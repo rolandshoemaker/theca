@@ -3,3 +3,6 @@
 name = "theca"
 version = "0.0.1"
 authors = ["Roland Shoemaker <roland@bind.es>"]
+
+[dependencies]
+time = "*"

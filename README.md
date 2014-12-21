@@ -2,32 +2,6 @@
 
 rust memo/note taking tool with a json note file format
 
-## display format
-
-    # theca # prints all items for default/set profile
-    # theca 1 #
-    1   short title                     U       21-12-14
-    # theca view 2
-    2   long title with body            S       10-12-14
-        This is the body, you probably found it because you searched
-        for something in the body!
-
-	long:
-
-    # theca
-    id  (+) title                       status      date
-    --------------------------------------------------------
-    1   short title                     Urgent      21-12-14
-    2   (+) long title with body        Started     21-12-14
-    3   i dont have a status                        21-12-14
-
-	condensed:
-
-    # theca -c
-    1   short title                     U       10-12-14
-    2   (+) long title with body        S       10-12-14
-    3   i dont have a status                    21-12-14
-
 ## json note file
 
     {
@@ -55,6 +29,32 @@ rust memo/note taking tool with a json note file format
             }
         ]
     }
+
+## display commands
+
+    # theca # prints all items for default/set profile
+    # theca 1 #
+    1   short title                     U       21-12-14
+    # theca view 2
+    2   long title with body            S       10-12-14
+        This is the body, you probably found it because you searched
+        for something in the body!
+
+	long:
+
+    # theca
+    id  (+) title                       status      date
+    --------------------------------------------------------
+    1   short title                     Urgent      21-12-14
+    2   (+) long title with body        Started     21-12-14
+    3   i dont have a status                        21-12-14
+
+	condensed:
+
+    # theca -c
+    1   short title                     U       10-12-14
+    2   (+) long title with body        S       10-12-14
+    3   i dont have a status                    21-12-14
 
 ## add item commands
 
@@ -107,6 +107,7 @@ rust memo/note taking tool with a json note file format
 
 ## features
 
+* allow import from one profile file to another?
 * allow encrypted note file (encrypt entire file or just relevant json fields...?)
 * multiple profiles (default+selectable profiles)
 * drop to editor to add/edit long notes / commandline for just titles

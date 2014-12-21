@@ -1,5 +1,7 @@
 extern crate serialize;
+extern crate time;
 use serialize::{Encodable, Encoder, json};
+use time::{now_utc, strftime};
 
 static NOSTATUS: &'static str = "";
 static STARTED: &'static str = "Started";
@@ -54,36 +56,47 @@ impl <S: Encoder<E>, E> Encodable<S, E> for ThecaProfile {
 }
 
 impl ThecaProfile {
-	fn add_note(&mut self, note: ThecaItem) {
-		self.notes.push(note);
+	fn add_item(&mut self, a_title: String, a_status: String, a_body: String) {
+        let item = ThecaItem {
+            id: self.current_id+1,
+            title: a_title,
+            status: a_status,
+            body: a_body,
+            last_touched: strftime("%FT%T", &now_utc()).ok().unwrap()
+        };
+		self.notes.push(item);
+        self.current_id += 1;
+        println!("added");
 	}
+
+    fn delete_item(&mut self, id: int) {
+        let remove = self.notes.iter()
+            .position(|n| n.id == id)
+            .map(|e| self.notes.remove(e))
+            .is_some();
+        match remove {
+            true => {
+                println!("removed");
+            }
+            false => {
+                println!("not found");
+            }
+        }
+    }
 }
 
 fn main() {
-	let note1 = ThecaItem {
-		id: 1,
-		title: "wooo".to_string(),
-		status: "".to_string(),
-		body: "this is the body of this thing".to_string(),
-		last_touched: "then".to_string()
-	};
-
-    let note2 = ThecaItem {
-        id: 2,
-        title: "wooo this is another title".to_string(), 
-        status: "Urgent".to_string(),
-        body: "".to_string(),
-        last_touched: "then".to_string()
-    };
-
 	let mut profile = ThecaProfile {
-		current_id: 2,
+		current_id: 0,
 		encrypted: false,
 		notes: vec![]
 	};
 
-	profile.add_note(note1);
-	profile.add_note(note2);
+    profile.add_item("woo".to_string(), STARTED.to_string(), "this is the body".to_string());
+    profile.add_item("another woo".to_string(), NOSTATUS.to_string(), "".to_string());
+    profile.delete_item(2);
+    profile.delete_item(3);
+    profile.add_item("another woo".to_string(), URGENT.to_string(), "".to_string());
 
 	println!("profile: {}", json::encode(&profile));
 }
