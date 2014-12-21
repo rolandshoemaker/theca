@@ -104,6 +104,7 @@ rust memo/note taking tool with a json note file format
 
 ## features
 
+* allow encrypted note file (encrypt entire file or just relevant json fields...?)
 * multiple profiles (default+selectable profiles)
 * drop to editor to add/edit long notes / commandline for just titles
 * stdin to new note
