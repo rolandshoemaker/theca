@@ -2,7 +2,21 @@
 name = "theca"
 version = "0.0.1"
 dependencies = [
+ "docopt_macros 0.6.16 (git+git://github.com/docopt/docopt.rs)",
  "time 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "docopt"
+version = "0.6.16"
+source = "git+git://github.com/docopt/docopt.rs#3f39bcc7f590716b6dbb21822fe96f649871ded4"
+
+[[package]]
+name = "docopt_macros"
+version = "0.6.16"
+source = "git+git://github.com/docopt/docopt.rs#3f39bcc7f590716b6dbb21822fe96f649871ded4"
+dependencies = [
+ "docopt 0.6.16 (git+git://github.com/docopt/docopt.rs)",
 ]
 
 [[package]]

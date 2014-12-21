@@ -6,3 +6,6 @@ authors = ["Roland Shoemaker <roland@bind.es>"]
 
 [dependencies]
 time = "*"
+
+[dependencies.docopt_macros]
+git = "git://github.com/docopt/docopt.rs"
