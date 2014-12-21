@@ -2,35 +2,56 @@
 
 rust memo/note taking tool with a json note file format
 
-## features
-* multiple profiles (default+selectable profiles)
-* drop to editor to add/edit long notes / commandline for just titles
-* stdin to new note
-* read file to new note
-* store user config in ~/.theca/conf (header/condensed, dropbox/~, etc)
-* store note file in ~/.thecha/profiles/name.json
-* not rly a feature but storing chain in dropbox should sync pretty well...
+## display format
 
-## display
-* print from provided profile
-* print from default profile
-* print from all profiles
-* print with header/condensed
-* show REAL id / show RELATIVE id
-* print in order
-* print by day/week/month added/updated
+    # theca # prints all items for default/set profile
+    # theca 1 #
+    1   short title                     U       21-12-14
+    # theca view 2
+    2   long title with body            S       10-12-14
+        This is the body, you probably found it because you searched
+        for something in the body!
 
-## searching
-* search by title keyword
-* search by body keyword
-* search both by user provided regex
+	long:
 
-## per item info
-* id (incr int)
-* status (urgent/started/) finished seems unnessacary...
-* title
-* optional text body
-* datetime last touched (created/edited)
+    # theca
+    id  (+) title                       status      date
+    --------------------------------------------------------
+    1   short title                     Urgent      21-12-14
+    2   (+) long title with body        Started     21-12-14
+    3   i dont have a status                        21-12-14
+
+	condensed:
+
+    # theca -c
+    1   short title                     U       10-12-14
+    2   (+) long title with body        S       10-12-14
+    3   i dont have a status                    21-12-14
+
+## json note file
+
+    {
+        "current_id": 3, # only needed for incr int id type...
+        "notes": [
+            {
+                "id": 1,
+                "title": "short title",
+                "status": 2, # int status code, to be converted to U/Urgent S/Started etcetc
+                "last_touched": "2014-12-21T00:16:26.001087" # ISO 8601 date in UTC
+            },{
+                "id": 2,
+                "title": "long title with body",
+                "body": "wow we can hold some stuff in here that we might want to read later\nwhoa that was a linebreak huh!\n\nyes, yes it was",
+                "status": 1,
+                "last_touched": "2014-12-21T00:25:24.858575" # ISO 8601 date in UTC
+            },{
+                "id": 3,
+                "title": "i dont have a status",
+                "status": 0,
+                "last_touched": "2014-12-21T00:16:26.001087" # ISO 8601 date in UTC
+            }
+        ]
+    }
 
 ## add item commands
 
@@ -51,7 +72,6 @@ rust memo/note taking tool with a json note file format
     # theca edit 2 "this is the new title for this item"
     # theca edit 2 # drop to $EDITOR to edit body
     # theca edit 2 -b "this is the new body for this item"
-
 
 ## search commands
 
@@ -82,54 +102,36 @@ rust memo/note taking tool with a json note file format
         20 kind of
         30 silly regex
 
+## features
 
-## display format
+* multiple profiles (default+selectable profiles)
+* drop to editor to add/edit long notes / commandline for just titles
+* stdin to new note
+* read file to new note
+* store user config in `~/.theca/conf` (header/condensed, dropbox/~, etc)
+* store note file in `~/.thecha/profiles/name.json`
+* not rly a feature but storing `.theca` folder in dropbox should sync pretty well...
 
-    # theca # prints all items for default/set profile
-    # theca 1 #
-    1   short title                     U       21-12-14
-    # theca view 2
-    2   long title with body            S       10-12-14
-        This is the body, you probably found it because you searched
-        for something in the body!
+### display
 
-	long:
+* print from provided profile
+* print from default profile
+* print from all profiles
+* print with header/condensed
+* show REAL id / show RELATIVE id
+* print in order
+* print by day/week/month last touched
 
-    # theca
-    id  (+) title                       status      date
-    --------------------------------------------------------
-    1   short title                     Urgent      21-12-14
-    2   (+) long title with body        Started     21-12-14
-    3   i dont have a status                        21-12-14
+### searching
 
-	condensed:
+* search by title keyword
+* search by body keyword
+* search both by user provided regex
 
-    # theca -c
-    1   short title                     U       10-12-14
-    2   (+) long title with body        S       10-12-14
-    3   i dont have a status                    21-12-14
+### per item info
 
-## json note file
-
-    {
-        "current_id": 2, # only needed for incr int id type...
-        "notes": [
-            {
-                "id": 1,
-                "title": "short title",
-                "status": 2, # int status code, to be converted to U/Urgent S/Started etcetc
-                "last_touched": "2014-12-21T00:16:26.001087" # ISO 8601 date in UTC
-            },{
-                "id": 2,
-                "title": "long title with body",
-                "body": "wow we can hold some stuff in here that we might want to read later\nwhoa that was a linebreak huh!\n\nyes, yes it was",
-                "status": 1,
-                "last_touched": "2014-12-21T00:25:24.858575" # ISO 8601 date in UTC
-            },{
-                "id": 3,
-                "title": "i dont have a status",
-                "status": 0,
-                "last_touched": "2014-12-21T00:16:26.001087" # ISO 8601 date in UTC
-            }
-        ]
-    }
+* id (incr int)
+* status (urgent/started/) finished seems unnessacary...
+* title
+* optional text body
+* datetime last touched (created/edited)
