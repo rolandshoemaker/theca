@@ -32,22 +32,25 @@ rust memo/note taking tool with a json note file format
 
     {
         "current_id": 3, # only needed for incr int id type...
+        "encrypted": false,
         "notes": [
             {
                 "id": 1,
                 "title": "short title",
-                "status": 2, # int status code, to be converted to U/Urgent S/Started etcetc
+                "body": "",
+                "status": "Urgent",
                 "last_touched": "2014-12-21T00:16:26.001087" # ISO 8601 date in UTC
             },{
                 "id": 2,
                 "title": "long title with body",
                 "body": "wow we can hold some stuff in here that we might want to read later\nwhoa that was a linebreak huh!\n\nyes, yes it was",
-                "status": 1,
+                "status": "Started",
                 "last_touched": "2014-12-21T00:25:24.858575" # ISO 8601 date in UTC
             },{
                 "id": 3,
-                "title": "i dont have a status",
-                "status": 0,
+                "title": "i dont have a status or a body",
+                "body": "",
+                "status": "",
                 "last_touched": "2014-12-21T00:16:26.001087" # ISO 8601 date in UTC
             }
         ]
