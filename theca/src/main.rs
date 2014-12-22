@@ -12,13 +12,13 @@ static USAGE: &'static str = "
 theca - cli note taking tool
 
 Usage:
-    theca new_profile
-    theca new_profile <name> [--encrypted --dropbox]
-    theca [options] [-c | -e] [-l LIMIT]
-    theca [options] [-c | -e] <id>
-    theca [options] [-c | -e] view <id>
-    theca [options] add <title> [-sn | -ss | -su] [-b BODY | --editor | -]
-    theca [options] edit <id> [-sn | -ss | -su] [-b BODY | --editor | -]
+    theca new-profile
+    theca new-profile <name> [--encrypted]
+    theca [options] [-c|-e] [-l LIMIT]
+    theca [options] [-c|-e] <id>
+    theca [options] [-c|-e] view <id>
+    theca [options] add <title> [--started|--urgent] [-b BODY|--editor|-]
+    theca [options] edit <id> [--started|--urgent|--none] [-b BODY|--editor|-]
     theca [options] del <id>
     theca (-h | --help)
     theca --version
@@ -33,13 +33,41 @@ Options:
     -e, --expanded                      Use the expanded print format.
     --encrypted                         Encrypt new profile, theca will prompt you for a key.
     -l LIMIT                            Limit listing to LIMIT items.
-    -sn                                 No status.
-    -ss                                 Started status.
-    -su                                 Urgent status.
+    --none                              No status.
+    --started                           Started status.
+    --urgent                            Urgent status.
     -b BODY                             Set body of the item to BODY.
-    -                                   Set body of the item to STDIN.
     --editor                            Drop to $EDITOR to set/edit item body.
+    -                                   Set body of the item to STDIN.
 ";
+
+
+#[deriving(Decodable, Show)]
+struct Args {
+    flag_config: Vec<String>,
+    flag_profiles_folder: Vec<String>,
+    flag_p: Vec<String>,
+    cmd_new_profile: bool,
+    cmd_view: bool,
+    cmd_add: bool,
+    cmd_edit: bool,
+    cmd_del: bool,
+    arg_name: String,
+    flag_encrypted: bool,
+    flag_c: bool,
+    flag_e: bool,
+    flag_l: Vec<int>,
+    arg_title: String,
+    flag_started: bool,
+    flag_urgent: bool,
+    flag_none: bool,
+    flag_b: Vec<String>,
+    flag_editor: bool,
+    flag_: bool,
+    arg_id: Vec<int>,
+    flag_h: bool,
+    flag_v: bool
+}
 
 static NOSTATUS: &'static str = "";
 static STARTED: &'static str = "Started";
@@ -101,22 +129,15 @@ impl <S: Encoder<E>, E> Encodable<S, E> for ThecaProfile {
 }
 
 impl ThecaProfile {
-    fn save_to_file(&mut self, args: &docopt::ArgvMap) {
+    fn save_to_file(&mut self, args: &Args) {
         // set profile folder
-        let mut profile_path = if args.get_bool("--profiles-folder") {
-            Path::new(args.get_str("PROFILEPATH"))
-        } else {
-            match os::homedir() {
-                Some(ref p) => p.join(".theca"),
-                None => Path::new(".").join(".theca")
-            }
-        };
+        let mut profile_path = get_profile_folder(args);
 
         // set file name
-        if args.get_bool("-p") {
-            profile_path.push(args.get_str("-p").to_string() + ".json");
-        } else if args.get_bool("new_profile") {
-            profile_path.push(args.get_str("<name>").to_string() + ".json");
+        if !args.flag_p.is_empty() {
+            profile_path.push(args.flag_p[0].to_string() + ".json");
+        } else if args.cmd_new_profile {
+            profile_path.push(args.arg_name.to_string() + ".json");
         } else {
             profile_path.push("default".to_string() + ".json");
         }
@@ -144,7 +165,7 @@ impl ThecaProfile {
                     title: a_title,
                     status: a_status,
                     body: a_body,
-                    last_touched: strftime("%FT%T", &now_utc()).ok().unwrap()
+                    last_touched: strftime("%F", &now_utc()).ok().unwrap() // no time...?
                 });
             }
         }
@@ -170,8 +191,19 @@ impl ThecaProfile {
     // fn edit_item(&mut self) {
     // }
 
-    // fn list_items(&mut self) {
-    // }
+    fn view_item(&mut self, id: int) {
+        let item = self.notes.iter()
+            .find(|n| n.id == id);
+    }
+
+    fn list_items(&mut self, args: &Args) {
+        if args.flag_e {
+            // print table header
+        }
+        for i in self.notes.iter() {
+            // print each item
+        }
+    }
 
     // fn search_titles(&mut self, keyword: String) {
     // }
@@ -186,27 +218,31 @@ impl ThecaProfile {
     // }
 }
 
-fn build_profile(args: &docopt::ArgvMap) -> Result<ThecaProfile, String> {
-    if args.get_bool("new_profile") {
+fn get_profile_folder(args: &Args) -> Path {
+    if !args.flag_profiles_folder.is_empty() {
+        Path::new(args.flag_p[0].to_string())
+    } else {
+        match os::homedir() {
+            Some(ref p) => p.join(".theca"),
+            None => Path::new(".").join(".theca")
+        }
+    }
+}
+
+fn build_profile(args: &Args) -> Result<ThecaProfile, String> {
+    if args.cmd_new_profile {
         Ok(ThecaProfile {
             current_id: 0,
-            encrypted: args.get_bool("--encrypted"),
+            encrypted: args.flag_encrypted,
             notes: vec![]
         })
     } else {
         // set profile folder
-        let mut profile_path = if args.get_bool("--profiles-folder") {
-            Path::new(args.get_str("PROFILEPATH"))
-        } else {
-            match os::homedir() {
-                Some(ref p) => p.join(".theca"),
-                None => Path::new(".").join(".theca")
-            }
-        };
+        let mut profile_path = get_profile_folder(args);
 
         // set profile name
-        if args.get_bool("-p") {
-            profile_path.push(args.get_str("-p").to_string() + ".json");
+        if !args.flag_p.is_empty() {
+            profile_path.push(args.flag_p[0].to_string() + ".json");
         } else {
             profile_path.push("default".to_string() + ".json");
         }
@@ -240,9 +276,13 @@ fn build_profile(args: &docopt::ArgvMap) -> Result<ThecaProfile, String> {
 }
 
 fn main() {
-    let args = Docopt::new(USAGE)
-                      .and_then(|dopt| dopt.parse())
-                      .unwrap_or_else(|e| e.exit());
+    // let args = Docopt::new(USAGE)
+    //                   .and_then(|dopt| dopt.parse())
+    //                   .unwrap_or_else(|e| e.exit());
+
+    let args: Args = Docopt::new(USAGE)
+                            .and_then(|d| d.decode())
+                            .unwrap_or_else(|e| e.exit());
 
     println!("{}", args);
 
@@ -252,15 +292,24 @@ fn main() {
         Err(e) => panic!("{}", e)
     };
 
-    // check for all other commands and work on profile
-    if args.get_bool("view") {
+    // see what root command was used
+    if args.cmd_view {
 
-    } else if args.get_bool("add") {
+    } else if args.cmd_add {
+        let title = args.arg_title.to_string();
+        let status = if args.flag_started {STARTED.to_string()} else if args.flag_urgent {URGENT.to_string()} else {NOSTATUS.to_string()};
+        let body = if !args.flag_b.is_empty() {args.flag_b[0].to_string()} else {"".to_string()};
+        profile.add_item(title, status, body);
+    } else if args.cmd_edit {
 
-    } else if args.get_bool("edit") {
-
-    } else if args.get_bool("del") {
-
+    } else if args.cmd_del {
+        let id = args.arg_id[0];
+        profile.delete_item(id);
+    } else if args.flag_v {
+        println!("VERSION YO");
+    } else if !args.cmd_new_profile {
+        // this should be the default for nothing
+        profile.list_items(&args);
     }
 
     // save altered profile back to disk
