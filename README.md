@@ -33,7 +33,7 @@ rust memo/note taking tool with a json note file format
 ## display commands
 
     # theca # prints all items for default/set profile
-    # theca 1 #
+    # theca 1
     1   short title                     U       21-12-14
     # theca view 2
     2   long title with body            S       10-12-14
@@ -113,8 +113,8 @@ rust memo/note taking tool with a json note file format
 * drop to editor to add/edit long notes / commandline for just titles
 * stdin to new note
 * read file to new note
-* store user config in `~/.theca/conf` (header/condensed, dropbox/~, etc)
-* store note file in `~/.thecha/profiles/name.json`
+* store user config in `~/.thecarc` (header/condensed, .theca/ (dropbox/~), etc)
+* store note files in `~/.thecha/`
 * not rly a feature but storing `.theca` folder in dropbox should sync pretty well...
 
 ### display
