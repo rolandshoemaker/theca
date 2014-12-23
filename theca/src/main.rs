@@ -8,6 +8,45 @@ use std::os;
 use std::io::fs::PathExtensions;
 use std::io::{File, Truncate, Write};
 
+mod c {
+    extern crate libc;
+    pub use self::libc::{
+        c_int,
+        c_ushort,
+        c_ulong,
+        STDOUT_FILENO,
+    };
+    use std::mem::zeroed;
+    pub struct winsize {
+        pub ws_row: c_ushort,
+        pub ws_col: c_ushort,
+    }
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    static TIOCGWINSZ: c_ulong = 0x5413;
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    static TIOCGWINSZ: c_ulong = 0x40087468;
+    extern {
+        pub fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
+    }
+    pub unsafe fn dimensions() -> winsize {
+        let mut window: winsize = zeroed();
+        ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut window as *mut winsize);
+        window
+    }
+}
+
+fn termsize() -> Option<(uint, uint)> {
+    let ws = unsafe { c::dimensions() };
+
+    if ws.ws_col == 0 || ws.ws_row == 0 {
+        None
+    }
+    else {
+        Some((ws.ws_col as uint, ws.ws_row as uint))
+    }
+
+}
+
 static USAGE: &'static str = "
 theca - cli note taking tool
 
@@ -63,7 +102,7 @@ struct Args {
     flag_none: bool,
     flag_b: Vec<String>,
     flag_editor: bool,
-    flag_: bool,
+    cmd__: bool,
     arg_id: Vec<int>,
     flag_h: bool,
     flag_v: bool
@@ -72,6 +111,8 @@ struct Args {
 static NOSTATUS: &'static str = "";
 static STARTED: &'static str = "Started";
 static URGENT: &'static str = "Urgent";
+
+static COLSEP: uint = 3;
 
 #[deriving(Decodable)]
 pub struct ThecaItem {
@@ -106,12 +147,14 @@ pub struct ThecaProfile {
     notes: Vec<ThecaItem>
 }
 
-// impl ThecaItem {
-//     fn decode_item(&mut self, id: int, key: String) {
-//     }
-//     fn format_item(&mut self, id: int) {
-//     }
-// }
+fn right_pad_string(string: &String, padding: uint) {
+
+}
+
+impl ThecaItem {
+    fn decrypt(&mut self, key: &str) {
+    }
+}
 
 impl <S: Encoder<E>, E> Encodable<S, E> for ThecaProfile {
     fn encode(&self, encoder: &mut S) -> Result<(), E> {
@@ -125,6 +168,16 @@ impl <S: Encoder<E>, E> Encodable<S, E> for ThecaProfile {
                 })
             }
         }
+    }
+}
+
+
+
+fn format_field(value: &String, width: uint) -> String {
+    if value.len() > width {
+        format!("{: <1$.1$}...", value, width-3)
+    } else {
+        format!("{: <1$.1$}", value, width)
     }
 }
 
@@ -165,7 +218,7 @@ impl ThecaProfile {
                     title: a_title,
                     status: a_status,
                     body: a_body,
-                    last_touched: strftime("%F", &now_utc()).ok().unwrap() // no time...?
+                    last_touched: strftime("%FT%T", &now_utc()).ok().unwrap() // no time...?
                 });
             }
         }
@@ -191,18 +244,78 @@ impl ThecaProfile {
     // fn edit_item(&mut self) {
     // }
 
+    fn print_items(&mut self, args: &Args) {
+        // SERIOUS SERIOUS optimization, this is awful...
+        let (mut id_width, mut title_width, mut status_width, mut touched_width) = (0, 0, 0, 0);
+        for i in range(0, self.notes.len()) {
+            id_width = if self.notes[i].id.to_string().len() > id_width {self.notes[i].id.to_string().len()} else {id_width};
+            if self.notes[i].body.len() > 0 {
+                title_width = if self.notes[i].title.len()+4 > title_width {self.notes[i].title.len()+4} else {title_width};
+            } else {
+                title_width = if self.notes[i].title.len() > title_width {self.notes[i].title.len()} else {title_width};
+            }
+            status_width = if self.notes[i].status.len() > status_width {self.notes[i].status.len()} else {status_width};
+            touched_width = if self.notes[i].last_touched.len() > touched_width {self.notes[i].last_touched.len()} else {touched_width};
+        }
+        // println!("{} {} {} {}", id_width, title_width, status_width, touched_width);
+        let total_width = id_width+title_width+status_width+touched_width+(3*COLSEP);
+
+        let (width, height) = match termsize() {
+            None => panic!(),
+            Some((width, height)) => (width, height),
+        };
+
+        // println!("{} {}", total_width, width);
+        
+        // if total_width > width {
+        //     let new_width = (total_width / width) as f64;
+        //     println!("{}", new_width);
+        //     id_width = ((id_width as f64) * new_width) as uint;
+        //     title_width = ((title_width as f64) * new_width) as uint;
+        //     status_width = ((status_width as f64) * new_width) as uint;
+        //     touched_width = ((touched_width as f64) * new_width) as uint;
+        // }
+
+        if args.flag_e {
+            print!("{}", format_field(&"id".to_string(), id_width));
+            print!("{}", " ".repeat(COLSEP));
+            print!("{}", format_field(&"title".to_string(), title_width));
+            print!("{}", " ".repeat(COLSEP));
+            print!("{}", format_field(&"status".to_string(), status_width));
+            print!("{}", " ".repeat(COLSEP));
+            print!("{}", format_field(&"last touched".to_string(), touched_width));
+            print!("\n");
+            println!("{}", "-".repeat(total_width));
+        }
+
+        for i in range(0, self.notes.len()) {
+            print!("{}", format_field(&self.notes[i].id.to_string(), id_width));
+            print!("{}", " ".repeat(COLSEP));
+            if self.notes[i].body.len() > 0 {
+                print!("(+) {}", format_field(&self.notes[i].title, title_width-4));
+            } else {
+                print!("{}", format_field(&self.notes[i].title, title_width));
+            }
+            print!("{}", " ".repeat(COLSEP));
+            print!("{}", format_field(&self.notes[i].status, status_width));
+            print!("{}", " ".repeat(COLSEP));
+            print!("{}", format_field(&self.notes[i].last_touched, touched_width));
+            print!("\n");
+        }
+    }
+
+    fn print_header(&mut self) {
+    }
+
+
     fn view_item(&mut self, id: int) {
-        let item = self.notes.iter()
-            .find(|n| n.id == id);
+        let item_pos: uint = self.notes.iter()
+            .position(|n| n.id == id).unwrap();
+        
     }
 
     fn list_items(&mut self, args: &Args) {
-        if args.flag_e {
-            // print table header
-        }
-        for i in self.notes.iter() {
-            // print each item
-        }
+        self.print_items(args);
     }
 
     // fn search_titles(&mut self, keyword: String) {
@@ -284,8 +397,6 @@ fn main() {
                             .and_then(|d| d.decode())
                             .unwrap_or_else(|e| e.exit());
 
-    println!("{}", args);
-
     // Setup a ThecaProfile struct
     let mut profile = match build_profile(&args) {
         Ok(p) => p,
@@ -294,7 +405,7 @@ fn main() {
 
     // see what root command was used
     if args.cmd_view {
-
+        profile.view_item(args.arg_id[0]);
     } else if args.cmd_add {
         let title = args.arg_title.to_string();
         let status = if args.flag_started {STARTED.to_string()} else if args.flag_urgent {URGENT.to_string()} else {NOSTATUS.to_string()};

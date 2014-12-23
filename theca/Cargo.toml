@@ -8,5 +8,4 @@ authors = ["Roland Shoemaker <roland@bind.es>"]
 time = "*"
 
 [dependencies.docopt]
-# git = "git://github.com/docopt/docopt.rs"
-path = "/home/rolands/docopt.rs"
+git = "git://github.com/docopt/docopt.rs"
