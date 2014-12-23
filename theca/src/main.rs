@@ -389,9 +389,6 @@ fn build_profile(args: &Args) -> Result<ThecaProfile, String> {
 }
 
 fn main() {
-    // let args = Docopt::new(USAGE)
-    //                   .and_then(|dopt| dopt.parse())
-    //                   .unwrap_or_else(|e| e.exit());
 
     let args: Args = Docopt::new(USAGE)
                             .and_then(|d| d.decode())
