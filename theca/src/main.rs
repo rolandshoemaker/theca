@@ -1,51 +1,52 @@
-extern crate serialize;
 extern crate time;
 extern crate docopt;
-use serialize::{Encodable, Decodable, Encoder, json};
+extern crate "rustc-serialize" as rustc_serialize;
+// use serialize::{Encodable, Decodable, Encoder, json};
+use rustc_serialize::{Encodable, Decodable, Encoder, json};
 use time::{now_utc, strftime};
 use docopt::Docopt;
 use std::os;
 use std::io::fs::PathExtensions;
 use std::io::{File, Truncate, Write};
 
-mod c {
-    extern crate libc;
-    pub use self::libc::{
-        c_int,
-        c_ushort,
-        c_ulong,
-        STDOUT_FILENO,
-    };
-    use std::mem::zeroed;
-    pub struct winsize {
-        pub ws_row: c_ushort,
-        pub ws_col: c_ushort,
-    }
-    #[cfg(any(target_os = "linux", target_os = "android"))]
-    static TIOCGWINSZ: c_ulong = 0x5413;
-    #[cfg(any(target_os = "macos", target_os = "ios"))]
-    static TIOCGWINSZ: c_ulong = 0x40087468;
-    extern {
-        pub fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
-    }
-    pub unsafe fn dimensions() -> winsize {
-        let mut window: winsize = zeroed();
-        ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut window as *mut winsize);
-        window
-    }
-}
+// mod c {
+//     extern crate libc;
+//     pub use self::libc::{
+//         c_int,
+//         c_ushort,
+//         c_ulong,
+//         STDOUT_FILENO,
+//     };
+//     use std::mem::zeroed;
+//     pub struct winsize {
+//         pub ws_row: c_ushort,
+//         pub ws_col: c_ushort,
+//     }
+//     #[cfg(any(target_os = "linux", target_os = "android"))]
+//     static TIOCGWINSZ: c_ulong = 0x5413;
+//     #[cfg(any(target_os = "macos", target_os = "ios"))]
+//     static TIOCGWINSZ: c_ulong = 0x40087468;
+//     extern {
+//         pub fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
+//     }
+//     pub unsafe fn dimensions() -> winsize {
+//         let mut window: winsize = zeroed();
+//         ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut window as *mut winsize);
+//         window
+//     }
+// }
 
-fn termsize() -> Option<(uint, uint)> {
-    let ws = unsafe { c::dimensions() };
+// fn termsize() -> Option<(uint, uint)> {
+//     let ws = unsafe { c::dimensions() };
 
-    if ws.ws_col == 0 || ws.ws_row == 0 {
-        None
-    }
-    else {
-        Some((ws.ws_col as uint, ws.ws_row as uint))
-    }
+//     if ws.ws_col == 0 || ws.ws_row == 0 {
+//         None
+//     }
+//     else {
+//         Some((ws.ws_col as uint, ws.ws_row as uint))
+//     }
 
-}
+// }
 
 static USAGE: &'static str = "
 theca - cli note taking tool
@@ -80,7 +81,7 @@ Options:
     -                                   Set body of the item to STDIN.
 ";
 
-#[deriving(Decodable, Show)]
+#[deriving(RustcDecodable, Show)]
 struct Args {
     flag_config: Vec<String>,
     flag_profiles_folder: Vec<String>,
@@ -111,18 +112,43 @@ static NOSTATUS: &'static str = "";
 static STARTED: &'static str = "Started";
 static URGENT: &'static str = "Urgent";
 
-// keep static defaults here to initalize LineFormat?
-static COLSEP: uint = 3;
-
 pub struct LineFormat {
-    colsep: int,
-    id_width: int,
-    title_width: int,
-    status_width: int,
-    touched_width: int
+    colsep: uint,
+    id_width: uint,
+    title_width: uint,
+    status_width: uint,
+    touched_width: uint
 }
 
-#[deriving(Decodable)]
+impl LineFormat {
+    fn new(items: &Vec<ThecaItem>) -> LineFormat {
+        // get terminal width, unused atm
+        // let (width, height) = match termsize() {
+        //     None => panic!(),
+        //     Some((width, height)) => (width, height),
+        // };
+
+        // set minimums (header length) + colsep, this should probably do some other stuff?
+        let mut line_format = LineFormat {colsep: 3, id_width:2, title_width:5, status_width:7, touched_width:7};
+        for i in range(0, items.len()) {
+            line_format.id_width = if items[i].id.to_string().len() > line_format.id_width {items[i].id.to_string().len()} else {line_format.id_width};
+            if items[i].body.len() > 0 {
+                line_format.title_width = if items[i].title.len()+4 > line_format.title_width {items[i].title.len()+4} else {line_format.title_width};
+            } else {
+                line_format.title_width = if items[i].title.len() > line_format.title_width {items[i].title.len()} else {line_format.title_width};
+            }
+            line_format.status_width = if items[i].status.len() > line_format.status_width {items[i].status.len()} else {line_format.status_width};
+            line_format.touched_width = if items[i].last_touched.len() > line_format.touched_width {items[i].last_touched.len()} else {line_format.touched_width};
+        }
+        line_format
+    }
+
+    fn line_width(&self) -> uint {
+        self.id_width+self.title_width+self.status_width+self.touched_width+(3*self.colsep)
+    }
+}
+
+#[deriving(RustcDecodable)]
 pub struct ThecaItem {
     id: int,
     title: String,
@@ -151,9 +177,24 @@ impl <S: Encoder<E>, E> Encodable<S, E> for ThecaItem {
 impl ThecaItem {
     fn decrypt(&mut self, key: &str) {
     }
+
+    fn print(&mut self, line_format: &LineFormat) {
+        print!("{}", format_field(&self.id.to_string(), line_format.id_width));
+        print!("{}", String::from_char(line_format.colsep, ' '));
+        if self.body.len() > 0 {
+            print!("(+) {}", format_field(&self.title, line_format.title_width-4));
+        } else {
+            print!("{}", format_field(&self.title, line_format.title_width));
+        }
+        print!("{}", String::from_char(line_format.colsep, ' '));
+        print!("{}", format_field(&self.status, line_format.status_width));
+        print!("{}", String::from_char(line_format.colsep, ' '));
+        print!("{}", format_field(&self.last_touched, line_format.touched_width));
+        print!("\n");
+    }
 }
 
-#[deriving(Decodable)]
+#[deriving(RustcDecodable)]
 pub struct ThecaProfile {
     current_id: int,
     encrypted: bool,
@@ -212,7 +253,7 @@ impl ThecaProfile {
                     title: a_title,
                     status: a_status,
                     body: a_body,
-                    last_touched: strftime("%FT%T", &now_utc()).ok().unwrap() // no time...?
+                    last_touched: strftime("%F %T", &now_utc()).ok().unwrap()
                 });
             }
         }
@@ -238,77 +279,35 @@ impl ThecaProfile {
     // fn edit_item(&mut self) {
     // }
 
-    fn print_items(&mut self, args: &Args) {
-        // SERIOUS SERIOUS optimization, this is awful...
-        let (mut id_width, mut title_width, mut status_width, mut touched_width) = (0, 0, 0, 0);
-        for i in range(0, self.notes.len()) {
-            id_width = if self.notes[i].id.to_string().len() > id_width {self.notes[i].id.to_string().len()} else {id_width};
-            if self.notes[i].body.len() > 0 {
-                title_width = if self.notes[i].title.len()+4 > title_width {self.notes[i].title.len()+4} else {title_width};
-            } else {
-                title_width = if self.notes[i].title.len() > title_width {self.notes[i].title.len()} else {title_width};
-            }
-            status_width = if self.notes[i].status.len() > status_width {self.notes[i].status.len()} else {status_width};
-            touched_width = if self.notes[i].last_touched.len() > touched_width {self.notes[i].last_touched.len()} else {touched_width};
-        }
-        // println!("{} {} {} {}", id_width, title_width, status_width, touched_width);
-        let total_width = id_width+title_width+status_width+touched_width+(3*COLSEP);
-
-        let (width, height) = match termsize() {
-            None => panic!(),
-            Some((width, height)) => (width, height),
-        };
-
-        // println!("{} {}", total_width, width);
-        
-        // if total_width > width {
-        //     let new_width = (total_width / width) as f64;
-        //     println!("{}", new_width);
-        //     id_width = ((id_width as f64) * new_width) as uint;
-        //     title_width = ((title_width as f64) * new_width) as uint;
-        //     status_width = ((status_width as f64) * new_width) as uint;
-        //     touched_width = ((touched_width as f64) * new_width) as uint;
-        // }
-
-        if args.flag_e {
-            print!("{}", format_field(&"id".to_string(), id_width));
-            print!("{}", " ".repeat(COLSEP));
-            print!("{}", format_field(&"title".to_string(), title_width));
-            print!("{}", " ".repeat(COLSEP));
-            print!("{}", format_field(&"status".to_string(), status_width));
-            print!("{}", " ".repeat(COLSEP));
-            print!("{}", format_field(&"last touched".to_string(), touched_width));
-            print!("\n");
-            println!("{}", "-".repeat(total_width));
-        }
-
-        for i in range(0, self.notes.len()) {
-            print!("{}", format_field(&self.notes[i].id.to_string(), id_width));
-            print!("{}", " ".repeat(COLSEP));
-            if self.notes[i].body.len() > 0 {
-                print!("(+) {}", format_field(&self.notes[i].title, title_width-4));
-            } else {
-                print!("{}", format_field(&self.notes[i].title, title_width));
-            }
-            print!("{}", " ".repeat(COLSEP));
-            print!("{}", format_field(&self.notes[i].status, status_width));
-            print!("{}", " ".repeat(COLSEP));
-            print!("{}", format_field(&self.notes[i].last_touched, touched_width));
-            print!("\n");
-        }
-    }
-
-    fn print_header(&mut self) {
+    fn print_header(&mut self, line_format: &LineFormat) {
+        print!("{}", format_field(&"id".to_string(), line_format.id_width));
+        print!("{}", String::from_char(line_format.colsep, ' '));
+        print!("{}", format_field(&"title".to_string(), line_format.title_width));
+        print!("{}", String::from_char(line_format.colsep, ' '));
+        print!("{}", format_field(&"status".to_string(), line_format.status_width));
+        print!("{}", String::from_char(line_format.colsep, ' '));
+        print!("{}", format_field(&"last touched".to_string(), line_format.touched_width));
+        print!("\n");
+        println!("{}", String::from_char(line_format.line_width(), '-'));
     }
 
     fn view_item(&mut self, id: int) {
         let item_pos: uint = self.notes.iter()
             .position(|n| n.id == id).unwrap();
-        
     }
 
     fn list_items(&mut self, args: &Args) {
-        self.print_items(args);
+        let line_format = LineFormat::new(&self.notes);
+        if args.flag_e {
+            self.print_header(&line_format);
+        }
+
+        // wish this would work :<
+        // self.notes.iter().map(|n| n.print(&line_format));
+
+        for i in range(0, self.notes.len()) {
+            self.notes[i].print(&line_format);
+        }
     }
 
     // should these searchs be for both title+body instead of seperate commands?
@@ -328,7 +327,7 @@ impl ThecaProfile {
 }
 
 fn format_field(value: &String, width: uint) -> String {
-    if value.len() > width {
+    if value.len() > width && width > 3 {
         format!("{: <1$.1$}...", value, width-3)
     } else {
         format!("{: <1$.1$}", value, width)
@@ -406,9 +405,7 @@ fn main() {
     };
 
     // see what root command was used
-    if args.cmd_view {
-        profile.view_item(args.arg_id[0]);
-    } else if args.cmd_add {
+    if args.cmd_add {
         let title = args.arg_title.to_string();
         let status = if args.flag_started {STARTED.to_string()} else if args.flag_urgent {URGENT.to_string()} else {NOSTATUS.to_string()};
         let body = if !args.flag_b.is_empty() {args.flag_b[0].to_string()} else {"".to_string()};
@@ -420,13 +417,15 @@ fn main() {
         profile.delete_item(id);
     } else if args.flag_v {
         println!("VERSION YO");
+    } else if args.cmd_view {
+        profile.view_item(args.arg_id[0]);
     } else if !args.cmd_new_profile {
         // this should be the default for nothing
         profile.list_items(&args);
     }
 
     // save altered profile back to disk
-    // this should only be triggered by commands that commit transactions
+    // this should only be triggered by commands that commit transactions to the profile
     if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile {
         profile.save_to_file(&args);
     }

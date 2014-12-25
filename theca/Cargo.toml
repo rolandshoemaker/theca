@@ -6,6 +6,7 @@ authors = ["Roland Shoemaker <roland@bind.es>"]
 
 [dependencies]
 time = "*"
+rustc-serialize = "0.1.1"
 
 [dependencies.docopt]
 git = "git://github.com/docopt/docopt.rs"
