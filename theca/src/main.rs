@@ -80,7 +80,6 @@ Options:
     -                                   Set body of the item to STDIN.
 ";
 
-
 #[deriving(Decodable, Show)]
 struct Args {
     flag_config: Vec<String>,
@@ -112,7 +111,16 @@ static NOSTATUS: &'static str = "";
 static STARTED: &'static str = "Started";
 static URGENT: &'static str = "Urgent";
 
+// keep static defaults here to initalize LineFormat?
 static COLSEP: uint = 3;
+
+pub struct LineFormat {
+    colsep: int,
+    id_width: int,
+    title_width: int,
+    status_width: int,
+    touched_width: int
+}
 
 #[deriving(Decodable)]
 pub struct ThecaItem {
@@ -124,19 +132,24 @@ pub struct ThecaItem {
 }
 
 impl <S: Encoder<E>, E> Encodable<S, E> for ThecaItem {
-        fn encode(&self, encoder: &mut S) -> Result<(), E> {
-                match *self {
-                        ThecaItem{id: ref p_id, title: ref p_title, status: ref p_status, body: ref p_body, last_touched: ref p_last_touched} => {
-                                encoder.emit_struct("ThecaItem", 1, |encoder| {
-                                    try!(encoder.emit_struct_field("id", 0u, |encoder| p_id.encode(encoder)));
-                                    try!(encoder.emit_struct_field("title", 1u, |encoder| p_title.encode(encoder)));
-                                    try!(encoder.emit_struct_field("status", 2u, |encoder| p_status.encode(encoder)));
-                                    try!(encoder.emit_struct_field("body", 3u, |encoder| p_body.encode(encoder)));
-                                    try!(encoder.emit_struct_field("last_touched", 4u, |encoder| p_last_touched.encode(encoder)));
-                                    Ok(())
-                            })
-                    }
+    fn encode(&self, encoder: &mut S) -> Result<(), E> {
+        match *self {
+            ThecaItem{id: ref p_id, title: ref p_title, status: ref p_status, body: ref p_body, last_touched: ref p_last_touched} => {
+                encoder.emit_struct("ThecaItem", 1, |encoder| {
+                    try!(encoder.emit_struct_field("id", 0u, |encoder| p_id.encode(encoder)));
+                    try!(encoder.emit_struct_field("title", 1u, |encoder| p_title.encode(encoder)));
+                    try!(encoder.emit_struct_field("status", 2u, |encoder| p_status.encode(encoder)));
+                    try!(encoder.emit_struct_field("body", 3u, |encoder| p_body.encode(encoder)));
+                    try!(encoder.emit_struct_field("last_touched", 4u, |encoder| p_last_touched.encode(encoder)));
+                    Ok(())
+                })
             }
+        }
+    }
+}
+
+impl ThecaItem {
+    fn decrypt(&mut self, key: &str) {
     }
 }
 
@@ -145,15 +158,6 @@ pub struct ThecaProfile {
     current_id: int,
     encrypted: bool,
     notes: Vec<ThecaItem>
-}
-
-fn right_pad_string(string: &String, padding: uint) {
-
-}
-
-impl ThecaItem {
-    fn decrypt(&mut self, key: &str) {
-    }
 }
 
 impl <S: Encoder<E>, E> Encodable<S, E> for ThecaProfile {
@@ -171,20 +175,10 @@ impl <S: Encoder<E>, E> Encodable<S, E> for ThecaProfile {
     }
 }
 
-
-
-fn format_field(value: &String, width: uint) -> String {
-    if value.len() > width {
-        format!("{: <1$.1$}...", value, width-3)
-    } else {
-        format!("{: <1$.1$}", value, width)
-    }
-}
-
 impl ThecaProfile {
     fn save_to_file(&mut self, args: &Args) {
         // set profile folder
-        let mut profile_path = get_profile_folder(args);
+        let mut profile_path = find_profile_folder(args);
 
         // set file name
         if !args.flag_p.is_empty() {
@@ -307,7 +301,6 @@ impl ThecaProfile {
     fn print_header(&mut self) {
     }
 
-
     fn view_item(&mut self, id: int) {
         let item_pos: uint = self.notes.iter()
             .position(|n| n.id == id).unwrap();
@@ -317,6 +310,9 @@ impl ThecaProfile {
     fn list_items(&mut self, args: &Args) {
         self.print_items(args);
     }
+
+    // should these searchs be for both title+body instead of seperate commands?
+    // (probably...)
 
     // fn search_titles(&mut self, keyword: String) {
     // }
@@ -331,7 +327,15 @@ impl ThecaProfile {
     // }
 }
 
-fn get_profile_folder(args: &Args) -> Path {
+fn format_field(value: &String, width: uint) -> String {
+    if value.len() > width {
+        format!("{: <1$.1$}...", value, width-3)
+    } else {
+        format!("{: <1$.1$}", value, width)
+    }
+}
+
+fn find_profile_folder(args: &Args) -> Path {
     if !args.flag_profiles_folder.is_empty() {
         Path::new(args.flag_p[0].to_string())
     } else {
@@ -342,6 +346,7 @@ fn get_profile_folder(args: &Args) -> Path {
     }
 }
 
+// this should be a method of ThecaProfile
 fn build_profile(args: &Args) -> Result<ThecaProfile, String> {
     if args.cmd_new_profile {
         Ok(ThecaProfile {
@@ -351,7 +356,7 @@ fn build_profile(args: &Args) -> Result<ThecaProfile, String> {
         })
     } else {
         // set profile folder
-        let mut profile_path = get_profile_folder(args);
+        let mut profile_path = find_profile_folder(args);
 
         // set profile name
         if !args.flag_p.is_empty() {
@@ -421,25 +426,13 @@ fn main() {
     }
 
     // save altered profile back to disk
-    // profile.add_item("woo".to_string(), STARTED.to_string(), "this is the body".to_string());
-    profile.save_to_file(&args);
-
-    // if args.get_bool("new_profile") {
-    //     // build a new profile
-    //     let mut profile = build_profile(args);
-    //     println!("profile: {}", json::encode(&profile));
-    // } else {
-    //     // read in either default.json or PROFILE.json (from args) from .thecaprofiles/
-
-    // }
-
-    // some setup function should do check for existing profile / run preceding line to build a new profile from args etcetcetc..,
-    // let mut profile = build_profile(false);
+    // this should only be triggered by commands that commit transactions
+    if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile {
+        profile.save_to_file(&args);
+    }
 
     // profile.add_item("another woo".to_string(), NOSTATUS.to_string(), "".to_string());
     // profile.delete_item(2);
     // profile.delete_item(3);
     // profile.add_item("another woo".to_string(), URGENT.to_string(), "".to_string());
-
-    // println!("profile: {}", json::encode(&profile));
 }
