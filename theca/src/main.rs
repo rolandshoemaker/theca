@@ -95,7 +95,7 @@ struct Args {
     flag_encrypted: bool,
     flag_c: bool,
     flag_e: bool,
-    flag_l: Vec<int>,
+    flag_l: Vec<uint>,
     arg_title: String,
     flag_started: bool,
     flag_urgent: bool,
@@ -103,7 +103,7 @@ struct Args {
     flag_b: Vec<String>,
     flag_editor: bool,
     cmd__: bool,
-    arg_id: Vec<int>,
+    arg_id: Vec<uint>,
     flag_h: bool,
     flag_v: bool
 }
@@ -112,6 +112,7 @@ static NOSTATUS: &'static str = "";
 static STARTED: &'static str = "Started";
 static URGENT: &'static str = "Urgent";
 
+#[deriving(Copy)]
 pub struct LineFormat {
     colsep: uint,
     id_width: uint,
@@ -148,9 +149,9 @@ impl LineFormat {
     }
 }
 
-#[deriving(RustcDecodable)]
+#[deriving(RustcDecodable, Clone)]
 pub struct ThecaItem {
-    id: int,
+    id: uint,
     title: String,
     status: String,
     body: String,
@@ -196,7 +197,7 @@ impl ThecaItem {
 
 #[deriving(RustcDecodable)]
 pub struct ThecaProfile {
-    current_id: int,
+    current_id: uint,
     encrypted: bool,
     notes: Vec<ThecaItem>
 }
@@ -261,7 +262,7 @@ impl ThecaProfile {
         println!("added");
     }
 
-    fn delete_item(&mut self, id: int) {
+    fn delete_item(&mut self, id: uint) {
         let remove = self.notes.iter()
             .position(|n| n.id == id)
             .map(|e| self.notes.remove(e))
@@ -291,9 +292,16 @@ impl ThecaProfile {
         println!("{}", String::from_char(line_format.line_width(), '-'));
     }
 
-    fn view_item(&mut self, id: int) {
+    fn view_item(&mut self, id: uint, args: &Args) {
         let item_pos: uint = self.notes.iter()
-            .position(|n| n.id == id).unwrap();
+            .position(|n| n.id == id)
+            .unwrap();
+        let mut notes = vec![self.notes[item_pos].clone()];
+        let line_format = LineFormat::new(&notes);
+        if args.flag_e {
+            self.print_header(&line_format);
+        }
+        notes[0].print(&line_format);
     }
 
     fn list_items(&mut self, args: &Args) {
@@ -418,7 +426,7 @@ fn main() {
     } else if args.flag_v {
         println!("VERSION YO");
     } else if args.cmd_view {
-        profile.view_item(args.arg_id[0]);
+        profile.view_item(args.arg_id[0], &args);
     } else if !args.cmd_new_profile {
         // this should be the default for nothing
         profile.list_items(&args);
