@@ -9,18 +9,20 @@ use std::os;
 use std::io::fs::PathExtensions;
 use std::io::{File, Truncate, Write};
 
+static VERSION:  &'static str = "0.0.1-dev";
+
 // mod c {
 //     extern crate libc;
 //     pub use self::libc::{
 //         c_int,
 //         c_ushort,
 //         c_ulong,
-//         STDOUT_FILENO,
+//         STDOUT_FILENO
 //     };
 //     use std::mem::zeroed;
 //     pub struct winsize {
 //         pub ws_row: c_ushort,
-//         pub ws_col: c_ushort,
+//         pub ws_col: c_ushort
 //     }
 //     #[cfg(any(target_os = "linux", target_os = "android"))]
 //     static TIOCGWINSZ: c_ulong = 0x5413;
@@ -58,7 +60,7 @@ Usage:
     theca [options] [-c|-e] <id>
     theca [options] [-c|-e] view <id>
     theca [options] add <title> [--started|--urgent] [-b BODY|--editor|-]
-    theca [options] edit <id> [--started|--urgent|--none] [-b BODY|--editor|-]
+    theca [options] edit <id> [<title>] [--started|--urgent|--none] [-b BODY|--editor|-]
     theca [options] del <id>
     theca (-h | --help)
     theca --version
@@ -131,6 +133,7 @@ impl LineFormat {
 
         // set minimums (header length) + colsep, this should probably do some other stuff?
         let mut line_format = LineFormat {colsep: 3, id_width:2, title_width:5, status_width:7, touched_width:7};
+
         for i in range(0, items.len()) {
             line_format.id_width = if items[i].id.to_string().len() > line_format.id_width {items[i].id.to_string().len()} else {line_format.id_width};
             if items[i].body.len() > 0 {
@@ -141,6 +144,7 @@ impl LineFormat {
             line_format.status_width = if items[i].status.len() > line_format.status_width {items[i].status.len()} else {line_format.status_width};
             line_format.touched_width = if items[i].last_touched.len() > line_format.touched_width {items[i].last_touched.len()} else {line_format.touched_width};
         }
+
         line_format
     }
 
@@ -179,7 +183,7 @@ impl ThecaItem {
     fn decrypt(&mut self, key: &str) {
     }
 
-    fn print(&mut self, line_format: &LineFormat) {
+    fn print(& self, line_format: &LineFormat) {
         print!("{}", format_field(&self.id.to_string(), line_format.id_width));
         print!("{}", String::from_char(line_format.colsep, ' '));
         if self.body.len() > 0 {
@@ -277,8 +281,24 @@ impl ThecaProfile {
         }
     }
 
-    // fn edit_item(&mut self) {
-    // }
+    fn edit_item(&mut self, id: uint, args: &Args) {
+        let item_pos: uint = self.notes.iter()
+            .position(|n| n.id == id)
+            .unwrap();
+        if args.arg_title.len() > 0 {
+            // change title
+            self.notes[item_pos].title = args.arg_title.to_string();
+        } else if args.flag_started || args.flag_urgent || args.flag_none {
+            // change status
+            if args.flag_started {self.notes[item_pos].status = STARTED.to_string();} else if args.flag_urgent {self.notes[item_pos].status = URGENT.to_string();} else if args.flag_none {self.notes[item_pos].status = NOSTATUS.to_string();};
+        } else if args.flag_b[0].len() > 0 || args.flag_editor || args.cmd__ {
+            // change body
+            if args.flag_b[0].len() > 0 {self.notes[item_pos].body = args.flag_b[0].to_string();} else if args.flag_editor {} else if args.cmd__ {};
+        }
+        // update last_touched
+        self.notes[item_pos].last_touched = strftime("%F %T", &now_utc()).ok().unwrap();
+        println!("edited")
+    }
 
     fn print_header(&mut self, line_format: &LineFormat) {
         print!("{}", format_field(&"id".to_string(), line_format.id_width));
@@ -292,16 +312,19 @@ impl ThecaProfile {
         println!("{}", String::from_char(line_format.line_width(), '-'));
     }
 
-    fn view_item(&mut self, id: uint, args: &Args) {
+    fn view_item(&mut self, id: uint, args: &Args, body: bool) {
         let item_pos: uint = self.notes.iter()
             .position(|n| n.id == id)
             .unwrap();
-        let mut notes = vec![self.notes[item_pos].clone()];
+        let notes = vec![self.notes[item_pos].clone()];
         let line_format = LineFormat::new(&notes);
         if args.flag_e {
             self.print_header(&line_format);
         }
         notes[0].print(&line_format);
+        if body && notes[0].body.len() > 0 {
+            println!("{}", notes[0].body);
+        }
     }
 
     fn list_items(&mut self, args: &Args) {
@@ -309,9 +332,6 @@ impl ThecaProfile {
         if args.flag_e {
             self.print_header(&line_format);
         }
-
-        // wish this would work :<
-        // self.notes.iter().map(|n| n.print(&line_format));
 
         for i in range(0, self.notes.len()) {
             self.notes[i].print(&line_format);
@@ -414,19 +434,28 @@ fn main() {
 
     // see what root command was used
     if args.cmd_add {
+        // add a item
         let title = args.arg_title.to_string();
         let status = if args.flag_started {STARTED.to_string()} else if args.flag_urgent {URGENT.to_string()} else {NOSTATUS.to_string()};
         let body = if !args.flag_b.is_empty() {args.flag_b[0].to_string()} else {"".to_string()};
         profile.add_item(title, status, body);
     } else if args.cmd_edit {
-
+        // edit a item
+        let id = args.arg_id[0];
+        profile.edit_item(id, &args);
     } else if args.cmd_del {
+        // delete a item
         let id = args.arg_id[0];
         profile.delete_item(id);
     } else if args.flag_v {
-        println!("VERSION YO");
+        // display theca version
+        println!("theca v{}", VERSION);
     } else if args.cmd_view {
-        profile.view_item(args.arg_id[0], &args);
+        // view full item
+        profile.view_item(args.arg_id[0], &args, true);
+    } else if !args.cmd_view && args.arg_id.len() > 0 {
+        // view short item
+        profile.view_item(args.arg_id[0], &args, false);
     } else if !args.cmd_new_profile {
         // this should be the default for nothing
         profile.list_items(&args);
@@ -437,9 +466,4 @@ fn main() {
     if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile {
         profile.save_to_file(&args);
     }
-
-    // profile.add_item("another woo".to_string(), NOSTATUS.to_string(), "".to_string());
-    // profile.delete_item(2);
-    // profile.delete_item(3);
-    // profile.add_item("another woo".to_string(), URGENT.to_string(), "".to_string());
 }
