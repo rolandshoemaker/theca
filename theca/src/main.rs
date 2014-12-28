@@ -118,6 +118,11 @@ struct Args {
     flag_v: bool
 }
 
+impl Args {
+    fn check_rc(&mut self) {
+    }
+}
+
 static NOSTATUS: &'static str = "";
 static STARTED: &'static str = "Started";
 static URGENT: &'static str = "Urgent";
@@ -299,9 +304,9 @@ impl ThecaProfile {
         } else if args.flag_started || args.flag_urgent || args.flag_none {
             // change status
             if args.flag_started {self.notes[item_pos].status = STARTED.to_string();} else if args.flag_urgent {self.notes[item_pos].status = URGENT.to_string();} else if args.flag_none {self.notes[item_pos].status = NOSTATUS.to_string();};
-        } else if !args.flag_b[0].is_empty() || args.flag_editor || args.cmd__ {
+        } else if !args.flag_b.is_empty() || args.flag_editor || args.cmd__ {
             // change body
-            if !args.flag_b[0].is_empty() {self.notes[item_pos].body = args.flag_b[0].to_string();} else if args.flag_editor {} else if args.cmd__ {};
+            if !args.flag_b.is_empty() {self.notes[item_pos].body = args.flag_b[0].to_string();} else if args.flag_editor {self.notes[item_pos].body = drop_to_editor(&self.notes[item_pos].body);} else if args.cmd__ {};
         }
         // update last_touched
         self.notes[item_pos].last_touched = strftime("%F %T", &now_utc()).ok().unwrap();
@@ -381,7 +386,7 @@ fn find_profile_folder(args: &Args) -> Path {
     }
 }
 
-fn drop_to_editor(contents: String) -> String {
+fn drop_to_editor(contents: &String) -> String {
     // setup temporary directory
     let tmpdir = match TempDir::new("theca") {
         Ok(dir) => dir,
@@ -489,7 +494,7 @@ fn main() {
         // add a item
         let title = args.arg_title.to_string();
         let status = if args.flag_started {STARTED.to_string()} else if args.flag_urgent {URGENT.to_string()} else {NOSTATUS.to_string()};
-        let body = if !args.flag_b.is_empty() {args.flag_b[0].to_string()} else if args.flag_editor {drop_to_editor("".to_string())} else {"".to_string()};
+        let body = if !args.flag_b.is_empty() {args.flag_b[0].to_string()} else if args.flag_editor {drop_to_editor(&"".to_string())} else {"".to_string()};
         profile.add_item(title, status, body);
     } else if args.cmd_edit {
         // edit a item
