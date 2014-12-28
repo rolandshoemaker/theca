@@ -144,7 +144,7 @@ impl LineFormat {
 
         for i in range(0, items.len()) {
             line_format.id_width = if items[i].id.to_string().len() > line_format.id_width {items[i].id.to_string().len()} else {line_format.id_width};
-            if items[i].body.len() > 0 {
+            if !items[i].body.is_empty() {
                 line_format.title_width = if items[i].title.len()+4 > line_format.title_width {items[i].title.len()+4} else {line_format.title_width};
             } else {
                 line_format.title_width = if items[i].title.len() > line_format.title_width {items[i].title.len()} else {line_format.title_width};
@@ -194,7 +194,7 @@ impl ThecaItem {
     fn print(& self, line_format: &LineFormat) {
         print!("{}", format_field(&self.id.to_string(), line_format.id_width));
         print!("{}", String::from_char(line_format.colsep, ' '));
-        if self.body.len() > 0 {
+        if !self.body.is_empty() {
             print!("(+) {}", format_field(&self.title, line_format.title_width-4));
         } else {
             print!("{}", format_field(&self.title, line_format.title_width));
@@ -293,15 +293,15 @@ impl ThecaProfile {
         let item_pos: uint = self.notes.iter()
             .position(|n| n.id == id)
             .unwrap();
-        if args.arg_title.len() > 0 {
+        if !args.arg_title.is_empty() {
             // change title
             self.notes[item_pos].title = args.arg_title.to_string();
         } else if args.flag_started || args.flag_urgent || args.flag_none {
             // change status
             if args.flag_started {self.notes[item_pos].status = STARTED.to_string();} else if args.flag_urgent {self.notes[item_pos].status = URGENT.to_string();} else if args.flag_none {self.notes[item_pos].status = NOSTATUS.to_string();};
-        } else if args.flag_b[0].len() > 0 || args.flag_editor || args.cmd__ {
+        } else if !args.flag_b[0].is_empty() || args.flag_editor || args.cmd__ {
             // change body
-            if args.flag_b[0].len() > 0 {self.notes[item_pos].body = args.flag_b[0].to_string();} else if args.flag_editor {} else if args.cmd__ {};
+            if !args.flag_b[0].is_empty() {self.notes[item_pos].body = args.flag_b[0].to_string();} else if args.flag_editor {} else if args.cmd__ {};
         }
         // update last_touched
         self.notes[item_pos].last_touched = strftime("%F %T", &now_utc()).ok().unwrap();
@@ -330,7 +330,7 @@ impl ThecaProfile {
             self.print_header(&line_format);
         }
         notes[0].print(&line_format);
-        if body && notes[0].body.len() > 0 {
+        if body && !notes[0].body.is_empty() {
             println!("{}", notes[0].body);
         }
     }
@@ -381,7 +381,7 @@ fn find_profile_folder(args: &Args) -> Path {
     }
 }
 
-fn temporary_editor(contents: String) -> String {
+fn drop_to_editor(contents: String) -> String {
     // setup temporary directory
     let tmpdir = match TempDir::new("theca") {
         Ok(dir) => dir,
@@ -410,9 +410,9 @@ fn temporary_editor(contents: String) -> String {
     // currently using so we can display the editor
     let mut editor_command = Command::new(editor);
     editor_command.arg(tmppath.display().to_string());
-    editor_command.stdin(InheritFd(libc::STDIN_FILENO));
-    editor_command.stdout(InheritFd(libc::STDOUT_FILENO));
-    editor_command.stderr(InheritFd(libc::STDERR_FILENO));
+    editor_command.stdin(InheritFd(STDIN_FILENO));
+    editor_command.stdout(InheritFd(STDOUT_FILENO));
+    editor_command.stderr(InheritFd(STDERR_FILENO));
     let editor_proc = editor_command.spawn();
     match editor_proc.ok().expect("Couldn't launch editor").wait().is_ok() {
         true => {
@@ -489,7 +489,7 @@ fn main() {
         // add a item
         let title = args.arg_title.to_string();
         let status = if args.flag_started {STARTED.to_string()} else if args.flag_urgent {URGENT.to_string()} else {NOSTATUS.to_string()};
-        let body = if !args.flag_b.is_empty() {args.flag_b[0].to_string()} else {"".to_string()};
+        let body = if !args.flag_b.is_empty() {args.flag_b[0].to_string()} else if args.flag_editor {drop_to_editor("".to_string())} else {"".to_string()};
         profile.add_item(title, status, body);
     } else if args.cmd_edit {
         // edit a item
@@ -505,7 +505,7 @@ fn main() {
     } else if args.cmd_view {
         // view full item
         profile.view_item(args.arg_id[0], &args, true);
-    } else if !args.cmd_view && args.arg_id.len() > 0 {
+    } else if !args.cmd_view && !args.arg_id.is_empty() {
         // view short item
         profile.view_item(args.arg_id[0], &args, false);
     } else if !args.cmd_new_profile {
