@@ -1,3 +1,4 @@
+extern crate libc;
 extern crate time;
 extern crate docopt;
 extern crate "rustc-serialize" as rustc_serialize;
@@ -7,7 +8,14 @@ use time::{now_utc, strftime};
 use docopt::Docopt;
 use std::os;
 use std::io::fs::PathExtensions;
-use std::io::{File, Truncate, Write};
+use std::io::process::{InheritFd};
+use std::io::{File, Truncate, Write, Open, ReadWrite, TempDir, Command, SeekSet};
+
+pub use self::libc::{
+    STDIN_FILENO,
+    STDOUT_FILENO,
+    STDERR_FILENO
+};
 
 static VERSION:  &'static str = "0.0.1-dev";
 
@@ -370,6 +378,50 @@ fn find_profile_folder(args: &Args) -> Path {
             Some(ref p) => p.join(".theca"),
             None => Path::new(".").join(".theca")
         }
+    }
+}
+
+fn temporary_editor(contents: String) -> String {
+    // setup temporary directory
+    let tmpdir = match TempDir::new("theca") {
+        Ok(dir) => dir,
+        Err(e) => panic!("couldn't create temporary directory: {}", e)
+    };
+    // setup temporary file to write/read
+    let tmppath = tmpdir.path().join("something-unique");
+    let mut tmpfile = match File::open_mode(&tmppath, Open, ReadWrite) {
+        Ok(f) => f,
+        Err(e) => panic!("File error: {}", e)
+    };
+    tmpfile.write_line(contents.as_slice()).ok().expect("Failed to write line to temp file");
+    // we now have a temp file, at `tmppath`, that contains `contents`
+    // first we need to know which one
+    let editor = match os::getenv("VISUAL") {
+        Some(val) => val,
+        None => {
+            match os::getenv("EDITOR") {
+                Some(val) => val,
+                None => panic!("Neither $VISUAL nor $EDITOR is set.")
+            }
+        }
+    };
+    // lets start `editor` and edit the file at `tmppath`
+    // first we need to set STDIN, STDOUT, and STDERR to those that theca is
+    // currently using so we can display the editor
+    let mut editor_command = Command::new(editor);
+    editor_command.arg(tmppath.display().to_string());
+    editor_command.stdin(InheritFd(libc::STDIN_FILENO));
+    editor_command.stdout(InheritFd(libc::STDOUT_FILENO));
+    editor_command.stderr(InheritFd(libc::STDERR_FILENO));
+    let editor_proc = editor_command.spawn();
+    match editor_proc.ok().expect("Couldn't launch editor").wait().is_ok() {
+        true => {
+            // finished editing, time to read `tmpfile` for the final output
+            // seek to start of `tmpfile`
+            tmpfile.seek(0, SeekSet).ok().expect("Can't seek to start of temp file");
+            tmpfile.read_to_string().unwrap()
+        }
+        false => panic!("The editor broke")
     }
 }
 
