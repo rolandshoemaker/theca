@@ -2,15 +2,16 @@
 name = "theca"
 version = "0.0.1"
 dependencies = [
- "docopt 0.6.19 (git+git://github.com/docopt/docopt.rs)",
+ "docopt 0.6.20 (git+git://github.com/docopt/docopt.rs)",
  "rustc-serialize 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "time 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "docopt"
-version = "0.6.19"
-source = "git+git://github.com/docopt/docopt.rs#f91585f39b8fbebe233cdcfdcef9f7c26018d78a"
+version = "0.6.20"
+source = "git+git://github.com/docopt/docopt.rs#338f1e66c4ee6433092a45a12e624bb309706101"
 dependencies = [
  "regex 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -20,14 +21,6 @@ dependencies = [
 name = "gcc"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "log"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "regex 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "regex"
@@ -41,11 +34,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "time"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "gcc 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "toml"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
  "rustc-serialize 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

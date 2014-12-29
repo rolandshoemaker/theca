@@ -3,6 +3,7 @@ extern crate time;
 extern crate docopt;
 extern crate "rustc-serialize" as rustc_serialize;
 extern crate regex;
+extern crate toml;
 use regex::{Regex};
 use rustc_serialize::{Encodable, Decodable, Encoder, json};
 use time::{now_utc, strftime};
@@ -11,7 +12,7 @@ use std::os;
 use std::io;
 use std::io::fs::PathExtensions;
 use std::io::process::{InheritFd};
-use std::io::{File, Truncate, Write, Open, ReadWrite, TempDir, Command, SeekSet};
+use std::io::{File, Truncate, Write, Read, Open, ReadWrite, TempDir, Command, SeekSet};
 
 pub use self::libc::{
     STDIN_FILENO,
@@ -127,6 +128,32 @@ struct Args {
 
 impl Args {
     fn check_rc(&mut self) {
+        let conf_file_path = match self.flag_config.is_empty() {
+            true => os::homedir().unwrap().join(".thecarc"),
+            false => Path::new(self.flag_config[0].as_slice())
+        };
+        match conf_file_path.is_file() {
+            false => {
+                if conf_file_path.exists() {
+                    Err(format!("{} is not a file.", conf_file_path.display()))
+                } else {
+                    Ok(())
+                }
+            }
+            true => {
+                let mut conf_file = match File::open_mode(&conf_file_path, Open, Read) {
+                    Ok(f) => f,
+                    Err(e) => panic!("{}", e.desc)
+                };
+                let conf_contents = match conf_file.read_to_string() {
+                    Ok(c) => c,
+                    Err(e) => panic!("{}", e.desc)
+                };
+                let decoded_toml = toml::Parser::new(conf_contents.as_slice()).parse().unwrap();
+                println!("{}", decoded_toml);
+                Ok(())
+            }
+        };
     }
 }
 
@@ -484,9 +511,10 @@ fn drop_to_editor(contents: &String) -> String {
 }
 
 fn main() {
-    let args: Args = Docopt::new(USAGE)
+    let mut args: Args = Docopt::new(USAGE)
                             .and_then(|d| d.decode())
                             .unwrap_or_else(|e| e.exit());
+    args.check_rc();
 
     // Setup a ThecaProfile struct
     let mut profile = match ThecaProfile::new(&args) {
