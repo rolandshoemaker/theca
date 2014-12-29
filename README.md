@@ -1,14 +1,15 @@
 # theca
 
-## road to 1.0
+## road to 0.9 (first stable)
 
 * ~~note body from STDIN (easy)~~
+* ~~strip newlines from title (easy)~~
 * encryptable profiles (unsure of which crypto library to use, rust-crypto most likely)
 * note search functions (this'll be annoying :/)
  * Keyword
  * Regex
 * proper setup functions for first time use (p easy)
-* strip newlines from title (easy)
+* better LineFormat using termsize to set max widths etc... (annoying)
 * finish printing (e/c) (easy)
 * read config file (Args.check_rc) and combine with provided arguments (easy)
 * better status handling (hooooow)

@@ -18,7 +18,7 @@ pub use self::libc::{
     STDERR_FILENO
 };
 
-static VERSION:  &'static str = "0.2.0-dev";
+static VERSION:  &'static str = "0.2.5-dev";
 
 // mod c {
 //     extern crate libc;
@@ -348,7 +348,7 @@ impl ThecaProfile {
             .unwrap();
         if !args.arg_title.is_empty() {
             // change title
-            self.notes[item_pos].title = args.arg_title.to_string();
+            self.notes[item_pos].title = args.arg_title.replace("\n", "").to_string();
         } else if args.flag_started || args.flag_urgent || args.flag_none {
             // change status
             if args.flag_started {self.notes[item_pos].status = STARTED.to_string();} else if args.flag_urgent {self.notes[item_pos].status = URGENT.to_string();} else if args.flag_none {self.notes[item_pos].status = NOSTATUS.to_string();};
@@ -494,7 +494,7 @@ fn main() {
     // see what root command was used
     if args.cmd_add {
         // add a item
-        let title = args.arg_title.to_string();
+        let title = args.arg_title.replace("\n", "").to_string();
         let status = if args.flag_started {STARTED.to_string()} else if args.flag_urgent {URGENT.to_string()} else {NOSTATUS.to_string()};
         let body = if !args.flag_b.is_empty() {args.flag_b[0].to_string()} else if args.flag_editor {drop_to_editor(&"".to_string())} else if args.cmd__ {io::stdin().lock().read_to_string().unwrap()} else {"".to_string()};
         profile.add_item(title, status, body);
