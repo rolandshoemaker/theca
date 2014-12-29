@@ -19,7 +19,7 @@ pub use self::libc::{
     STDERR_FILENO
 };
 
-static VERSION:  &'static str = "0.3.0-dev";
+static VERSION:  &'static str = "0.3.2-dev";
 
 // mod c {
 //     extern crate libc;
@@ -143,9 +143,15 @@ pub struct LineFormat {
     touched_width: uint
 }
 
+fn add_if(x: uint, y: uint, a: bool) -> uint {
+    match a {
+        true => x+y,
+        false => x
+    }
+}
+
 impl LineFormat {
     fn new(items: &Vec<ThecaItem>) -> LineFormat {
-        // get terminal width, unused atm
         // let (width, height) = match termsize() {
         //     None => panic!(),
         //     Some((width, height)) => (width, height),
@@ -153,18 +159,10 @@ impl LineFormat {
 
         // set minimums (header length) + colsep, this should probably do some other stuff?
         let mut line_format = LineFormat {colsep: 3, id_width:2, title_width:5, status_width:7, touched_width:7};
-
-        for i in range(0, items.len()) {
-            line_format.id_width = if items[i].id.to_string().len() > line_format.id_width {items[i].id.to_string().len()} else {line_format.id_width};
-            if !items[i].body.is_empty() {
-                line_format.title_width = if items[i].title.len()+4 > line_format.title_width {items[i].title.len()+4} else {line_format.title_width};
-            } else {
-                line_format.title_width = if items[i].title.len() > line_format.title_width {items[i].title.len()} else {line_format.title_width};
-            }
-            line_format.status_width = if items[i].status.len() > line_format.status_width {items[i].status.len()} else {line_format.status_width};
-            line_format.touched_width = if items[i].last_touched.len() > line_format.touched_width {items[i].last_touched.len()} else {line_format.touched_width};
-        }
-
+        line_format.id_width = items.iter().max_by(|n| n.id.to_string().len()).unwrap().id.to_string().len();
+        line_format.title_width = items.iter().max_by(|n| add_if(n.title.len(), 4, n.body.len().ne(&0))).unwrap().title.len();
+        line_format.status_width = items.iter().max_by(|n| n.status.len()).unwrap().status.len();
+        line_format.touched_width = items.iter().max_by(|n| n.last_touched.len()).unwrap().last_touched.len();
         line_format
     }
 
