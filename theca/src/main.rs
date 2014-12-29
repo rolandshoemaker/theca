@@ -2,7 +2,8 @@ extern crate libc;
 extern crate time;
 extern crate docopt;
 extern crate "rustc-serialize" as rustc_serialize;
-// use serialize::{Encodable, Decodable, Encoder, json};
+extern crate regex;
+use regex::{Regex};
 use rustc_serialize::{Encodable, Decodable, Encoder, json};
 use time::{now_utc, strftime};
 use docopt::Docopt;
@@ -18,7 +19,7 @@ pub use self::libc::{
     STDERR_FILENO
 };
 
-static VERSION:  &'static str = "0.2.5-dev";
+static VERSION:  &'static str = "0.3.0-dev";
 
 // mod c {
 //     extern crate libc;
@@ -68,6 +69,8 @@ Usage:
     theca [options] [-c|-e] [-l LIMIT]
     theca [options] [-c|-e] <id>
     theca [options] [-c|-e] view <id>
+    theca [options] [-c|-e] search <pattern>
+    theca [options] [-c|-e] search-body <pattern>
     theca [options] add <title> [--started|--urgent] [-b BODY|--editor|-]
     theca [options] edit <id> [<title>] [--started|--urgent|--none] [-b BODY|--editor|-]
     theca [options] del <id>
@@ -99,10 +102,13 @@ struct Args {
     flag_p: Vec<String>,
     cmd_new_profile: bool,
     cmd_view: bool,
+    cmd_search: bool,
+    cmd_search_body: bool,
     cmd_add: bool,
     cmd_edit: bool,
     cmd_del: bool,
     arg_name: String,
+    arg_pattern: String,
     flag_encrypted: bool,
     flag_c: bool,
     flag_e: bool,
@@ -194,9 +200,6 @@ impl <S: Encoder<E>, E> Encodable<S, E> for ThecaItem {
 }
 
 impl ThecaItem {
-    fn decrypt(&mut self, key: &str) {
-    }
-
     fn print(& self, line_format: &LineFormat) {
         print!("{}", format_field(&self.id.to_string(), line_format.id_width));
         print!("{}", String::from_char(line_format.colsep, ' '));
@@ -374,10 +377,7 @@ impl ThecaProfile {
     }
 
     fn view_item(&mut self, id: uint, args: &Args, body: bool) {
-        let item_pos: uint = self.notes.iter()
-            .position(|n| n.id == id)
-            .unwrap();
-        let notes = vec![self.notes[item_pos].clone()];
+        let notes: Vec<ThecaItem> = self.notes.iter().filter(|n| n.id == id).map(|n| n.clone()).collect();
         let line_format = LineFormat::new(&notes);
         if args.flag_e {
             self.print_header(&line_format);
@@ -393,26 +393,31 @@ impl ThecaProfile {
         if args.flag_e {
             self.print_header(&line_format);
         }
-
         for i in range(0, self.notes.len()) {
             self.notes[i].print(&line_format);
         }
     }
 
-    // should these searchs be for both title+body instead of seperate commands?
-    // (probably...)
-
-    // fn search_titles(&mut self, keyword: String) {
-    // }
-
-    // fn search_bodies(&mut self, keyword: String) {
-    // }
-
-    // fn search_titles_regex(&mut self, regex: String) {
-    // }
-
-    // fn search_bodies_regex(&mut self, regex: String) {
-    // }
+    fn search_items(&mut self, regex_pattern: &str, body: bool, args: &Args) {
+        let re = match Regex::new(regex_pattern) {
+            Ok(r) => r,
+            Err(e) => panic!("{}", e)
+        };
+        let notes: Vec<ThecaItem> = match body {
+            true => self.notes.iter().filter(|n| re.is_match(n.body.as_slice())).map(|n| n.clone()).collect(),
+            false => self.notes.iter().filter(|n| re.is_match(n.title.as_slice())).map(|n| n.clone()).collect()
+        };
+        let line_format = LineFormat::new(&notes);
+        if args.flag_e {
+            self.print_header(&line_format);
+        }
+        for i in range(0, notes.len()) {
+            notes[i].print(&line_format);
+            if body {
+                println!("{}", notes[i].body);
+            }
+        }
+    }
 }
 
 fn format_field(value: &String, width: uint) -> String {
@@ -512,6 +517,12 @@ fn main() {
     } else if args.cmd_view {
         // view full item
         profile.view_item(args.arg_id[0], &args, true);
+    } else if args.cmd_search || args.cmd_search_body {
+        // search for an item
+        match args.cmd_search {
+            true => profile.search_items(args.arg_pattern.as_slice(), false, &args),
+            false => profile.search_items(args.arg_pattern.as_slice(), true, &args)
+        }
     } else if !args.cmd_view && !args.arg_id.is_empty() {
         // view short item
         profile.view_item(args.arg_id[0], &args, false);
