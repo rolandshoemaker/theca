@@ -2,11 +2,11 @@
 
 ## road to 1.0
 
+* ~~note body from STDIN (easy)~~
 * encryptable profiles (unsure of which crypto library to use, rust-crypto most likely)
 * note search functions (this'll be annoying :/)
  * Keyword
  * Regex
-* notes body from STDIN (easy)
 * proper setup functions for first time use (p easy)
 * strip newlines from title (easy)
 * finish printing (e/c) (easy)

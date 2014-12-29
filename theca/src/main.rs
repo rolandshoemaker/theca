@@ -7,6 +7,7 @@ use rustc_serialize::{Encodable, Decodable, Encoder, json};
 use time::{now_utc, strftime};
 use docopt::Docopt;
 use std::os;
+use std::io;
 use std::io::fs::PathExtensions;
 use std::io::process::{InheritFd};
 use std::io::{File, Truncate, Write, Open, ReadWrite, TempDir, Command, SeekSet};
@@ -17,7 +18,7 @@ pub use self::libc::{
     STDERR_FILENO
 };
 
-static VERSION:  &'static str = "0.0.1-dev";
+static VERSION:  &'static str = "0.2.0-dev";
 
 // mod c {
 //     extern crate libc;
@@ -353,7 +354,7 @@ impl ThecaProfile {
             if args.flag_started {self.notes[item_pos].status = STARTED.to_string();} else if args.flag_urgent {self.notes[item_pos].status = URGENT.to_string();} else if args.flag_none {self.notes[item_pos].status = NOSTATUS.to_string();};
         } else if !args.flag_b.is_empty() || args.flag_editor || args.cmd__ {
             // change body
-            if !args.flag_b.is_empty() {self.notes[item_pos].body = args.flag_b[0].to_string();} else if args.flag_editor {self.notes[item_pos].body = drop_to_editor(&self.notes[item_pos].body);} else if args.cmd__ {};
+            if !args.flag_b.is_empty() {self.notes[item_pos].body = args.flag_b[0].to_string();} else if args.flag_editor {self.notes[item_pos].body = drop_to_editor(&self.notes[item_pos].body);} else if args.cmd__ {io::stdin().lock().read_to_string().unwrap();};
         }
         // update last_touched
         self.notes[item_pos].last_touched = strftime("%F %T", &now_utc()).ok().unwrap();
@@ -495,7 +496,7 @@ fn main() {
         // add a item
         let title = args.arg_title.to_string();
         let status = if args.flag_started {STARTED.to_string()} else if args.flag_urgent {URGENT.to_string()} else {NOSTATUS.to_string()};
-        let body = if !args.flag_b.is_empty() {args.flag_b[0].to_string()} else if args.flag_editor {drop_to_editor(&"".to_string())} else {"".to_string()};
+        let body = if !args.flag_b.is_empty() {args.flag_b[0].to_string()} else if args.flag_editor {drop_to_editor(&"".to_string())} else if args.cmd__ {io::stdin().lock().read_to_string().unwrap()} else {"".to_string()};
         profile.add_item(title, status, body);
     } else if args.cmd_edit {
         // edit a item
