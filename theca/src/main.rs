@@ -235,6 +235,53 @@ impl <S: Encoder<E>, E> Encodable<S, E> for ThecaProfile {
 }
 
 impl ThecaProfile {
+    // this should be a method of ThecaProfile
+    fn new(args: &Args) -> Result<ThecaProfile, String> {
+        if args.cmd_new_profile {
+            Ok(ThecaProfile {
+                current_id: 0,
+                encrypted: args.flag_encrypted,
+                notes: vec![]
+            })
+        } else {
+            // set profile folder
+            let mut profile_path = find_profile_folder(args);
+
+            // set profile name
+            if !args.flag_p.is_empty() {
+                profile_path.push(args.flag_p[0].to_string() + ".json");
+            } else {
+                profile_path.push("default".to_string() + ".json");
+            }
+
+            // attempt to read profile
+            match profile_path.is_file() {
+                false => {
+                    if profile_path.exists() {
+                        Err(format!("{} is not a file.", profile_path.display()))
+                    } else {
+                        Err(format!("{} does not exist.", profile_path.display()))
+                    }
+                }
+                true => {
+                    let mut file = match File::open(&profile_path) {
+                        Ok(t) => t,
+                        Err(e) => panic!("{}", e.desc)
+                    };
+                    let contents = match file.read_to_string() {
+                        Ok(t) => t,
+                        Err(e) => panic!("{}", e.desc)
+                    };
+                    let decoded: ThecaProfile = match json::decode(contents.as_slice()) {
+                        Ok(s) => s,
+                        Err(e) => panic!("Invalid JSON in {}. {}", profile_path.display(), e)
+                    };
+                    Ok(decoded)
+                }
+            }
+        }
+    }
+
     fn save_to_file(&mut self, args: &Args) {
         // set profile folder
         let mut profile_path = find_profile_folder(args);
@@ -387,6 +434,8 @@ fn find_profile_folder(args: &Args) -> Path {
 }
 
 fn drop_to_editor(contents: &String) -> String {
+    // this could probably be prettyified tbh!
+
     // setup temporary directory
     let tmpdir = match TempDir::new("theca") {
         Ok(dir) => dir,
@@ -430,61 +479,13 @@ fn drop_to_editor(contents: &String) -> String {
     }
 }
 
-// this should be a method of ThecaProfile
-fn build_profile(args: &Args) -> Result<ThecaProfile, String> {
-    if args.cmd_new_profile {
-        Ok(ThecaProfile {
-            current_id: 0,
-            encrypted: args.flag_encrypted,
-            notes: vec![]
-        })
-    } else {
-        // set profile folder
-        let mut profile_path = find_profile_folder(args);
-
-        // set profile name
-        if !args.flag_p.is_empty() {
-            profile_path.push(args.flag_p[0].to_string() + ".json");
-        } else {
-            profile_path.push("default".to_string() + ".json");
-        }
-
-        // attempt to read profile
-        match profile_path.is_file() {
-            false => {
-                if profile_path.exists() {
-                    Err(format!("{} is not a file.", profile_path.display()))
-                } else {
-                    Err(format!("{} does not exist.", profile_path.display()))
-                }
-            }
-            true => {
-                let mut file = match File::open(&profile_path) {
-                    Ok(t) => t,
-                    Err(e) => panic!("{}", e.desc)
-                };
-                let contents = match file.read_to_string() {
-                    Ok(t) => t,
-                    Err(e) => panic!("{}", e.desc)
-                };
-                let decoded: ThecaProfile = match json::decode(contents.as_slice()) {
-                    Ok(s) => s,
-                    Err(e) => panic!("Invalid JSON in {}. {}", profile_path.display(), e)
-                };
-                Ok(decoded)
-            }
-        }
-    }
-}
-
 fn main() {
-
     let args: Args = Docopt::new(USAGE)
                             .and_then(|d| d.decode())
                             .unwrap_or_else(|e| e.exit());
 
     // Setup a ThecaProfile struct
-    let mut profile = match build_profile(&args) {
+    let mut profile = match ThecaProfile::new(&args) {
         Ok(p) => p,
         Err(e) => panic!("{}", e)
     };

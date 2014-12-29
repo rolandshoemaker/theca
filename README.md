@@ -1,4 +1,20 @@
-# theca design document
+# theca
+
+## road to 1.0
+
+* encryptable profiles (unsure of which crypto library to use, rust-crypto most likely)
+* note search functions (this'll be annoying :/)
+ * Keyword
+ * Regex
+* notes body from STDIN (easy)
+* proper setup functions for first time use (p easy)
+* strip newlines from title (easy)
+* finish printing (e/c) (easy)
+* read config file (Args.check_rc) and combine with provided arguments (easy)
+* better status handling (hooooow)
+* (subjective) lots of clean-up (:>)
+
+## theca design
 
 rust memo/note taking tool with a json note file format
 
