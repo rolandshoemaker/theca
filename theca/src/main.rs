@@ -1,9 +1,10 @@
+#![feature(old_orphan_check)]
+
 extern crate libc;
 extern crate time;
 extern crate docopt;
 extern crate "rustc-serialize" as rustc_serialize;
 extern crate regex;
-extern crate toml;
 use regex::{Regex};
 use rustc_serialize::{Encodable, Decodable, Encoder, json};
 use time::{now_utc, strftime};
@@ -81,7 +82,6 @@ Usage:
 Options:
     -h, --help                          Show this screen.
     -v, --version                       Show the version of theca.
-    --config CONFIGPATH                 Path to .thecarc configuration file.
     --profiles-folder PROFILEPATH       Path to folder container profile.json files.
     -p PROFILE, --profile PROFILE       Specify non-default profile.
     -c, --condensed                     Use the condensed print format.
@@ -96,9 +96,8 @@ Options:
     -                                   Set body of the item to STDIN.
 ";
 
-#[deriving(RustcDecodable, Show)]
+#[derive(RustcDecodable, Show)]
 struct Args {
-    flag_config: Vec<String>,
     flag_profiles_folder: Vec<String>,
     flag_p: Vec<String>,
     cmd_new_profile: bool,
@@ -126,42 +125,43 @@ struct Args {
     flag_v: bool
 }
 
-impl Args {
-    fn check_rc(&mut self) {
-        let conf_file_path = match self.flag_config.is_empty() {
-            true => os::homedir().unwrap().join(".thecarc"),
-            false => Path::new(self.flag_config[0].as_slice())
-        };
-        match conf_file_path.is_file() {
-            false => {
-                if conf_file_path.exists() {
-                    Err(format!("{} is not a file.", conf_file_path.display()))
-                } else {
-                    Ok(())
-                }
-            }
-            true => {
-                let mut conf_file = match File::open_mode(&conf_file_path, Open, Read) {
-                    Ok(f) => f,
-                    Err(e) => panic!("{}", e.desc)
-                };
-                let conf_contents = match conf_file.read_to_string() {
-                    Ok(c) => c,
-                    Err(e) => panic!("{}", e.desc)
-                };
-                let decoded_toml = toml::Parser::new(conf_contents.as_slice()).parse().unwrap();
-                println!("{}", decoded_toml);
-                Ok(())
-            }
-        };
-    }
-}
+// impl Args {
+//     fn check_rc(&mut self) {
+//         let conf_file_path = match self.flag_config.is_empty() {
+//             true => os::homedir().unwrap().join(".thecarc"),
+//             false => Path::new(self.flag_config[0].as_slice())
+//         };
+//         match conf_file_path.is_file() {
+//             false => {
+//                 if conf_file_path.exists() {
+//                     Err(format!("{} is not a file.", conf_file_path.display()))
+//                 } else {
+//                     Ok(())
+//                 }
+//             }
+//             true => {
+//                 let mut conf_file = match File::open_mode(&conf_file_path, Open, Read) {
+//                     Ok(f) => f,
+//                     Err(e) => panic!("{}", e.desc)
+//                 };
+//                 let conf_contents = match conf_file.read_to_string() {
+//                     Ok(c) => c,
+//                     Err(e) => panic!("{}", e.desc)
+//                 };
+//                 let decoded_toml = toml::Parser::new(conf_contents.as_slice()).parse().unwrap();
+//                 println!("{}", decoded_toml.get("name"));
+
+//                 Ok(())
+//             }
+//         };
+//     }
+// }
 
 static NOSTATUS: &'static str = "";
 static STARTED: &'static str = "Started";
 static URGENT: &'static str = "Urgent";
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct LineFormat {
     colsep: uint,
     id_width: uint,
@@ -198,7 +198,7 @@ impl LineFormat {
     }
 }
 
-#[deriving(RustcDecodable, Clone)]
+#[derive(RustcDecodable, Clone)]
 pub struct ThecaItem {
     id: uint,
     title: String,
@@ -241,7 +241,7 @@ impl ThecaItem {
     }
 }
 
-#[deriving(RustcDecodable)]
+#[derive(RustcDecodable)]
 pub struct ThecaProfile {
     current_id: uint,
     encrypted: bool,
@@ -293,7 +293,7 @@ impl ThecaProfile {
                     }
                 }
                 true => {
-                    let mut file = match File::open(&profile_path) {
+                    let mut file = match File::open_mode(&profile_path, Open, Read) {
                         Ok(t) => t,
                         Err(e) => panic!("{}", e.desc)
                     };
@@ -324,15 +324,21 @@ impl ThecaProfile {
             profile_path.push("default".to_string() + ".json");
         }
 
-        // save to file
+        // open file
         let mut file = match File::open_mode(&profile_path, Truncate, Write) {
             Ok(f) => f,
             Err(e) => panic!("File error: {}", e)
         };
 
-        let mut encoder = json::PrettyEncoder::new(&mut file);
-        // let mut encoder = json::Encoder::new(&mut file);
-        self.encode(&mut encoder).unwrap();
+        // encode to buffer
+        let mut buffer: Vec<u8> = Vec::new();
+        {
+            let mut encoder = json::PrettyEncoder::new(&mut buffer);
+            self.encode(&mut encoder).ok().expect("JSON encoding error.");
+        }
+
+        // write buffer to file
+        file.write(buffer.as_slice());
     }
 
     fn add_item(&mut self, a_title: String, a_status: String, a_body: String) {
@@ -511,10 +517,10 @@ fn drop_to_editor(contents: &String) -> String {
 }
 
 fn main() {
-    let mut args: Args = Docopt::new(USAGE)
+    let args: Args = Docopt::new(USAGE)
                             .and_then(|d| d.decode())
                             .unwrap_or_else(|e| e.exit());
-    args.check_rc();
+    // args.check_rc();
 
     // Setup a ThecaProfile struct
     let mut profile = match ThecaProfile::new(&args) {

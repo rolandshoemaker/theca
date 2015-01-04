@@ -7,14 +7,14 @@
 * ~~note search functions (this'll be annoying :/)~~
  * ~~Keyword~~
  * ~~Regex~~
-* read config file (Args.check_rc) and combine with provided arguments (easy)
-* implement sort/limiting for item listings
+* implement aesc/desc sort
 * encryptable profiles (unsure of which crypto library to use, rust-crypto most likely)
 * proper setup functions for first time use (p easy)
 * better LineFormat using termsize to set max widths etc... (annoying)
 * finish printing (e/c) (easy...ish)
 * better status handling (hooooow)
 * (subjective) lots of clean-up (:>)
+* **Is this really needed?** there are only three options... - read config file (Args.check_rc) and combine with provided arguments (easy)
 
 ## theca design
 

@@ -1,13 +1,10 @@
 [package]
 
 name = "theca"
-version = "0.0.1"
+version = "0.3.2"
 authors = ["Roland Shoemaker <roland@bind.es>"]
 
 [dependencies]
-time = "*"
-rustc-serialize = "0.1.5"
-toml = "0.1.7"
-
-[dependencies.docopt]
-git = "git://github.com/docopt/docopt.rs"
+time = "0.1.7"
+rustc-serialize = "0.2.2"
+docopt = "0.6.21"
