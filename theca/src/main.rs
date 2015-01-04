@@ -14,6 +14,7 @@ use std::io;
 use std::io::fs::PathExtensions;
 use std::io::process::{InheritFd};
 use std::io::{File, Truncate, Write, Read, Open, ReadWrite, TempDir, Command, SeekSet};
+use std::iter::{repeat};
 
 pub use self::libc::{
     STDIN_FILENO,
@@ -226,16 +227,17 @@ impl <S: Encoder<E>, E> Encodable<S, E> for ThecaItem {
 
 impl ThecaItem {
     fn print(& self, line_format: &LineFormat) {
+        let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         print!("{}", format_field(&self.id.to_string(), line_format.id_width));
-        print!("{}", String::from_char(line_format.colsep, ' '));
+        print!("{}", column_seperator);
         if !self.body.is_empty() {
             print!("(+) {}", format_field(&self.title, line_format.title_width-4));
         } else {
             print!("{}", format_field(&self.title, line_format.title_width));
         }
-        print!("{}", String::from_char(line_format.colsep, ' '));
+        print!("{}", column_seperator);
         print!("{}", format_field(&self.status, line_format.status_width));
-        print!("{}", String::from_char(line_format.colsep, ' '));
+        print!("{}", column_seperator);
         print!("{}", format_field(&self.last_touched, line_format.touched_width));
         print!("\n");
     }
@@ -338,7 +340,7 @@ impl ThecaProfile {
         }
 
         // write buffer to file
-        file.write(buffer.as_slice());
+        file.write(buffer.as_slice()).ok().expect(format!("Couldn't write to {}", profile_path.display()).as_slice());
     }
 
     fn add_item(&mut self, a_title: String, a_status: String, a_body: String) {
@@ -385,10 +387,22 @@ impl ThecaProfile {
             self.notes[item_pos].title = args.arg_title.replace("\n", "").to_string();
         } else if args.flag_started || args.flag_urgent || args.flag_none {
             // change status
-            if args.flag_started {self.notes[item_pos].status = STARTED.to_string();} else if args.flag_urgent {self.notes[item_pos].status = URGENT.to_string();} else if args.flag_none {self.notes[item_pos].status = NOSTATUS.to_string();};
+            if args.flag_started {
+                self.notes[item_pos].status = STARTED.to_string();
+            } else if args.flag_urgent {
+                self.notes[item_pos].status = URGENT.to_string();
+            } else if args.flag_none {
+                self.notes[item_pos].status = NOSTATUS.to_string();
+            }
         } else if !args.flag_b.is_empty() || args.flag_editor || args.cmd__ {
             // change body
-            if !args.flag_b.is_empty() {self.notes[item_pos].body = args.flag_b[0].to_string();} else if args.flag_editor {self.notes[item_pos].body = drop_to_editor(&self.notes[item_pos].body);} else if args.cmd__ {io::stdin().lock().read_to_string().unwrap();};
+            if !args.flag_b.is_empty() {
+                self.notes[item_pos].body = args.flag_b[0].to_string();
+            } else if args.flag_editor {
+                self.notes[item_pos].body = drop_to_editor(&self.notes[item_pos].body);
+            } else if args.cmd__ {
+                io::stdin().lock().read_to_string().unwrap();
+            }
         }
         // update last_touched
         self.notes[item_pos].last_touched = strftime("%F %T", &now_utc()).ok().unwrap();
@@ -396,15 +410,17 @@ impl ThecaProfile {
     }
 
     fn print_header(&mut self, line_format: &LineFormat) {
-        print!("{}", format_field(&"id".to_string(), line_format.id_width));
-        print!("{}", String::from_char(line_format.colsep, ' '));
-        print!("{}", format_field(&"title".to_string(), line_format.title_width));
-        print!("{}", String::from_char(line_format.colsep, ' '));
-        print!("{}", format_field(&"status".to_string(), line_format.status_width));
-        print!("{}", String::from_char(line_format.colsep, ' '));
-        print!("{}", format_field(&"last touched".to_string(), line_format.touched_width));
-        print!("\n");
-        println!("{}", String::from_char(line_format.line_width(), '-'));
+        let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
+        let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
+        println!(
+            "{1}{0}{2}{0}{3}{0}{4}\n{5}",
+            column_seperator,
+            format_field(&"id".to_string(), line_format.id_width),
+            format_field(&"title".to_string(), line_format.title_width),
+            format_field(&"status".to_string(), line_format.status_width),
+            format_field(&"last touched".to_string(), line_format.touched_width),
+            header_seperator
+        );
     }
 
     fn view_item(&mut self, id: uint, args: &Args, body: bool) {
@@ -424,7 +440,12 @@ impl ThecaProfile {
         if args.flag_e {
             self.print_header(&line_format);
         }
-        for i in range(0, self.notes.len()) {
+        let list_range = if !args.flag_l.is_empty() {
+            args.flag_l[0]
+        } else {
+            self.notes.len()
+        };
+        for i in range(0, list_range) {
             self.notes[i].print(&line_format);
         }
     }
@@ -532,8 +553,22 @@ fn main() {
     if args.cmd_add {
         // add a item
         let title = args.arg_title.replace("\n", "").to_string();
-        let status = if args.flag_started {STARTED.to_string()} else if args.flag_urgent {URGENT.to_string()} else {NOSTATUS.to_string()};
-        let body = if !args.flag_b.is_empty() {args.flag_b[0].to_string()} else if args.flag_editor {drop_to_editor(&"".to_string())} else if args.cmd__ {io::stdin().lock().read_to_string().unwrap()} else {"".to_string()};
+        let status = if args.flag_started {
+            STARTED.to_string()
+        } else if args.flag_urgent {
+            URGENT.to_string()
+        } else {
+            NOSTATUS.to_string()
+        };
+        let body = if !args.flag_b.is_empty() {
+            args.flag_b[0].to_string()
+        } else if args.flag_editor {
+            drop_to_editor(&"".to_string())
+        } else if args.cmd__ {
+            io::stdin().lock().read_to_string().unwrap()
+        } else {
+            "".to_string()
+        };
         profile.add_item(title, status, body);
     } else if args.cmd_edit {
         // edit a item
