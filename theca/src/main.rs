@@ -1,5 +1,3 @@
-#![feature(old_orphan_check)]
-
 extern crate libc;
 extern crate time;
 extern crate docopt;
@@ -22,7 +20,7 @@ pub use self::libc::{
     STDERR_FILENO
 };
 
-static VERSION:  &'static str = "0.3.2-dev";
+static VERSION:  &'static str = "0.3.5-dev";
 
 // mod c {
 //     extern crate libc;
@@ -208,8 +206,8 @@ pub struct ThecaItem {
     last_touched: String
 }
 
-impl <S: Encoder<E>, E> Encodable<S, E> for ThecaItem {
-    fn encode(&self, encoder: &mut S) -> Result<(), E> {
+impl Encodable for ThecaItem {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), E::Error> {
         match *self {
             ThecaItem{id: ref p_id, title: ref p_title, status: ref p_status, body: ref p_body, last_touched: ref p_last_touched} => {
                 encoder.emit_struct("ThecaItem", 1, |encoder| {
@@ -245,19 +243,19 @@ impl ThecaItem {
 
 #[derive(RustcDecodable)]
 pub struct ThecaProfile {
-    current_id: uint,
+    // current_id: uint,
     encrypted: bool,
     notes: Vec<ThecaItem>
 }
 
-impl <S: Encoder<E>, E> Encodable<S, E> for ThecaProfile {
-    fn encode(&self, encoder: &mut S) -> Result<(), E> {
+impl Encodable for ThecaProfile {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), E::Error> {
         match *self {
-            ThecaProfile{current_id: ref p_current_id, encrypted: ref p_encrypted, notes: ref p_notes} => {
+            ThecaProfile{encrypted: ref p_encrypted, notes: ref p_notes} => {
                 encoder.emit_struct("ThecaProfile", 1, |encoder| {
-                    try!(encoder.emit_struct_field("current_id", 0u, |encoder| p_current_id.encode(encoder)));
-                    try!(encoder.emit_struct_field("encrypted", 1u, |encoder| p_encrypted.encode(encoder)));
-                    try!(encoder.emit_struct_field("notes", 2u, |encoder| p_notes.encode(encoder)));
+                    // try!(encoder.emit_struct_field("current_id", 0u, |encoder| p_current_id.encode(encoder)));
+                    try!(encoder.emit_struct_field("encrypted", 0u, |encoder| p_encrypted.encode(encoder)));
+                    try!(encoder.emit_struct_field("notes", 1u, |encoder| p_notes.encode(encoder)));
                     Ok(())
                 })
             }
@@ -270,7 +268,7 @@ impl ThecaProfile {
     fn new(args: &Args) -> Result<ThecaProfile, String> {
         if args.cmd_new_profile {
             Ok(ThecaProfile {
-                current_id: 0,
+                // current_id: 0,
                 encrypted: args.flag_encrypted,
                 notes: vec![]
             })
@@ -344,6 +342,7 @@ impl ThecaProfile {
     }
 
     fn add_item(&mut self, a_title: String, a_status: String, a_body: String) {
+        let new_id = self.notes.last().unwrap().id;
         match self.encrypted {
             true => {
                 // uh not this, but placeholder for now!
@@ -351,7 +350,7 @@ impl ThecaProfile {
             }
             false => {
                 self.notes.push(ThecaItem {
-                    id: self.current_id+1,
+                    id: new_id + 1,
                     title: a_title,
                     status: a_status,
                     body: a_body,
@@ -359,7 +358,7 @@ impl ThecaProfile {
                 });
             }
         }
-        self.current_id += 1;
+        // self.current_id += 1;
         println!("added");
     }
 
