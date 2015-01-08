@@ -26,7 +26,7 @@ use crypto::pbkdf2::{pbkdf2};
 use crypto::hmac::{Hmac};
 use crypto::sha2::{Sha256};
 use crypto::digest::Digest;
-use rustc_serialize::base64::{ToBase64, MIME};
+use rustc_serialize::base64::{ToBase64, FromBase64, MIME};
 
 pub use self::libc::{
     STDIN_FILENO,
@@ -334,8 +334,14 @@ fn password_to_key(p: &str) -> (Vec<u8>, Vec<u8>) {
     (key, iv)
 }
 
+// for saving cipher
 fn cipher_to_str(buf: &Vec<u8>) -> String {
-  buf.to_base64(MIME)
+    buf.to_base64(MIME)
+}
+
+// for decrypting cipher
+fn cipher_to_buf(cipher: &String) -> Vec<u8> {
+    cipher.as_bytes().from_base64().unwrap()
 }
 
 #[derive(RustcDecodable)]
