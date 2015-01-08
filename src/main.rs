@@ -3,16 +3,30 @@ extern crate time;
 extern crate docopt;
 extern crate "rustc-serialize" as rustc_serialize;
 extern crate regex;
-use regex::{Regex};
-use rustc_serialize::{Encodable, Decodable, Encoder, json};
-use time::{now_utc, strftime};
-use docopt::Docopt;
+extern crate crypto;
+
+// std lib imports...
 use std::os;
 use std::io;
 use std::io::fs::PathExtensions;
 use std::io::process::{InheritFd};
 use std::io::{File, Truncate, Write, Read, Open, ReadWrite, TempDir, Command, SeekSet};
 use std::iter::{repeat};
+
+// random things
+use regex::{Regex};
+use rustc_serialize::{Encodable, Decodable, Encoder, json};
+use time::{now_utc, strftime};
+use docopt::Docopt;
+
+// crypto imports
+use crypto::{ symmetriccipher, buffer, aes, blockmodes };
+use crypto::buffer::{ ReadBuffer, WriteBuffer, BufferResult };
+use crypto::pbkdf2::{pbkdf2};
+use crypto::hmac::{Hmac};
+use crypto::sha2::{Sha256};
+use crypto::digest::Digest;
+use rustc_serialize::base64::{ToBase64, MIME};
 
 pub use self::libc::{
     STDIN_FILENO,
@@ -252,6 +266,76 @@ impl ThecaItem {
         print!("{}", format_field(&self.last_touched, line_format.touched_width, false));
         print!("\n");
     }
+}
+
+// ALL the encryption functions ^_^
+fn encrypt(data: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
+    let mut encryptor = aes::cbc_encryptor(
+            aes::KeySize::KeySize256,
+            key,
+            iv,
+            blockmodes::PkcsPadding);
+
+    let mut final_result = Vec::<u8>::new();
+    let mut read_buffer = buffer::RefReadBuffer::new(data);
+    let mut buffer = [0; 4096];
+    let mut write_buffer = buffer::RefWriteBuffer::new(&mut buffer);
+
+    loop {
+        let result = try!(encryptor.encrypt(&mut read_buffer, &mut write_buffer, true));
+
+        final_result.push_all(write_buffer.take_read_buffer().take_remaining());
+
+        match result {
+            BufferResult::BufferUnderflow => break,
+            BufferResult::BufferOverflow => { }
+        }
+    }
+
+    Ok(final_result)
+}
+
+fn decrypt(encrypted_data: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
+    let mut decryptor = aes::cbc_decryptor(
+            aes::KeySize::KeySize256,
+            key,
+            iv,
+            blockmodes::PkcsPadding);
+
+    let mut final_result = Vec::<u8>::new();
+    let mut read_buffer = buffer::RefReadBuffer::new(encrypted_data);
+    let mut buffer = [0; 4096];
+    let mut write_buffer = buffer::RefWriteBuffer::new(&mut buffer);
+
+    loop {
+        let result = try!(decryptor.decrypt(&mut read_buffer, &mut write_buffer, true));
+        final_result.push_all(write_buffer.take_read_buffer().take_remaining());
+        match result {
+            BufferResult::BufferUnderflow => break,
+            BufferResult::BufferOverflow => { }
+        }
+    }
+
+    Ok(final_result)
+}
+
+fn password_to_key(p: &str) -> (Vec<u8>, Vec<u8>) {
+    let mut salt_sha = Sha256::new();
+    salt_sha.input(p.as_bytes());
+    let salt = salt_sha.result_str();
+
+    let mut mac = Hmac::new(Sha256::new(), p.as_bytes());
+    let mut key: Vec<u8> = repeat(0).take(32).collect();
+    let mut iv: Vec<u8> = repeat(0).take(16).collect();
+
+    pbkdf2(&mut mac, salt.as_bytes(), 2056, key.as_mut_slice());
+    pbkdf2(&mut mac, salt.as_bytes(), 1028, iv.as_mut_slice());
+
+    (key, iv)
+}
+
+fn cipher_to_str(buf: &Vec<u8>) -> String {
+  buf.to_base64(MIME)
 }
 
 #[derive(RustcDecodable)]
@@ -609,7 +693,7 @@ fn main() {
     }
 
     // save altered profile back to disk
-    // this should only be triggered by commands that commit transactions to the profile
+    // this should only be triggered by commands that make transactions to the profile
     if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile {
         profile.save_to_file(&args);
     }

@@ -8,3 +8,4 @@ authors = ["Roland Shoemaker <roland@bind.es>"]
 time = "0.1.7"
 rustc-serialize = "0.2.2"
 docopt = "0.6.21"
+rust-crypto = "0.2.11"
