@@ -31,7 +31,7 @@ mod c {
         STDOUT_FILENO
     };
     use std::mem::zeroed;
-    pub struct winsize {
+    pub struct Winsize {
         pub ws_row: c_ushort,
         pub ws_col: c_ushort
     }
@@ -42,20 +42,20 @@ mod c {
     extern {
         pub fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
     }
-    pub unsafe fn dimensions() -> winsize {
-        let mut window: winsize = zeroed();
-        ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut window as *mut winsize);
+    pub unsafe fn dimensions() -> Winsize {
+        let mut window: Winsize = zeroed();
+        ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut window as *mut Winsize);
         window
     }
 }
 
-fn termsize() -> Option<(uint, uint)> {
+fn termsize() -> Option<uint> {
     let ws = unsafe { c::dimensions() };
     if ws.ws_col == 0 || ws.ws_row == 0 {
         None
     }
     else {
-        Some((ws.ws_col as uint, ws.ws_row as uint))
+        Some(ws.ws_col as uint)
     }
 }
 
@@ -164,9 +164,9 @@ fn add_if(x: uint, y: uint, a: bool) -> uint {
 impl LineFormat {
     fn new(items: &Vec<ThecaItem>, args: &Args) -> LineFormat {
         // get termsize :>
-        let (console_width, console_height) = match termsize() {
+        let console_width = match termsize() {
             None => panic!("Cannot retrieve terminal information"),
-            Some((width, height)) => (width, height),
+            Some(width) => width,
         };
 
         // set minimums (header length) + colsep, this should probably do some other stuff?
@@ -184,8 +184,8 @@ impl LineFormat {
             line_format.status_width = 1;
         }
         line_format.touched_width = match args.flag_c {
-            true => 10,
-            false => 19
+            true => 10, // condensed
+            false => 19 // expanded
         };
 
         // check to make sure our new line format isn't bigger than the console
@@ -194,7 +194,7 @@ impl LineFormat {
             line_format.title_width -= line_width - console_width;
         }
 
-        // debuging :>
+        // debuging
         // println!("console width: {}, line width: {}", console_width, line_format.line_width());
         // println!("id: {}, title: {}, status: {}, last: {}", line_format.id_width, line_format.title_width, line_format.status_width, line_format.touched_width);
 
