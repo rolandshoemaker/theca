@@ -1,7 +1,7 @@
 language: rust
 rust:
-	- nightly
+    - nightly
 script:
-	- cargo build --verbose
-	- cargo test --verbose
-	- python3 --version
+    - cargo build --verbose
+    - cargo test --verbose
+    - python3 --version
