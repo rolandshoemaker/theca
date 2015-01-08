@@ -20,46 +20,44 @@ pub use self::libc::{
     STDERR_FILENO
 };
 
-static VERSION:  &'static str = "0.3.5-dev";
+static VERSION:  &'static str = "0.4.0-dev";
 
-// mod c {
-//     extern crate libc;
-//     pub use self::libc::{
-//         c_int,
-//         c_ushort,
-//         c_ulong,
-//         STDOUT_FILENO
-//     };
-//     use std::mem::zeroed;
-//     pub struct winsize {
-//         pub ws_row: c_ushort,
-//         pub ws_col: c_ushort
-//     }
-//     #[cfg(any(target_os = "linux", target_os = "android"))]
-//     static TIOCGWINSZ: c_ulong = 0x5413;
-//     #[cfg(any(target_os = "macos", target_os = "ios"))]
-//     static TIOCGWINSZ: c_ulong = 0x40087468;
-//     extern {
-//         pub fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
-//     }
-//     pub unsafe fn dimensions() -> winsize {
-//         let mut window: winsize = zeroed();
-//         ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut window as *mut winsize);
-//         window
-//     }
-// }
+mod c {
+    extern crate libc;
+    pub use self::libc::{
+        c_int,
+        c_ushort,
+        c_ulong,
+        STDOUT_FILENO
+    };
+    use std::mem::zeroed;
+    pub struct winsize {
+        pub ws_row: c_ushort,
+        pub ws_col: c_ushort
+    }
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    static TIOCGWINSZ: c_ulong = 0x5413;
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    static TIOCGWINSZ: c_ulong = 0x40087468;
+    extern {
+        pub fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
+    }
+    pub unsafe fn dimensions() -> winsize {
+        let mut window: winsize = zeroed();
+        ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut window as *mut winsize);
+        window
+    }
+}
 
-// fn termsize() -> Option<(uint, uint)> {
-//     let ws = unsafe { c::dimensions() };
-
-//     if ws.ws_col == 0 || ws.ws_row == 0 {
-//         None
-//     }
-//     else {
-//         Some((ws.ws_col as uint, ws.ws_row as uint))
-//     }
-
-// }
+fn termsize() -> Option<(uint, uint)> {
+    let ws = unsafe { c::dimensions() };
+    if ws.ws_col == 0 || ws.ws_row == 0 {
+        None
+    }
+    else {
+        Some((ws.ws_col as uint, ws.ws_row as uint))
+    }
+}
 
 static USAGE: &'static str = "
 theca - cli note taking tool
@@ -67,11 +65,11 @@ theca - cli note taking tool
 Usage:
     theca new-profile
     theca new-profile <name> [--encrypted]
-    theca [options] [-c|-e] [-l LIMIT]
-    theca [options] [-c|-e] <id>
-    theca [options] [-c|-e] view <id>
-    theca [options] [-c|-e] search <pattern>
-    theca [options] [-c|-e] search-body <pattern>
+    theca [options] [-c] [-l LIMIT]
+    theca [options] [-c] <id>
+    theca [options] [-c] view <id>
+    theca [options] [-c] search <pattern>
+    theca [options] [-c] search-body <pattern>
     theca [options] add <title> [--started|--urgent] [-b BODY|--editor|-]
     theca [options] edit <id> [<title>] [--started|--urgent|--none] [-b BODY|--editor|-]
     theca [options] del <id>
@@ -84,7 +82,6 @@ Options:
     --profiles-folder PROFILEPATH       Path to folder container profile.json files.
     -p PROFILE, --profile PROFILE       Specify non-default profile.
     -c, --condensed                     Use the condensed print format.
-    -e, --expanded                      Use the expanded print format.
     --encrypted                         Encrypt new profile, theca will prompt you for a key.
     -l LIMIT                            Limit listing to LIMIT items.
     --none                              No status.
@@ -110,7 +107,6 @@ struct Args {
     arg_pattern: String,
     flag_encrypted: bool,
     flag_c: bool,
-    flag_e: bool,
     flag_l: Vec<uint>,
     arg_title: String,
     flag_started: bool,
@@ -124,37 +120,26 @@ struct Args {
     flag_v: bool
 }
 
-// impl Args {
-//     fn check_rc(&mut self) {
-//         let conf_file_path = match self.flag_config.is_empty() {
-//             true => os::homedir().unwrap().join(".thecarc"),
-//             false => Path::new(self.flag_config[0].as_slice())
-//         };
-//         match conf_file_path.is_file() {
-//             false => {
-//                 if conf_file_path.exists() {
-//                     Err(format!("{} is not a file.", conf_file_path.display()))
-//                 } else {
-//                     Ok(())
-//                 }
-//             }
-//             true => {
-//                 let mut conf_file = match File::open_mode(&conf_file_path, Open, Read) {
-//                     Ok(f) => f,
-//                     Err(e) => panic!("{}", e.desc)
-//                 };
-//                 let conf_contents = match conf_file.read_to_string() {
-//                     Ok(c) => c,
-//                     Err(e) => panic!("{}", e.desc)
-//                 };
-//                 let decoded_toml = toml::Parser::new(conf_contents.as_slice()).parse().unwrap();
-//                 println!("{}", decoded_toml.get("name"));
-
-//                 Ok(())
-//             }
-//         };
-//     }
-// }
+impl Args {
+    fn check_env(&mut self) {
+        match os::getenv("THECA_DEFAULT_PROFILE") {
+            Some(val) => {
+                if self.flag_p.is_empty() {
+                    self.flag_p[0] = val;
+                }
+            },
+            None => ()
+        };
+        match os::getenv("THECA_PROFILE_FOLDER") {
+            Some(val) => {
+                if self.flag_profiles_folder.is_empty() {
+                    self.flag_profiles_folder[0] = val;
+                }
+            },
+            None => ()
+        };
+    }
+}
 
 static NOSTATUS: &'static str = "";
 static STARTED: &'static str = "Started";
@@ -177,18 +162,42 @@ fn add_if(x: uint, y: uint, a: bool) -> uint {
 }
 
 impl LineFormat {
-    fn new(items: &Vec<ThecaItem>) -> LineFormat {
-        // let (width, height) = match termsize() {
-        //     None => panic!(),
-        //     Some((width, height)) => (width, height),
-        // };
+    fn new(items: &Vec<ThecaItem>, args: &Args) -> LineFormat {
+        // get termsize :>
+        let (console_width, console_height) = match termsize() {
+            None => panic!("Cannot retrieve terminal information"),
+            Some((width, height)) => (width, height),
+        };
 
         // set minimums (header length) + colsep, this should probably do some other stuff?
-        let mut line_format = LineFormat {colsep: 3, id_width:2, title_width:5, status_width:7, touched_width:7};
+        let mut line_format = LineFormat {colsep: 2, id_width:0, title_width:0, status_width:0, touched_width:0};
+
+        // find length of longest items to format line
         line_format.id_width = items.iter().max_by(|n| n.id.to_string().len()).unwrap().id.to_string().len();
+        if line_format.id_width < 2 {line_format.id_width = 2;}
         line_format.title_width = items.iter().max_by(|n| add_if(n.title.len(), 4, n.body.len().ne(&0))).unwrap().title.len();
-        line_format.status_width = items.iter().max_by(|n| n.status.len()).unwrap().status.len();
-        line_format.touched_width = items.iter().max_by(|n| n.last_touched.len()).unwrap().last_touched.len();
+        if line_format.title_width < 5 {line_format.title_width = 5;}
+        if !args.flag_c {
+            line_format.status_width = items.iter().max_by(|n| n.status.len()).unwrap().status.len();
+            if line_format.status_width > 0 && line_format.status_width < 7 {line_format.status_width = 7;}
+        } else {
+            line_format.status_width = 1;
+        }
+        line_format.touched_width = match args.flag_c {
+            true => 10,
+            false => 19
+        };
+
+        // check to make sure our new line format isn't bigger than the console
+        let line_width = line_format.line_width();
+        if line_width > console_width && (line_format.title_width-(line_width-console_width)) > 0 {
+            line_format.title_width -= line_width - console_width;
+        }
+
+        // debuging :>
+        // println!("console width: {}, line width: {}", console_width, line_format.line_width());
+        // println!("id: {}, title: {}, status: {}, last: {}", line_format.id_width, line_format.title_width, line_format.status_width, line_format.touched_width);
+
         line_format
     }
 
@@ -224,26 +233,29 @@ impl Encodable for ThecaItem {
 }
 
 impl ThecaItem {
-    fn print(& self, line_format: &LineFormat) {
+    fn print(&self, line_format: &LineFormat, args: &Args) {
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
-        print!("{}", format_field(&self.id.to_string(), line_format.id_width));
+        print!("{}", format_field(&self.id.to_string(), line_format.id_width, false));
         print!("{}", column_seperator);
         if !self.body.is_empty() {
-            print!("(+) {}", format_field(&self.title, line_format.title_width-4));
+            print!("(+) {}", format_field(&self.title, line_format.title_width-4, true));
         } else {
-            print!("{}", format_field(&self.title, line_format.title_width));
+            print!("{}", format_field(&self.title, line_format.title_width, true));
         }
         print!("{}", column_seperator);
-        print!("{}", format_field(&self.status, line_format.status_width));
+        if args.flag_c && self.status.len() > 0 {
+            print!("{}", format_field(&self.status.chars().nth(0).unwrap().to_string(), line_format.status_width, false));
+        } else {
+            print!("{}", format_field(&self.status, line_format.status_width, false));
+        }
         print!("{}", column_seperator);
-        print!("{}", format_field(&self.last_touched, line_format.touched_width));
+        print!("{}", format_field(&self.last_touched, line_format.touched_width, false));
         print!("\n");
     }
 }
 
 #[derive(RustcDecodable)]
 pub struct ThecaProfile {
-    // current_id: uint,
     encrypted: bool,
     notes: Vec<ThecaItem>
 }
@@ -253,7 +265,6 @@ impl Encodable for ThecaProfile {
         match *self {
             ThecaProfile{encrypted: ref p_encrypted, notes: ref p_notes} => {
                 encoder.emit_struct("ThecaProfile", 1, |encoder| {
-                    // try!(encoder.emit_struct_field("current_id", 0u, |encoder| p_current_id.encode(encoder)));
                     try!(encoder.emit_struct_field("encrypted", 0u, |encoder| p_encrypted.encode(encoder)));
                     try!(encoder.emit_struct_field("notes", 1u, |encoder| p_notes.encode(encoder)));
                     Ok(())
@@ -268,7 +279,6 @@ impl ThecaProfile {
     fn new(args: &Args) -> Result<ThecaProfile, String> {
         if args.cmd_new_profile {
             Ok(ThecaProfile {
-                // current_id: 0,
                 encrypted: args.flag_encrypted,
                 notes: vec![]
             })
@@ -358,7 +368,6 @@ impl ThecaProfile {
                 });
             }
         }
-        // self.current_id += 1;
         println!("added");
     }
 
@@ -414,29 +423,29 @@ impl ThecaProfile {
         println!(
             "{1}{0}{2}{0}{3}{0}{4}\n{5}",
             column_seperator,
-            format_field(&"id".to_string(), line_format.id_width),
-            format_field(&"title".to_string(), line_format.title_width),
-            format_field(&"status".to_string(), line_format.status_width),
-            format_field(&"last touched".to_string(), line_format.touched_width),
+            format_field(&"id".to_string(), line_format.id_width, false),
+            format_field(&"title".to_string(), line_format.title_width, false),
+            format_field(&"status".to_string(), line_format.status_width, false),
+            format_field(&"last touched".to_string(), line_format.touched_width, false),
             header_seperator
         );
     }
 
     fn view_item(&mut self, id: uint, args: &Args, body: bool) {
         let notes: Vec<ThecaItem> = self.notes.iter().filter(|n| n.id == id).map(|n| n.clone()).collect();
-        let line_format = LineFormat::new(&notes);
-        if args.flag_e {
+        let line_format = LineFormat::new(&notes, args);
+        if !args.flag_c {
             self.print_header(&line_format);
         }
-        notes[0].print(&line_format);
+        notes[0].print(&line_format, args);
         if body && !notes[0].body.is_empty() {
             println!("{}", notes[0].body);
         }
     }
 
     fn list_items(&mut self, args: &Args) {
-        let line_format = LineFormat::new(&self.notes);
-        if args.flag_e {
+        let line_format = LineFormat::new(&self.notes, args);
+        if !args.flag_c {
             self.print_header(&line_format);
         }
         let list_range = if !args.flag_l.is_empty() {
@@ -445,7 +454,7 @@ impl ThecaProfile {
             self.notes.len()
         };
         for i in range(0, list_range) {
-            self.notes[i].print(&line_format);
+            self.notes[i].print(&line_format, args);
         }
     }
 
@@ -458,12 +467,12 @@ impl ThecaProfile {
             true => self.notes.iter().filter(|n| re.is_match(n.body.as_slice())).map(|n| n.clone()).collect(),
             false => self.notes.iter().filter(|n| re.is_match(n.title.as_slice())).map(|n| n.clone()).collect()
         };
-        let line_format = LineFormat::new(&notes);
-        if args.flag_e {
+        let line_format = LineFormat::new(&notes, args);
+        if !args.flag_c {
             self.print_header(&line_format);
         }
         for i in range(0, notes.len()) {
-            notes[i].print(&line_format);
+            notes[i].print(&line_format, args);
             if body {
                 println!("{}", notes[i].body);
             }
@@ -471,8 +480,8 @@ impl ThecaProfile {
     }
 }
 
-fn format_field(value: &String, width: uint) -> String {
-    if value.len() > width && width > 3 {
+fn format_field(value: &String, width: uint, truncate: bool) -> String {
+    if value.len() > width && width > 3 && truncate {
         format!("{: <1$.1$}...", value, width-3)
     } else {
         format!("{: <1$.1$}", value, width)
@@ -481,7 +490,7 @@ fn format_field(value: &String, width: uint) -> String {
 
 fn find_profile_folder(args: &Args) -> Path {
     if !args.flag_profiles_folder.is_empty() {
-        Path::new(args.flag_p[0].to_string())
+        Path::new(args.flag_profiles_folder[0].to_string())
     } else {
         match os::homedir() {
             Some(ref p) => p.join(".theca"),
@@ -506,7 +515,7 @@ fn drop_to_editor(contents: &String) -> String {
     };
     tmpfile.write_line(contents.as_slice()).ok().expect("Failed to write line to temp file");
     // we now have a temp file, at `tmppath`, that contains `contents`
-    // first we need to know which one
+    // first we need to know which onqe
     let editor = match os::getenv("VISUAL") {
         Some(val) => val,
         None => {
@@ -537,10 +546,12 @@ fn drop_to_editor(contents: &String) -> String {
 }
 
 fn main() {
-    let args: Args = Docopt::new(USAGE)
+    let mut args: Args = Docopt::new(USAGE)
                             .and_then(|d| d.decode())
                             .unwrap_or_else(|e| e.exit());
-    // args.check_rc();
+
+    // is anything stored in the ENV?
+    args.check_env();
 
     // Setup a ThecaProfile struct
     let mut profile = match ThecaProfile::new(&args) {
