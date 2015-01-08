@@ -4,3 +4,4 @@ rust:
 script:
 	- cargo build --verbose
 	- cargo test --verbose
+	- python3 --version
