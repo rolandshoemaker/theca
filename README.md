@@ -2,19 +2,20 @@
 
 ## road to 0.9 (first release)
 
+**1.0** will be come out with *rust* 1.0-stable so i dont have to change stuff every day
+
 * ~~note body from STDIN (easy)~~
 * ~~strip newlines from title (easy)~~
 * ~~note search functions (this'll be annoying :/)~~
- * ~~Keyword~~
  * ~~Regex~~
-* implement aesc/desc sort
+* ~~better LineFormat using termsize to set max widths etc... (annoying)~~ *(p. much)*
+* ~~finish printing (e/c) (easy...ish)~~ *(p. much)*
+* **implement aesc/desc sort**
+* **implement sep by day/week/month**
 * encryptable profiles (unsure of which crypto library to use, rust-crypto most likely)
 * proper setup functions for first time use (p easy)
-* better LineFormat using termsize to set max widths etc... (annoying)
-* finish printing (e/c) (easy...ish)
 * better status handling (hooooow)
 * (subjective) lots of clean-up (:>)
-* **Is this really needed?** there are only three options... - read config file (Args.check_rc) and combine with provided arguments (easy)
 
 ## theca design
 
@@ -23,7 +24,6 @@ rust memo/note taking tool with a json note file format
 ## json note file
 
     {
-        "current_id": 3, # only needed for incr int id type...
         "encrypted": false,
         "notes": [
             {
@@ -31,19 +31,19 @@ rust memo/note taking tool with a json note file format
                 "title": "short title",
                 "body": "",
                 "status": "Urgent",
-                "last_touched": "2014-12-21T00:16:26.001087" # ISO 8601 date in UTC
+                "last_touched": "2015-01-08 21:42:49"
             },{
                 "id": 2,
                 "title": "long title with body",
                 "body": "wow we can hold some stuff in here that we might want to read later\nwhoa that was a linebreak huh!\n\nyes, yes it was",
                 "status": "Started",
-                "last_touched": "2014-12-21T00:25:24.858575" # ISO 8601 date in UTC
+                "last_touched": "2014-12-28 18:36:23"
             },{
                 "id": 3,
                 "title": "i dont have a status or a body",
                 "body": "",
                 "status": "",
-                "last_touched": "2014-12-21T00:16:26.001087" # ISO 8601 date in UTC
+                "last_touched": "2015-01-08 21:43:26"
             }
         ]
     }
