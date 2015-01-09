@@ -458,20 +458,16 @@ impl ThecaProfile {
 
     fn add_item(&mut self, a_title: String, a_status: String, a_body: String) {
         let new_id = self.notes.last().unwrap().id;
-        match self.encrypted {
-            true => {
-                // uh not this, but placeholder for now!
-                println!("hahaha, soon");
-            }
-            false => {
-                self.notes.push(ThecaItem {
-                    id: new_id + 1,
-                    title: a_title,
-                    status: a_status,
-                    body: a_body,
-                    last_touched: strftime("%F %T", &now_utc()).ok().unwrap()
-                });
-            }
+        self.notes.push(ThecaItem {
+            id: new_id + 1,
+            title: a_title,
+            status: a_status,
+            body: a_body,
+            last_touched: strftime("%F %T", &now_utc()).ok().unwrap()
+        });
+        if self.encrypted {
+            let item_pos = self.notes.iter().position(|n| n.id == new_id).unwrap();
+            self.notes[item_pos].encrypt("weewoo");
         }
         println!("added");
     }
@@ -537,14 +533,14 @@ impl ThecaProfile {
     }
 
     fn view_item(&mut self, id: uint, args: &Args, body: bool) {
-        let notes: Vec<ThecaItem> = self.notes.iter().filter(|n| n.id == id).map(|n| n.clone()).collect();
-        let line_format = LineFormat::new(&notes, args);
+        let note_pos = self.notes.iter().position(|n| n.id == id).unwrap();
+        let line_format = LineFormat::new(&vec![self.notes[note_pos].clone()], args);
         if !args.flag_c {
             self.print_header(&line_format);
         }
-        notes[0].print(&line_format, args);
-        if body && !notes[0].body.is_empty() {
-            println!("{}", notes[0].body);
+        self.notes[note_pos].print(&line_format, args);
+        if body && !self.notes[note_pos].body.is_empty() {
+            println!("{}", self.notes[note_pos].body);
         }
     }
 
