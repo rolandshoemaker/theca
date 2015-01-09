@@ -246,6 +246,22 @@ impl Encodable for ThecaItem {
 }
 
 impl ThecaItem {
+    fn encrypt(&mut self, password: &str) {
+        let (key, iv) = password_to_key(password);
+        self.title = cipher_to_str(&encrypt(self.title.as_bytes(), key.as_slice(), iv.as_slice()).ok().unwrap());
+        self.body = cipher_to_str(&encrypt(self.body.as_bytes(), key.as_slice(), iv.as_slice()).ok().unwrap());
+        self.status = cipher_to_str(&encrypt(self.status.as_bytes(), key.as_slice(), iv.as_slice()).ok().unwrap());
+        self.last_touched = cipher_to_str(&encrypt(self.last_touched.as_bytes(), key.as_slice(), iv.as_slice()).ok().unwrap());
+    }
+
+    fn decrypt(&mut self, password: &str) {
+        let (key, iv) = password_to_key(password);
+        self.title = String::from_utf8(decrypt(cipher_to_buf(&self.title).as_slice(), key.as_slice(), iv.as_slice()).ok().unwrap()).unwrap();
+        self.body = String::from_utf8(decrypt(cipher_to_buf(&self.body).as_slice(), key.as_slice(), iv.as_slice()).ok().unwrap()).unwrap();
+        self.status = String::from_utf8(decrypt(cipher_to_buf(&self.status).as_slice(), key.as_slice(), iv.as_slice()).ok().unwrap()).unwrap();
+        self.last_touched = String::from_utf8(decrypt(cipher_to_buf(&self.last_touched).as_slice(), key.as_slice(), iv.as_slice()).ok().unwrap()).unwrap();
+    }
+
     fn print(&self, line_format: &LineFormat, args: &Args) {
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         print!("{}", format_field(&self.id.to_string(), line_format.id_width, false));
