@@ -6,11 +6,10 @@ extern crate regex;
 extern crate crypto;
 
 // std lib imports...
-use std::os;
-use std::io;
+use std::os::{getenv, homedir};
 use std::io::fs::PathExtensions;
 use std::io::process::{InheritFd};
-use std::io::{File, Truncate, Write, Read, Open, ReadWrite, TempDir, Command, SeekSet};
+use std::io::{File, Truncate, Write, Read, Open, ReadWrite, TempDir, Command, SeekSet, stdin};
 use std::iter::{repeat};
 
 // random things
@@ -20,8 +19,8 @@ use time::{now_utc, strftime};
 use docopt::Docopt;
 
 // crypto imports
-use crypto::{ symmetriccipher, buffer, aes, blockmodes };
-use crypto::buffer::{ ReadBuffer, WriteBuffer, BufferResult };
+use crypto::{symmetriccipher, buffer, aes, blockmodes};
+use crypto::buffer::{ReadBuffer, WriteBuffer, BufferResult};
 use crypto::pbkdf2::{pbkdf2};
 use crypto::hmac::{Hmac};
 use crypto::sha2::{Sha256};
@@ -136,7 +135,7 @@ struct Args {
 
 impl Args {
     fn check_env(&mut self) {
-        match os::getenv("THECA_DEFAULT_PROFILE") {
+        match getenv("THECA_DEFAULT_PROFILE") {
             Some(val) => {
                 if self.flag_p.is_empty() {
                     self.flag_p[0] = val;
@@ -144,7 +143,7 @@ impl Args {
             },
             None => ()
         };
-        match os::getenv("THECA_PROFILE_FOLDER") {
+        match getenv("THECA_PROFILE_FOLDER") {
             Some(val) => {
                 if self.flag_profiles_folder.is_empty() {
                     self.flag_profiles_folder[0] = val;
@@ -499,7 +498,7 @@ impl ThecaProfile {
             } else if args.flag_editor {
                 self.notes[item_pos].body = drop_to_editor(&self.notes[item_pos].body);
             } else if args.cmd__ {
-                io::stdin().lock().read_to_string().unwrap();
+                stdin().lock().read_to_string().unwrap();
             }
         }
         // update last_touched
@@ -582,7 +581,7 @@ fn find_profile_folder(args: &Args) -> Path {
     if !args.flag_profiles_folder.is_empty() {
         Path::new(args.flag_profiles_folder[0].to_string())
     } else {
-        match os::homedir() {
+        match homedir() {
             Some(ref p) => p.join(".theca"),
             None => Path::new(".").join(".theca")
         }
@@ -606,10 +605,10 @@ fn drop_to_editor(contents: &String) -> String {
     tmpfile.write_line(contents.as_slice()).ok().expect("Failed to write line to temp file");
     // we now have a temp file, at `tmppath`, that contains `contents`
     // first we need to know which onqe
-    let editor = match os::getenv("VISUAL") {
+    let editor = match getenv("VISUAL") {
         Some(val) => val,
         None => {
-            match os::getenv("EDITOR") {
+            match getenv("EDITOR") {
                 Some(val) => val,
                 None => panic!("Neither $VISUAL nor $EDITOR is set.")
             }
@@ -665,7 +664,7 @@ fn main() {
         } else if args.flag_editor {
             drop_to_editor(&"".to_string())
         } else if args.cmd__ {
-            io::stdin().lock().read_to_string().unwrap()
+            stdin().lock().read_to_string().unwrap()
         } else {
             "".to_string()
         };
