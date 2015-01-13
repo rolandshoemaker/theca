@@ -699,7 +699,7 @@ fn main() {
         // search for an item
         match args.cmd_search {
             true => profile.search_items(args.arg_pattern.as_slice(), false, &args),
-            false => profile.search_items(&args.arg_pattern[], true, &args)
+            false => profile.search_items(&args.arg_pattern.as_slice()], true, &args)
         }
     } else if !args.arg_id.is_empty() {
         // view short item
