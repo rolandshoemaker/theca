@@ -544,9 +544,7 @@ impl ThecaProfile {
         let mut t = term::stdout().unwrap();
 
         match args.flag_c {
-            // single item printer (cond)
             true => {
-                // println!("id: {}\ntitle: {}\nstatus: {}\nlast touched: {}", self.notes[note_pos].id, self.notes[note_pos].title, self.notes[note_pos].status, self.notes[note_pos].last_touched)
                 t.attr(Bold).unwrap();
                 (write!(t, "id: ")).unwrap();
                 t.reset().unwrap();
@@ -584,28 +582,22 @@ impl ThecaProfile {
             }
         };
 
-        // expanded?
-        // 
-
         // body
         if !self.notes[note_pos].body.is_empty() {
             match args.flag_c {
                 true => {
-                    // println!("body: {}", self.notes[note_pos].body)
                     t.attr(Bold).unwrap();
                     (write!(t, "body: ")).unwrap();
                     t.reset().unwrap();
                     (write!(t, "{}\n", self.notes[note_pos].body)).unwrap();
                 },
                 false => {
-                    // println!("body: {}", self.notes[note_pos].body)
                     t.attr(Bold).unwrap();
                     (write!(t, "body\n----\n")).unwrap();
                     t.reset().unwrap();
                     (write!(t, "{}\n", self.notes[note_pos].body)).unwrap();
                 }
             };
-            // 
         }
     }
 
