@@ -266,12 +266,12 @@ impl ThecaItem {
         self.last_touched = String::from_utf8(decrypt(cipher_to_buf(&self.last_touched).as_slice(), key.as_slice(), iv.as_slice()).ok().unwrap()).unwrap();
     }
 
-    fn print(&self, line_format: &LineFormat, args: &Args) {
+    fn print(&self, line_format: &LineFormat, args: &Args, body_ind: bool) {
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         print!("{}", format_field(&self.id.to_string(), line_format.id_width, false));
         print!("{}", column_seperator);
-        if !self.body.is_empty() {
-            print!("(+) {}", format_field(&self.title, line_format.title_width-4, true));
+        if !self.body.is_empty() && body_ind {
+            print!("{}", format_field(&("(+) ".to_string()+self.title.as_slice()), line_format.title_width, true));
         } else {
             print!("{}", format_field(&self.title, line_format.title_width, true));
         }
@@ -528,7 +528,7 @@ impl ThecaProfile {
         t.attr(Bold).unwrap();
         (write!(
             t, 
-            "{1}{0}{2}{0}{3}{0}{4}\n{5}",
+            "{1}{0}{2}{0}{3}{0}{4}\n{5}\n",
             column_seperator,
             format_field(&"id".to_string(), line_format.id_width, false),
             format_field(&"title".to_string(), line_format.title_width, false),
@@ -615,23 +615,23 @@ impl ThecaProfile {
             match args.flag_reverse {
                 false => {
                     for i in range(0, list_range) {
-                        self.notes[i].print(&line_format, args);
+                        self.notes[i].print(&line_format, args, true);
                     }
                 }, true => {
                     for i in range(0, list_range).rev() {
-                        self.notes[i].print(&line_format, args);
+                        self.notes[i].print(&line_format, args, true);
                     }
                 }
             };
         }
     }
 
-    fn search_items(&mut self, regex_pattern: &str, body: bool, args: &Args) {
+    fn search_items(&mut self, regex_pattern: &str, args: &Args) {
         let re = match Regex::new(regex_pattern) {
             Ok(r) => r,
             Err(e) => panic!("{}", e)
         };
-        let notes: Vec<ThecaItem> = match body {
+        let notes: Vec<ThecaItem> = match args.flag_body {
             true => self.notes.iter().filter(|n| re.is_match(n.body.as_slice())).map(|n| n.clone()).collect(),
             false => self.notes.iter().filter(|n| re.is_match(n.title.as_slice())).map(|n| n.clone()).collect()
         };
@@ -642,16 +642,16 @@ impl ThecaProfile {
         match args.flag_reverse {
             false => {
                 for i in range(0, notes.len()) {
-                    notes[i].print(&line_format, args);
-                    if body {
-                        println!("{}", notes[i].body);
+                    notes[i].print(&line_format, args, !args.flag_body);
+                    if args.flag_body {
+                        println!("\t{}", notes[i].body);
                     }
                 }
             }, true => {
                 for i in range(0, notes.len()).rev() {
-                    notes[i].print(&line_format, args);
-                    if body {
-                        println!("{}", notes[i].body);
+                    notes[i].print(&line_format, args, !args.flag_body);
+                    if args.flag_body {
+                        println!("\t{}", notes[i].body);
                     }
                 }
             }
@@ -794,10 +794,11 @@ fn main() {
         println!("theca v{}", VERSION);
     } else if args.cmd_search {
         // search for an item
-        match args.flag_body {
-            true => profile.search_items(args.arg_pattern.as_slice(), false, &args),
-            false => profile.search_items(args.arg_pattern.as_slice(), true, &args)
-        }
+        profile.search_items(args.arg_pattern.as_slice(), &args);
+        // match args.flag_body {
+        //     true => profile.search_items(args.arg_pattern.as_slice(), false, &args),
+        //     false => profile.search_items(args.arg_pattern.as_slice(), true, &args)
+        // }
     } else if !args.arg_id.is_empty() {
         // view short item
         profile.view_item(args.arg_id[0], &args);
