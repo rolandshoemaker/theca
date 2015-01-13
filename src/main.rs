@@ -457,7 +457,10 @@ impl ThecaProfile {
     }
 
     fn add_item(&mut self, a_title: String, a_status: String, a_body: String) {
-        let new_id = self.notes.last().unwrap().id;
+        let new_id = match self.notes.last() {
+            Some(n) => n.id,
+            None => 0
+        };
         self.notes.push(ThecaItem {
             id: new_id + 1,
             title: a_title,
@@ -528,39 +531,39 @@ impl ThecaProfile {
         );
     }
 
-    fn view_item(&mut self, id: usize, args: &Args, body: bool) {
+    fn view_item(&mut self, id: usize, args: &Args) {
         let note_pos = self.notes.iter().position(|n| n.id == id).unwrap();
         let line_format = LineFormat::new(&vec![self.notes[note_pos].clone()], args);
         if !args.flag_c {
             self.print_header(&line_format);
         }
         self.notes[note_pos].print(&line_format, args);
-        if body && !self.notes[note_pos].body.is_empty() {
-            println!("{}", self.notes[note_pos].body);
-        }
+        println!("{}", self.notes[note_pos].body);
     }
 
     fn list_items(&mut self, args: &Args) {
-        let line_format = LineFormat::new(&self.notes, args);
-        if !args.flag_c {
-            self.print_header(&line_format);
-        }
-        let list_range = if !args.flag_l.is_empty() {
-            args.flag_l[0]
-        } else {
-            self.notes.len()
-        };
-        match args.flag_reverse {
-            false => {
-                for i in range(0, list_range) {
-                    self.notes[i].print(&line_format, args);
-                }
-            }, true => {
-                for i in range(0, list_range).rev() {
-                    self.notes[i].print(&line_format, args);
-                }
+        if self.notes.len() > 0 {
+            let line_format = LineFormat::new(&self.notes, args);
+            if !args.flag_c {
+                self.print_header(&line_format);
             }
-        };
+            let list_range = if !args.flag_l.is_empty() {
+                args.flag_l[0]
+            } else {
+                self.notes.len()
+            };
+            match args.flag_reverse {
+                false => {
+                    for i in range(0, list_range) {
+                        self.notes[i].print(&line_format, args);
+                    }
+                }, true => {
+                    for i in range(0, list_range).rev() {
+                        self.notes[i].print(&line_format, args);
+                    }
+                }
+            };
+        }
     }
 
     fn search_items(&mut self, regex_pattern: &str, body: bool, args: &Args) {
@@ -722,7 +725,7 @@ fn main() {
         }
     } else if !args.arg_id.is_empty() {
         // view short item
-        profile.view_item(args.arg_id[0], &args, false);
+        profile.view_item(args.arg_id[0], &args);
     } else if !args.cmd_new_profile {
         // this should be the default for nothing
         profile.list_items(&args);
