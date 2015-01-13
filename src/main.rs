@@ -80,9 +80,9 @@ theca - cli note taking tool
 Usage:
     theca new-profile
     theca new-profile <name> [--encrypted]
-    theca [options] [-c] [-l LIMIT]
+    theca [options] [-c] [-l LIMIT, --reverse]
     theca [options] [-c] <id>
-    theca [options] [-c] search [--body] <pattern>
+    theca [options] [-c] search [--body, -l LIMIT, --reverse] <pattern>
     theca [options] add <title> [--started|--urgent] [-b BODY|--editor|-]
     theca [options] edit <id> [<title>] [--started|--urgent|--none] [-b BODY|--editor|-]
     theca [options] del <id>
@@ -112,6 +112,7 @@ struct Args {
     cmd_new_profile: bool,
     cmd_search: bool,
     flag_body: bool,
+    flag_reverse: bool,
     cmd_add: bool,
     cmd_edit: bool,
     cmd_del: bool,
