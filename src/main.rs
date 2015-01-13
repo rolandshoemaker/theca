@@ -535,12 +535,24 @@ impl ThecaProfile {
 
     fn view_item(&mut self, id: usize, args: &Args) {
         let note_pos = self.notes.iter().position(|n| n.id == id).unwrap();
-        let line_format = LineFormat::new(&vec![self.notes[note_pos].clone()], args);
-        if !args.flag_c {
-            self.print_header(&line_format);
+        //let line_format = LineFormat::new(&vec![self.notes[note_pos].clone()], args);
+        // if !args.flag_c {
+        //     self.print_header(&line_format);
+        // }
+        // self.notes[note_pos].print(&line_format, args);
+        // println!("{}", self.notes[note_pos].body);
+
+        // single item printer (cond)
+        println!("id: {}\ntitle: {}\nstatus: {}\nlast touched: {}", self.notes[note_pos].id, self.notes[note_pos].title, self.notes[note_pos].status, self.notes[note_pos].last_touched);
+
+        // expanded?
+        // println!("id\n--\n{}\ntitle\n-----\n{}\nstatus\n------\n{}\nlast touched\n------------\n{}", self.notes[note_pos].id, self.notes[note_pos].title, self.notes[note_pos].status, self.notes[note_pos].last_touched);
+
+        // body
+        if !self.notes[note_pos].body.is_empty() {
+            println!("body: {}", self.notes[note_pos].body);
+            // println!("body\n----\n{}", self.notes[note_pos].body);
         }
-        self.notes[note_pos].print(&line_format, args);
-        println!("{}", self.notes[note_pos].body);
     }
 
     fn list_items(&mut self, args: &Args) {
@@ -693,7 +705,6 @@ fn main() {
             }
         }
     };
-    println!("KAKA {}", key);
     // decrypt notes
     if profile.encrypted {
         for i in range(0, profile.notes.len()) {
