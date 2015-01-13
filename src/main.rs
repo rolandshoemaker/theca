@@ -80,9 +80,9 @@ theca - cli note taking tool
 Usage:
     theca new-profile
     theca new-profile <name> [--encrypted]
-    theca [options] [-c] [-l LIMIT, --reverse]
+    theca [options] [-c] [-l LIMIT] [--reverse]
     theca [options] [-c] <id>
-    theca [options] [-c] search [--body, -l LIMIT, --reverse] <pattern>
+    theca [options] [-c] search [--body] [-l LIMIT] [--reverse] <pattern>
     theca [options] add <title> [--started|--urgent] [-b BODY|--editor|-]
     theca [options] edit <id> [<title>] [--started|--urgent|--none] [-b BODY|--editor|-]
     theca [options] del <id>
@@ -550,9 +550,17 @@ impl ThecaProfile {
         } else {
             self.notes.len()
         };
-        for i in range(0, list_range) {
-            self.notes[i].print(&line_format, args);
-        }
+        match args.flag_reverse {
+            false => {
+                for i in range(0, list_range) {
+                    self.notes[i].print(&line_format, args);
+                }
+            }, true => {
+                for i in range(0, list_range).rev() {
+                    self.notes[i].print(&line_format, args);
+                }
+            }
+        };
     }
 
     fn search_items(&mut self, regex_pattern: &str, body: bool, args: &Args) {
@@ -568,12 +576,23 @@ impl ThecaProfile {
         if !args.flag_c {
             self.print_header(&line_format);
         }
-        for i in range(0, notes.len()) {
-            notes[i].print(&line_format, args);
-            if body {
-                println!("{}", notes[i].body);
+        match args.flag_reverse {
+            false => {
+                for i in range(0, notes.len()) {
+                    notes[i].print(&line_format, args);
+                    if body {
+                        println!("{}", notes[i].body);
+                    }
+                }
+            }, true => {
+                for i in range(0, notes.len()).rev() {
+                    notes[i].print(&line_format, args);
+                    if body {
+                        println!("{}", notes[i].body);
+                    }
+                }
             }
-        }
+        };
     }
 }
 
