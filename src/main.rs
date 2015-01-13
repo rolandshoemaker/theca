@@ -6,6 +6,7 @@ extern crate docopt;
 extern crate "rustc-serialize" as rustc_serialize;
 extern crate regex;
 extern crate crypto;
+extern crate term;
 
 // std lib imports...
 use std::os::{getenv, homedir};
@@ -19,6 +20,7 @@ use regex::{Regex};
 use rustc_serialize::{Encodable, Decodable, Encoder, json};
 use time::{now_utc, strftime};
 use docopt::Docopt;
+use term::attr::Attr::Bold;
 
 // crypto imports
 use crypto::{symmetriccipher, buffer, aes, blockmodes};
@@ -520,9 +522,12 @@ impl ThecaProfile {
     }
 
     fn print_header(&mut self, line_format: &LineFormat) {
+        let mut t = term::stdout().unwrap();
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
-        println!(
+        t.attr(Bold).unwrap();
+        (write!(
+            t, 
             "{1}{0}{2}{0}{3}{0}{4}\n{5}",
             column_seperator,
             format_field(&"id".to_string(), line_format.id_width, false),
@@ -530,28 +535,77 @@ impl ThecaProfile {
             format_field(&"status".to_string(), line_format.status_width, false),
             format_field(&"last touched".to_string(), line_format.touched_width, false),
             header_seperator
-        );
+        )).unwrap();
+        t.reset().unwrap();
     }
 
     fn view_item(&mut self, id: usize, args: &Args) {
         let note_pos = self.notes.iter().position(|n| n.id == id).unwrap();
-        //let line_format = LineFormat::new(&vec![self.notes[note_pos].clone()], args);
-        // if !args.flag_c {
-        //     self.print_header(&line_format);
-        // }
-        // self.notes[note_pos].print(&line_format, args);
-        // println!("{}", self.notes[note_pos].body);
+        let mut t = term::stdout().unwrap();
 
-        // single item printer (cond)
-        println!("id: {}\ntitle: {}\nstatus: {}\nlast touched: {}", self.notes[note_pos].id, self.notes[note_pos].title, self.notes[note_pos].status, self.notes[note_pos].last_touched);
+        match args.flag_c {
+            // single item printer (cond)
+            true => {
+                // println!("id: {}\ntitle: {}\nstatus: {}\nlast touched: {}", self.notes[note_pos].id, self.notes[note_pos].title, self.notes[note_pos].status, self.notes[note_pos].last_touched)
+                t.attr(Bold).unwrap();
+                (write!(t, "id: ")).unwrap();
+                t.reset().unwrap();
+                (write!(t, "{}\n", self.notes[note_pos].id)).unwrap();
+                t.attr(Bold).unwrap();
+                (write!(t, "title: ")).unwrap();
+                t.reset().unwrap();
+                (write!(t, "{}\n", self.notes[note_pos].title)).unwrap();
+                t.attr(Bold).unwrap();
+                (write!(t, "status: ")).unwrap();
+                t.reset().unwrap();
+                (write!(t, "{}\n", self.notes[note_pos].status)).unwrap();
+                t.attr(Bold).unwrap();
+                (write!(t, "last touched: ")).unwrap();
+                t.reset().unwrap();
+                (write!(t, "{}\n", self.notes[note_pos].last_touched)).unwrap();
+            },
+            false => {
+                t.attr(Bold).unwrap();
+                (write!(t, "id\n--\n")).unwrap();
+                t.reset().unwrap();
+                (write!(t, "{}\n", self.notes[note_pos].id)).unwrap();
+                t.attr(Bold).unwrap();
+                (write!(t, "title\n-----\n")).unwrap();
+                t.reset().unwrap();
+                (write!(t, "{}\n", self.notes[note_pos].title)).unwrap();
+                t.attr(Bold).unwrap();
+                (write!(t, "status\n------\n")).unwrap();
+                t.reset().unwrap();
+                (write!(t, "{}\n", self.notes[note_pos].status)).unwrap();
+                t.attr(Bold).unwrap();
+                (write!(t, "last touched\n------------\n")).unwrap();
+                t.reset().unwrap();
+                (write!(t, "{}\n", self.notes[note_pos].last_touched)).unwrap();
+            }
+        };
 
         // expanded?
-        // println!("id\n--\n{}\ntitle\n-----\n{}\nstatus\n------\n{}\nlast touched\n------------\n{}", self.notes[note_pos].id, self.notes[note_pos].title, self.notes[note_pos].status, self.notes[note_pos].last_touched);
+        // 
 
         // body
         if !self.notes[note_pos].body.is_empty() {
-            println!("body: {}", self.notes[note_pos].body);
-            // println!("body\n----\n{}", self.notes[note_pos].body);
+            match args.flag_c {
+                true => {
+                    // println!("body: {}", self.notes[note_pos].body)
+                    t.attr(Bold).unwrap();
+                    (write!(t, "body: ")).unwrap();
+                    t.reset().unwrap();
+                    (write!(t, "{}\n", self.notes[note_pos].body)).unwrap();
+                },
+                false => {
+                    // println!("body: {}", self.notes[note_pos].body)
+                    t.attr(Bold).unwrap();
+                    (write!(t, "body\n----\n")).unwrap();
+                    t.reset().unwrap();
+                    (write!(t, "{}\n", self.notes[note_pos].body)).unwrap();
+                }
+            };
+            // 
         }
     }
 
@@ -711,6 +765,8 @@ fn main() {
             profile.notes[i].decrypt(key.as_slice()); // add real password later!
         }
     }
+
+    // let mut t = term::stdout().unwrap();
 
     // see what root command was used
     if args.cmd_add {
