@@ -1,3 +1,5 @@
+#![allow(unstable)]
+
 extern crate libc;
 extern crate time;
 extern crate docopt;
@@ -62,13 +64,13 @@ mod c {
     }
 }
 
-fn termsize() -> Option<uint> {
+fn termsize() -> Option<usize> {
     let ws = unsafe { c::dimensions() };
     if ws.ws_col == 0 || ws.ws_row == 0 {
         None
     }
     else {
-        Some(ws.ws_col as uint)
+        Some(ws.ws_col as usize)
     }
 }
 
@@ -120,7 +122,7 @@ struct Args {
     arg_pattern: String,
     flag_encrypted: bool,
     flag_c: bool,
-    flag_l: Vec<uint>,
+    flag_l: Vec<usize>,
     arg_title: String,
     flag_started: bool,
     flag_urgent: bool,
@@ -128,7 +130,7 @@ struct Args {
     flag_b: Vec<String>,
     flag_editor: bool,
     cmd__: bool,
-    arg_id: Vec<uint>,
+    arg_id: Vec<usize>,
     flag_h: bool,
     flag_v: bool
 }
@@ -160,14 +162,14 @@ static URGENT: &'static str = "Urgent";
 
 #[derive(Copy)]
 pub struct LineFormat {
-    colsep: uint,
-    id_width: uint,
-    title_width: uint,
-    status_width: uint,
-    touched_width: uint
+    colsep: usize,
+    id_width: usize,
+    title_width: usize,
+    status_width: usize,
+    touched_width: usize
 }
 
-fn add_if(x: uint, y: uint, a: bool) -> uint {
+fn add_if(x: usize, y: usize, a: bool) -> usize {
     match a {
         true => x+y,
         false => x
@@ -208,20 +210,20 @@ impl LineFormat {
         }
 
         // debuging
-        // println!("console width: {}, line width: {}", console_width, line_format.line_width());
-        // println!("id: {}, title: {}, status: {}, last: {}", line_format.id_width, line_format.title_width, line_format.status_width, line_format.touched_width);
+        println!("console width: {}, line width: {}", console_width, line_format.line_width());
+        println!("id: {}, title: {}, status: {}, last: {}", line_format.id_width, line_format.title_width, line_format.status_width, line_format.touched_width);
 
         line_format
     }
 
-    fn line_width(&self) -> uint {
+    fn line_width(&self) -> usize {
         self.id_width+self.title_width+self.status_width+self.touched_width+(3*self.colsep)
     }
 }
 
 #[derive(RustcDecodable, Clone)]
 pub struct ThecaItem {
-    id: uint,
+    id: usize,
     title: String,
     status: String,
     body: String,
@@ -233,11 +235,11 @@ impl Encodable for ThecaItem {
         match *self {
             ThecaItem{id: ref p_id, title: ref p_title, status: ref p_status, body: ref p_body, last_touched: ref p_last_touched} => {
                 encoder.emit_struct("ThecaItem", 1, |encoder| {
-                    try!(encoder.emit_struct_field("id", 0u, |encoder| p_id.encode(encoder)));
-                    try!(encoder.emit_struct_field("title", 1u, |encoder| p_title.encode(encoder)));
-                    try!(encoder.emit_struct_field("status", 2u, |encoder| p_status.encode(encoder)));
-                    try!(encoder.emit_struct_field("body", 3u, |encoder| p_body.encode(encoder)));
-                    try!(encoder.emit_struct_field("last_touched", 4u, |encoder| p_last_touched.encode(encoder)));
+                    try!(encoder.emit_struct_field("id", 0, |encoder| p_id.encode(encoder)));
+                    try!(encoder.emit_struct_field("title", 1, |encoder| p_title.encode(encoder)));
+                    try!(encoder.emit_struct_field("status", 2, |encoder| p_status.encode(encoder)));
+                    try!(encoder.emit_struct_field("body", 3, |encoder| p_body.encode(encoder)));
+                    try!(encoder.emit_struct_field("last_touched", 4, |encoder| p_last_touched.encode(encoder)));
                     Ok(())
                 })
             }
@@ -370,8 +372,8 @@ impl Encodable for ThecaProfile {
         match *self {
             ThecaProfile{encrypted: ref p_encrypted, notes: ref p_notes} => {
                 encoder.emit_struct("ThecaProfile", 1, |encoder| {
-                    try!(encoder.emit_struct_field("encrypted", 0u, |encoder| p_encrypted.encode(encoder)));
-                    try!(encoder.emit_struct_field("notes", 1u, |encoder| p_notes.encode(encoder)));
+                    try!(encoder.emit_struct_field("encrypted", 0, |encoder| p_encrypted.encode(encoder)));
+                    try!(encoder.emit_struct_field("notes", 1, |encoder| p_notes.encode(encoder)));
                     Ok(())
                 })
             }
@@ -418,7 +420,7 @@ impl ThecaProfile {
                     };
                     let decoded: ThecaProfile = match json::decode(contents.as_slice()) {
                         Ok(s) => s,
-                        Err(e) => panic!("Invalid JSON in {}. {}", profile_path.display(), e)
+                        Err(_) => panic!("Invalid JSON in {}", profile_path.display())
                     };
                     Ok(decoded)
                 }
@@ -465,14 +467,10 @@ impl ThecaProfile {
             body: a_body,
             last_touched: strftime("%F %T", &now_utc()).ok().unwrap()
         });
-        if self.encrypted {
-            let item_pos = self.notes.iter().position(|n| n.id == new_id).unwrap();
-            self.notes[item_pos].encrypt("weewoo");
-        }
         println!("added");
     }
 
-    fn delete_item(&mut self, id: uint) {
+    fn delete_item(&mut self, id: usize) {
         let remove = self.notes.iter()
             .position(|n| n.id == id)
             .map(|e| self.notes.remove(e))
@@ -487,8 +485,8 @@ impl ThecaProfile {
         }
     }
 
-    fn edit_item(&mut self, id: uint, args: &Args) {
-        let item_pos: uint = self.notes.iter()
+    fn edit_item(&mut self, id: usize, args: &Args) {
+        let item_pos: usize = self.notes.iter()
             .position(|n| n.id == id)
             .unwrap();
         if !args.arg_title.is_empty() {
@@ -532,7 +530,7 @@ impl ThecaProfile {
         );
     }
 
-    fn view_item(&mut self, id: uint, args: &Args, body: bool) {
+    fn view_item(&mut self, id: usize, args: &Args, body: bool) {
         let note_pos = self.notes.iter().position(|n| n.id == id).unwrap();
         let line_format = LineFormat::new(&vec![self.notes[note_pos].clone()], args);
         if !args.flag_c {
@@ -581,7 +579,7 @@ impl ThecaProfile {
     }
 }
 
-fn format_field(value: &String, width: uint, truncate: bool) -> String {
+fn format_field(value: &String, width: usize, truncate: bool) -> String {
     if value.len() > width && width > 3 && truncate {
         format!("{: <1$.1$}...", value, width-3)
     } else {
@@ -660,6 +658,13 @@ fn main() {
         Err(e) => panic!("{}", e)
     };
 
+    // decrypt notes
+    if profile.encrypted {
+        for i in range(0, profile.notes.len()) {
+            profile.notes[i].decrypt("DEBUG"); // add real password later!
+        }
+    }
+
     // see what root command was used
     if args.cmd_add {
         // add a item
@@ -699,7 +704,7 @@ fn main() {
         // search for an item
         match args.cmd_search {
             true => profile.search_items(args.arg_pattern.as_slice(), false, &args),
-            false => profile.search_items(args.arg_pattern.as_slice(), true, &args)
+            false => profile.search_items(&args.arg_pattern[], true, &args)
         }
     } else if !args.cmd_view && !args.arg_id.is_empty() {
         // view short item
@@ -707,6 +712,13 @@ fn main() {
     } else if !args.cmd_new_profile {
         // this should be the default for nothing
         profile.list_items(&args);
+    }
+
+    // it seems like this should only be done if we are saving the obj back to file...?
+    if profile.encrypted {
+        for i in range(0, profile.notes.len()) {
+            profile.notes[i].encrypt("DEBUG"); // add real password later!
+        }
     }
 
     // save altered profile back to disk
