@@ -82,8 +82,7 @@ Usage:
     theca new-profile <name> [--encrypted]
     theca [options] [-c] [-l LIMIT]
     theca [options] [-c] <id>
-    theca [options] [-c] search <pattern>
-    theca [options] [-c] search-body <pattern>
+    theca [options] [-c] search [--body] <pattern>
     theca [options] add <title> [--started|--urgent] [-b BODY|--editor|-]
     theca [options] edit <id> [<title>] [--started|--urgent|--none] [-b BODY|--editor|-]
     theca [options] del <id>
@@ -112,7 +111,7 @@ struct Args {
     flag_p: Vec<String>,
     cmd_new_profile: bool,
     cmd_search: bool,
-    cmd_search_body: bool,
+    flag_body: bool,
     cmd_add: bool,
     cmd_edit: bool,
     cmd_del: bool,
@@ -695,9 +694,9 @@ fn main() {
     } else if args.flag_v {
         // display theca version
         println!("theca v{}", VERSION);
-    } else if args.cmd_search || args.cmd_search_body {
+    } else if args.cmd_search {
         // search for an item
-        match args.cmd_search {
+        match args.flag_body {
             true => profile.search_items(args.arg_pattern.as_slice(), false, &args),
             false => profile.search_items(args.arg_pattern.as_slice(), true, &args)
         }
