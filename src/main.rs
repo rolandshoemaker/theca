@@ -96,19 +96,20 @@ Options:
     -p PROFILE, --profile PROFILE       Specify non-default profile.
     -c, --condensed                     Use the condensed print format.
     --encrypted                         Encrypt new profile, theca will prompt you for a key.
-    -l LIMIT                            Limit listing to LIMIT items.
-    --none                              No status.
+    -k KEY, --key KEY                   Encryption key to use from encryption/decryption.
+    -l LIMIT                            Limit listing to LIMIT items [default: 0].
+    --none                              No status. (default)
     --started                           Started status.
     --urgent                            Urgent status.
-    -b BODY                             Set body of the item to BODY.
+    -b BODY                             Set body of the item from BODY.
     --editor                            Drop to $EDITOR to set/edit item body.
-    -                                   Set body of the item to STDIN.
+    -                                   Set body of the item from STDIN.
 ";
 
 #[derive(RustcDecodable, Show)]
 struct Args {
-    flag_profiles_folder: Vec<String>,
-    flag_p: Vec<String>,
+    flag_profiles_folder: String,
+    flag_p: String,
     cmd_new_profile: bool,
     cmd_search: bool,
     flag_body: bool,
@@ -119,13 +120,14 @@ struct Args {
     arg_name: String,
     arg_pattern: String,
     flag_encrypted: bool,
+    flag_key: String,
     flag_c: bool,
-    flag_l: Vec<usize>,
+    flag_l: usize,
     arg_title: String,
     flag_started: bool,
     flag_urgent: bool,
     flag_none: bool,
-    flag_b: Vec<String>,
+    flag_b: String,
     flag_editor: bool,
     cmd__: bool,
     arg_id: Vec<usize>,
@@ -138,7 +140,7 @@ impl Args {
         match getenv("THECA_DEFAULT_PROFILE") {
             Some(val) => {
                 if self.flag_p.is_empty() {
-                    self.flag_p[0] = val;
+                    self.flag_p = val;
                 }
             },
             None => ()
@@ -146,7 +148,7 @@ impl Args {
         match getenv("THECA_PROFILE_FOLDER") {
             Some(val) => {
                 if self.flag_profiles_folder.is_empty() {
-                    self.flag_profiles_folder[0] = val;
+                    self.flag_profiles_folder = val;
                 }
             },
             None => ()
@@ -393,7 +395,7 @@ impl ThecaProfile {
 
             // set profile name
             if !args.flag_p.is_empty() {
-                profile_path.push(args.flag_p[0].to_string() + ".json");
+                profile_path.push(args.flag_p.to_string() + ".json");
             } else {
                 profile_path.push("default".to_string() + ".json");
             }
@@ -432,7 +434,7 @@ impl ThecaProfile {
 
         // set file name
         if !args.flag_p.is_empty() {
-            profile_path.push(args.flag_p[0].to_string() + ".json");
+            profile_path.push(args.flag_p.to_string() + ".json");
         } else if args.cmd_new_profile {
             profile_path.push(args.arg_name.to_string() + ".json");
         } else {
@@ -505,7 +507,7 @@ impl ThecaProfile {
         } else if !args.flag_b.is_empty() || args.flag_editor || args.cmd__ {
             // change body
             if !args.flag_b.is_empty() {
-                self.notes[item_pos].body = args.flag_b[0].to_string();
+                self.notes[item_pos].body = args.flag_b.to_string();
             } else if args.flag_editor {
                 self.notes[item_pos].body = drop_to_editor(&self.notes[item_pos].body);
             } else if args.cmd__ {
@@ -547,8 +549,8 @@ impl ThecaProfile {
             if !args.flag_c {
                 self.print_header(&line_format);
             }
-            let list_range = if !args.flag_l.is_empty() {
-                args.flag_l[0]
+            let list_range = if args.flag_l > 0 {
+                args.flag_l
             } else {
                 self.notes.len()
             };
@@ -609,7 +611,7 @@ fn format_field(value: &String, width: usize, truncate: bool) -> String {
 
 fn find_profile_folder(args: &Args) -> Path {
     if !args.flag_profiles_folder.is_empty() {
-        Path::new(args.flag_profiles_folder[0].to_string())
+        Path::new(args.flag_profiles_folder.to_string())
     } else {
         match homedir() {
             Some(ref p) => p.join(".theca"),
@@ -678,10 +680,24 @@ fn main() {
         Err(e) => panic!("{}", e)
     };
 
+    // enc key
+    let key = match profile.encrypted {
+        false => "".to_string(),
+        true => {
+            if args.flag_key.is_empty() {
+                print!("Key: ");
+                let mut stdin = std::io::stdio::stdin();
+                stdin.read_line().unwrap().trim().to_string() // should check against using `-`, this could get messy...
+            } else {
+                args.flag_key.clone()
+            }
+        }
+    };
+    println!("KAKA {}", key);
     // decrypt notes
     if profile.encrypted {
         for i in range(0, profile.notes.len()) {
-            profile.notes[i].decrypt("DEBUG"); // add real password later!
+            profile.notes[i].decrypt(key.as_slice()); // add real password later!
         }
     }
 
@@ -697,7 +713,7 @@ fn main() {
             NOSTATUS.to_string()
         };
         let body = if !args.flag_b.is_empty() {
-            args.flag_b[0].to_string()
+            args.flag_b.to_string()
         } else if args.flag_editor {
             drop_to_editor(&"".to_string())
         } else if args.cmd__ {
@@ -734,7 +750,7 @@ fn main() {
     // it seems like this should only be done if we are saving the obj back to file...?
     if profile.encrypted {
         for i in range(0, profile.notes.len()) {
-            profile.notes[i].encrypt("DEBUG"); // add real password later!
+            profile.notes[i].encrypt(key.as_slice()); // add real password later!
         }
     }
 
