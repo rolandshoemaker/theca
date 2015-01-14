@@ -10,9 +10,10 @@ extern crate term;
 
 // std lib imports...
 use std::os::{getenv, homedir};
+use std::io::fs;
 use std::io::fs::PathExtensions;
 use std::io::process::{InheritFd};
-use std::io::{File, Truncate, Write, Read, Open, ReadWrite, TempDir, Command, SeekSet, stdin};
+use std::io::{File, Truncate, Write, Read, Open, ReadWrite, TempDir, Command, SeekSet, stdin, USER_RWX};
 use std::iter::{repeat};
 
 // random things
@@ -80,8 +81,7 @@ static USAGE: &'static str = "
 theca - cli note taking tool
 
 Usage:
-    theca new-profile
-    theca new-profile <name> [--encrypted]
+    theca [options] new-profile <name> [--encrypted]
     theca [options] [-c] [-l LIMIT] [--reverse]
     theca [options] [-c] <id>
     theca [options] [-c] search [--body] [-l LIMIT] [--reverse] <pattern>
@@ -387,6 +387,14 @@ impl Encodable for ThecaProfile {
 impl ThecaProfile {
     fn new(args: &Args) -> Result<ThecaProfile, String> {
         if args.cmd_new_profile {
+            let profile_path = find_profile_folder(args);
+            // if the folder doesn't exist, make it yo!
+            if !profile_path.exists() {
+                match fs::mkdir(&profile_path, USER_RWX) {
+                    Ok(_) => (),
+                    Err(e) => panic!("Creating folder {} failed. {}", profile_path.display(), e.desc)
+                };
+            }
             Ok(ThecaProfile {
                 encrypted: args.flag_encrypted,
                 notes: vec![]
@@ -435,9 +443,10 @@ impl ThecaProfile {
         let mut profile_path = find_profile_folder(args);
 
         // set file name
+        // this needs some work.
         if !args.flag_p.is_empty() {
             profile_path.push(args.flag_p.to_string() + ".json");
-        } else if args.cmd_new_profile {
+        } else if args.cmd_new_profile && !args.arg_name.is_empty() {
             profile_path.push(args.arg_name.to_string() + ".json");
         } else {
             profile_path.push("default".to_string() + ".json");
@@ -644,7 +653,10 @@ impl ThecaProfile {
                 for i in range(0, notes.len()) {
                     notes[i].print(&line_format, args, !args.flag_body);
                     if args.flag_body {
-                        println!("\t{}", notes[i].body);
+                        // println!("\t{}", notes[i].body);
+                        for l in notes[i].body.lines() {
+                            println!("\t{}", l);
+                        }
                     }
                 }
             }, true => {
@@ -752,6 +764,7 @@ fn main() {
         }
     };
     // decrypt notes
+    // so i wonder if decrypting the entire struct in memory is a good idea... lets see ._.
     if profile.encrypted {
         for i in range(0, profile.notes.len()) {
             profile.notes[i].decrypt(key.as_slice()); // add real password later!
