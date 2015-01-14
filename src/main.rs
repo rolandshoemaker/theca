@@ -31,8 +31,6 @@ use crypto::pbkdf2::{pbkdf2};
 use crypto::hmac::{Hmac};
 use crypto::sha2::{Sha256};
 use crypto::digest::Digest;
-// use rustc_serialize::base64::{ToBase64, FromBase64, MIME};
-
 
 pub use self::libc::{
     STDIN_FILENO,
@@ -40,7 +38,7 @@ pub use self::libc::{
     STDERR_FILENO
 };
 
-static VERSION:  &'static str = "0.4.0-dev";
+static VERSION:  &'static str = "0.4.5-dev";
 
 mod c {
     extern crate libc;
@@ -101,7 +99,8 @@ Options:
     -p PROFILE, --profile PROFILE       Specify non-default profile.
     -c, --condensed                     Use the condensed print format.
     --encrypted                         Specifies using an encrypted profile.
-    -k KEY, --key KEY                   Encryption key to use for encryption/decryption, .
+    -k KEY, --key KEY                   Encryption key to use for encryption/decryption,
+                                        a prompt will be displayed if no key is provided.
     -l LIMIT                            Limit listing to LIMIT items [default: 0].
     --none                              No status. (default)
     --started                           Started status.
@@ -219,7 +218,6 @@ impl LineFormat {
         // check to make sure our new line format isn't bigger than the console
         let line_width = line_format.line_width();
         if line_width > console_width && (line_format.title_width-(line_width-console_width)) > 0 {
-            println!("line too long! ({})", line_width);
             line_format.title_width -= line_width - console_width;
         }
 
@@ -293,7 +291,7 @@ impl ThecaItem {
     }
 }
 
-// ALL the encryption functions ^_^
+// ALL the encryption functions thx rust-crypto ^_^
 fn encrypt(data: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
     let mut encryptor = aes::cbc_encryptor(
             aes::KeySize::KeySize256,
@@ -345,6 +343,7 @@ fn decrypt(encrypted_data: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, symm
 }
 
 fn password_to_key(p: &str) -> (Vec<u8>, Vec<u8>) {
+    // yehh.... idk
     let mut salt_sha = Sha256::new();
     salt_sha.input(p.as_bytes());
     let salt = salt_sha.result_str();
@@ -486,7 +485,9 @@ impl ThecaProfile {
         }
 
         // write buffer to file
-        file.write(buffer.as_slice()).ok().expect(format!("Couldn't write to {}", profile_path.display()).as_slice());
+        file.write(buffer.as_slice())
+            .ok()
+            .expect(format!("Couldn't write to {}",profile_path.display()).as_slice());
     }
 
     fn add_item(&mut self, args: &Args) {
@@ -701,8 +702,10 @@ impl ThecaProfile {
             Err(e) => panic!("{}", e)
         };
         let notes: Vec<ThecaItem> = match args.flag_body {
-            true => self.notes.iter().filter(|n| re.is_match(n.body.as_slice())).map(|n| n.clone()).collect(),
-            false => self.notes.iter().filter(|n| re.is_match(n.title.as_slice())).map(|n| n.clone()).collect()
+            true => self.notes.iter().filter(|n| re.is_match(n.body.as_slice()))
+                              .map(|n| n.clone()).collect(),
+            false => self.notes.iter().filter(|n| re.is_match(n.title.as_slice()))
+                               .map(|n| n.clone()).collect()
         };
         let line_format = LineFormat::new(&notes, args);
         if !args.flag_c {
@@ -719,7 +722,8 @@ impl ThecaProfile {
                         }
                     }
                 }
-            }, true => {
+            },
+            true => {
                 for i in range(0, notes.len()).rev() {
                     notes[i].print(&line_format, args, !args.flag_body);
                     if args.flag_body {
@@ -829,12 +833,10 @@ fn main() {
         profile.add_item(&args);
     } else if args.cmd_edit {
         // edit a item
-        let id = args.arg_id[0];
-        profile.edit_item(id, &args);
+        profile.edit_item(args.arg_id[0], &args);
     } else if args.cmd_del {
         // delete a item
-        let id = args.arg_id[0];
-        profile.delete_item(id);
+        profile.delete_item(args.arg_id[0]);
     } else if args.flag_v {
         // display theca version
         println!("theca v{}", VERSION);
