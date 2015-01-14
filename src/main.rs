@@ -215,8 +215,8 @@ impl LineFormat {
         }
 
         // debuging
-        println!("console width: {}, line width: {}", console_width, line_format.line_width());
-        println!("id: {}, title: {}, status: {}, last: {}", line_format.id_width, line_format.title_width, line_format.status_width, line_format.touched_width);
+        // println!("console width: {}, line width: {}", console_width, line_format.line_width());
+        // println!("id: {}, title: {}, status: {}, last: {}", line_format.id_width, line_format.title_width, line_format.status_width, line_format.touched_width);
 
         line_format
     }
@@ -718,7 +718,6 @@ fn drop_to_editor(contents: &String) -> String {
     };
     // setup temporary file to write/read
     let tmppath = tmpdir.path().join(get_time().sec.to_string());
-    // let tmppath = tmpdir.path().join("something-unique");
     let mut tmpfile = match File::open_mode(&tmppath, Open, ReadWrite) {
         Ok(f) => f,
         Err(e) => panic!("File error: {}", e)
