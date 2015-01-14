@@ -33,6 +33,7 @@ use crypto::sha2::{Sha256};
 use crypto::digest::Digest;
 // use rustc_serialize::base64::{ToBase64, FromBase64, MIME};
 
+
 pub use self::libc::{
     STDIN_FILENO,
     STDOUT_FILENO,
@@ -414,6 +415,9 @@ impl ThecaProfile {
                     }
                 }
                 true => {
+                    if args.cmd_info {
+                        println!("# Loading {}", profile_path.display());
+                    }
                     let mut file = match File::open_mode(&profile_path, Open, Read) {
                         Ok(t) => t,
                         Err(e) => panic!("{}", e.desc)
@@ -422,7 +426,7 @@ impl ThecaProfile {
                         Ok(t) => t,
                         Err(e) => panic!("{}", e.desc)
                     };
-                    // decrypt the file
+                    // decrypt the file if flag_encrypted
                     let contents = match args.flag_encrypted {
                         false => String::from_utf8(contents_buf).unwrap(),
                         true => {
@@ -565,6 +569,9 @@ impl ThecaProfile {
 
     fn stats(&mut self) {
         let mut t = term::stdout().unwrap();
+        let no_s = self.notes.iter().filter(|n| n.status == "").count();
+        let started_s = self.notes.iter().filter(|n| n.status == "Started").count();
+        let urgent_s = self.notes.iter().filter(|n| n.status == "Urgent").count();
         t.attr(Bold).unwrap();
         (write!(t, "encrypted: ")).unwrap();
         t.reset().unwrap();
@@ -573,6 +580,10 @@ impl ThecaProfile {
         (write!(t, "notes: ")).unwrap();
         t.reset().unwrap();
         (write!(t, "{}\n", self.notes.len())).unwrap();
+        t.attr(Bold).unwrap();
+        (write!(t, "statuses:")).unwrap();
+        t.reset().unwrap();
+        (write!(t, " [none: {}, started: {}, urgent: {}]\n", no_s, started_s, urgent_s)).unwrap();
     }
 
     fn print_header(&mut self, line_format: &LineFormat) {
@@ -812,9 +823,7 @@ fn main() {
         Err(e) => panic!("{}", e)
     };
 
-    // let mut t = term::stdout().unwrap();
-
-    // see what root command was used
+    // what root command was used
     if args.cmd_add {
         // add a item
         profile.add_item(&args);
@@ -836,6 +845,7 @@ fn main() {
         // view short item
         profile.view_item(args.arg_id[0], &args);
     } else if args.cmd_info {
+
         profile.stats();
     } else if !args.cmd_new_profile {
         // this should be the default for nothing
