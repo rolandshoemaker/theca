@@ -31,7 +31,7 @@ use crypto::pbkdf2::{pbkdf2};
 use crypto::hmac::{Hmac};
 use crypto::sha2::{Sha256};
 use crypto::digest::Digest;
-use rustc_serialize::base64::{ToBase64, FromBase64, MIME};
+// use rustc_serialize::base64::{ToBase64, FromBase64, MIME};
 
 pub use self::libc::{
     STDIN_FILENO,
@@ -83,7 +83,7 @@ theca - cli note taking tool
 
 Usage:
     theca [options] info
-    theca [options] new-profile <name> [--encrypted]
+    theca [options] new-profile <name>
     theca [options] [-c] [-l LIMIT] [--reverse]
     theca [options] [-c] <id>
     theca [options] [-c] search [--body] [-l LIMIT] [--reverse] <pattern>
@@ -99,8 +99,8 @@ Options:
     --profiles-folder PROFILEPATH       Path to folder container profile.json files.
     -p PROFILE, --profile PROFILE       Specify non-default profile.
     -c, --condensed                     Use the condensed print format.
-    --encrypted                         Encrypt new profile, theca will prompt you for a key.
-    -k KEY, --key KEY                   Encryption key to use from encryption/decryption.
+    --encrypted                         Specifies using an encrypted profile.
+    -k KEY, --key KEY                   Encryption key to use for encryption/decryption, .
     -l LIMIT                            Limit listing to LIMIT items [default: 0].
     --none                              No status. (default)
     --started                           Started status.
@@ -263,54 +263,6 @@ impl Encodable for ThecaItem {
 }
 
 impl ThecaItem {
-    fn encrypt(&mut self, password: &str) {
-        let (key, iv) = password_to_key(password);
-        self.title = cipher_to_str(&encrypt(
-            self.title.as_bytes(),
-            key.as_slice(),
-            iv.as_slice()
-        ).ok().unwrap());
-        self.body = cipher_to_str(&encrypt(
-            self.body.as_bytes(),
-            key.as_slice(),
-            iv.as_slice()
-        ).ok().unwrap());
-        self.status = cipher_to_str(&encrypt(
-            self.status.as_bytes(),
-            key.as_slice(),
-            iv.as_slice()
-        ).ok().unwrap());
-        self.last_touched = cipher_to_str(&encrypt(
-            self.last_touched.as_bytes(),
-            key.as_slice(),
-            iv.as_slice()
-        ).ok().unwrap());
-    }
-
-    fn decrypt(&mut self, password: &str) {
-        let (key, iv) = password_to_key(password);
-        self.title = String::from_utf8(decrypt(
-            cipher_to_buf(&self.title).as_slice(),
-            key.as_slice(),
-            iv.as_slice()
-        ).ok().unwrap()).unwrap();
-        self.body = String::from_utf8(decrypt(
-            cipher_to_buf(&self.body).as_slice(),
-            key.as_slice(),
-            iv.as_slice()
-        ).ok().unwrap()).unwrap();
-        self.status = String::from_utf8(decrypt(
-            cipher_to_buf(&self.status).as_slice(),
-            key.as_slice(),
-            iv.as_slice()
-        ).ok().unwrap()).unwrap();
-        self.last_touched = String::from_utf8(decrypt(
-            cipher_to_buf(&self.last_touched).as_slice(),
-            key.as_slice(),
-            iv.as_slice()
-        ).ok().unwrap()).unwrap();
-    }
-
     fn print(&self, line_format: &LineFormat, args: &Args, body_ind: bool) {
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         print!("{}", format_field(&self.id.to_string(), line_format.id_width, false));
@@ -406,16 +358,6 @@ fn password_to_key(p: &str) -> (Vec<u8>, Vec<u8>) {
     (key, iv)
 }
 
-// for saving cipher
-fn cipher_to_str(buf: &Vec<u8>) -> String {
-    buf.to_base64(MIME)
-}
-
-// for decrypting cipher
-fn cipher_to_buf(cipher: &String) -> Vec<u8> {
-    cipher.as_bytes().from_base64().unwrap()
-}
-
 #[derive(RustcDecodable)]
 pub struct ThecaProfile {
     encrypted: bool,
@@ -476,9 +418,21 @@ impl ThecaProfile {
                         Ok(t) => t,
                         Err(e) => panic!("{}", e.desc)
                     };
-                    let contents = match file.read_to_string() {
+                    let contents_buf = match file.read_to_end() {
                         Ok(t) => t,
                         Err(e) => panic!("{}", e.desc)
+                    };
+                    // decrypt the file
+                    let contents = match args.flag_encrypted {
+                        false => String::from_utf8(contents_buf).unwrap(),
+                        true => {
+                            let (key, iv) = password_to_key(args.flag_key.as_slice());
+                                String::from_utf8(decrypt(
+                                    contents_buf.as_slice(),
+                                    key.as_slice(),
+                                    iv.as_slice()
+                                ).ok().unwrap()).unwrap()
+                        }
                     };
                     let decoded: ThecaProfile = match json::decode(contents.as_slice()) {
                         Ok(s) => s,
@@ -517,20 +471,47 @@ impl ThecaProfile {
             self.encode(&mut encoder).ok().expect("JSON encoding error.");
         }
 
+        // encrypt json if its an encrypted profile
+        if self.encrypted {
+            let (key, iv) = password_to_key(args.flag_key.as_slice());
+            buffer = encrypt(
+                buffer.as_slice(),
+                key.as_slice(),
+                iv.as_slice()
+            ).ok().unwrap();
+        }
+
         // write buffer to file
         file.write(buffer.as_slice()).ok().expect(format!("Couldn't write to {}", profile_path.display()).as_slice());
     }
 
-    fn add_item(&mut self, a_title: String, a_status: String, a_body: String) {
+    fn add_item(&mut self, args: &Args) {
+        let title = args.arg_title.replace("\n", "").to_string();
+        let status = if args.flag_started {
+            STARTED.to_string()
+        } else if args.flag_urgent {
+            URGENT.to_string()
+        } else {
+            NOSTATUS.to_string()
+        };
+        let body = if !args.flag_b.is_empty() {
+            args.flag_b.to_string()
+        } else if args.flag_editor {
+            drop_to_editor(&"".to_string())
+        } else if args.cmd__ {
+            stdin().lock().read_to_string().unwrap()
+        } else {
+            "".to_string()
+        };
         let new_id = match self.notes.last() {
             Some(n) => n.id,
             None => 0
         };
         self.notes.push(ThecaItem {
             id: new_id + 1,
-            title: a_title,
-            status: a_status,
-            body: a_body,
+            title: title,
+            status: status,
+            body: body,
             last_touched: strftime("%F %T", &now_utc()).ok().unwrap()
         });
         println!("added");
@@ -804,6 +785,15 @@ fn drop_to_editor(contents: &String) -> String {
     }
 }
 
+fn get_password() -> String {
+    // should really turn off terminal echo...
+    print!("Key: ");
+    let mut stdin = std::io::stdio::stdin();
+    // since this only reads one line of stdin it could still feasibly
+    // be used with `-` to set note body?
+    stdin.read_line().unwrap().trim().to_string()
+}
+
 fn main() {
     let mut args: Args = Docopt::new(USAGE)
                             .and_then(|d| d.decode())
@@ -812,56 +802,22 @@ fn main() {
     // is anything stored in the ENV?
     args.check_env();
 
+    if args.flag_encrypted && args.flag_key.is_empty() {
+        args.flag_key = get_password();
+    }
+
     // Setup a ThecaProfile struct
     let mut profile = match ThecaProfile::new(&args) {
         Ok(p) => p,
         Err(e) => panic!("{}", e)
     };
 
-    // enc key
-    let key = match profile.encrypted && !args.cmd_info {
-        false => "".to_string(),
-        true => {
-            if args.flag_key.is_empty() {
-                print!("Key: ");
-                let mut stdin = std::io::stdio::stdin();
-                stdin.read_line().unwrap().trim().to_string() // should check against using `-`, this could get messy...
-            } else {
-                args.flag_key.clone()
-            }
-        }
-    };
-    // decrypt notes
-    // so i wonder if decrypting the entire struct in memory is a good idea... lets see ._.
-    if profile.encrypted && !args.cmd_info {
-        for i in range(0, profile.notes.len()) {
-            profile.notes[i].decrypt(key.as_slice()); // add real password later!
-        }
-    }
-
     // let mut t = term::stdout().unwrap();
 
     // see what root command was used
     if args.cmd_add {
         // add a item
-        let title = args.arg_title.replace("\n", "").to_string();
-        let status = if args.flag_started {
-            STARTED.to_string()
-        } else if args.flag_urgent {
-            URGENT.to_string()
-        } else {
-            NOSTATUS.to_string()
-        };
-        let body = if !args.flag_b.is_empty() {
-            args.flag_b.to_string()
-        } else if args.flag_editor {
-            drop_to_editor(&"".to_string())
-        } else if args.cmd__ {
-            stdin().lock().read_to_string().unwrap()
-        } else {
-            "".to_string()
-        };
-        profile.add_item(title, status, body);
+        profile.add_item(&args);
     } else if args.cmd_edit {
         // edit a item
         let id = args.arg_id[0];
@@ -884,13 +840,6 @@ fn main() {
     } else if !args.cmd_new_profile {
         // this should be the default for nothing
         profile.list_items(&args);
-    }
-
-    // it seems like this should only be done if we are saving the obj back to file...?
-    if profile.encrypted && !args.cmd_info {
-        for i in range(0, profile.notes.len()) {
-            profile.notes[i].encrypt(key.as_slice()); // add real password later!
-        }
     }
 
     // save altered profile back to disk
