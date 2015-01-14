@@ -13,7 +13,8 @@ use std::os::{getenv, homedir};
 use std::io::fs;
 use std::io::fs::PathExtensions;
 use std::io::process::{InheritFd};
-use std::io::{File, Truncate, Write, Read, Open, ReadWrite, TempDir, Command, SeekSet, stdin, USER_RWX};
+use std::io::{File, Truncate, Write, Read, Open, ReadWrite,
+              TempDir, Command, SeekSet, stdin, USER_RWX};
 use std::iter::{repeat};
 
 // random things
@@ -189,16 +190,23 @@ impl LineFormat {
         };
 
         // set minimums (header length) + colsep, this should probably do some other stuff?
-        let mut line_format = LineFormat {colsep: 2, id_width:0, title_width:0, status_width:0, touched_width:0};
+        let mut line_format = LineFormat {colsep: 2, id_width:0, title_width:0,
+                                          status_width:0, touched_width:0};
 
         // find length of longest items to format line
-        line_format.id_width = items.iter().max_by(|n| n.id.to_string().len()).unwrap().id.to_string().len();
+        line_format.id_width = items.iter().max_by(|n| n.id.to_string().len())
+                                    .unwrap().id.to_string().len();
         if line_format.id_width < 2 {line_format.id_width = 2;}
-        line_format.title_width = add_if(items.iter().max_by(|n| n.title.len()).unwrap().title.len(), 4, items.iter().any(|n| !n.body.is_empty()));
+        line_format.title_width = add_if(items.iter().max_by(|n| n.title.len())
+                                              .unwrap().title.len(), 4, items.iter()
+                                              .any(|n| !n.body.is_empty()));
         if line_format.title_width < 5 {line_format.title_width = 5;}
         if !args.flag_c {
-            line_format.status_width = items.iter().max_by(|n| n.status.len()).unwrap().status.len();
-            if line_format.status_width > 0 && line_format.status_width < 7 {line_format.status_width = 7;}
+            line_format.status_width = items.iter().max_by(|n| n.status.len()).unwrap()
+                                            .status.len();
+            if line_format.status_width > 0 && line_format.status_width < 7 {
+                line_format.status_width = 7;
+            }
         } else {
             line_format.status_width = 1;
         }
@@ -213,10 +221,6 @@ impl LineFormat {
             println!("line too long! ({})", line_width);
             line_format.title_width -= line_width - console_width;
         }
-
-        // debuging
-        // println!("console width: {}, line width: {}", console_width, line_format.line_width());
-        // println!("id: {}, title: {}, status: {}, last: {}", line_format.id_width, line_format.title_width, line_format.status_width, line_format.touched_width);
 
         line_format
     }
@@ -238,13 +242,19 @@ pub struct ThecaItem {
 impl Encodable for ThecaItem {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), E::Error> {
         match *self {
-            ThecaItem{id: ref p_id, title: ref p_title, status: ref p_status, body: ref p_body, last_touched: ref p_last_touched} => {
+            ThecaItem{id: ref p_id, title: ref p_title, status: ref p_status, body: ref p_body,
+                      last_touched: ref p_last_touched} => {
                 encoder.emit_struct("ThecaItem", 1, |encoder| {
-                    try!(encoder.emit_struct_field("id", 0, |encoder| p_id.encode(encoder)));
-                    try!(encoder.emit_struct_field("title", 1, |encoder| p_title.encode(encoder)));
-                    try!(encoder.emit_struct_field("status", 2, |encoder| p_status.encode(encoder)));
-                    try!(encoder.emit_struct_field("body", 3, |encoder| p_body.encode(encoder)));
-                    try!(encoder.emit_struct_field("last_touched", 4, |encoder| p_last_touched.encode(encoder)));
+                    try!(encoder.emit_struct_field("id", 0, |encoder| p_id
+                                .encode(encoder)));
+                    try!(encoder.emit_struct_field("title", 1, |encoder| p_title
+                                .encode(encoder)));
+                    try!(encoder.emit_struct_field("status", 2, |encoder| p_status
+                                .encode(encoder)));
+                    try!(encoder.emit_struct_field("body", 3, |encoder| p_body
+                                .encode(encoder)));
+                    try!(encoder.emit_struct_field("last_touched", 4, |encoder| p_last_touched
+                                .encode(encoder)));
                     Ok(())
                 })
             }
@@ -255,18 +265,50 @@ impl Encodable for ThecaItem {
 impl ThecaItem {
     fn encrypt(&mut self, password: &str) {
         let (key, iv) = password_to_key(password);
-        self.title = cipher_to_str(&encrypt(self.title.as_bytes(), key.as_slice(), iv.as_slice()).ok().unwrap());
-        self.body = cipher_to_str(&encrypt(self.body.as_bytes(), key.as_slice(), iv.as_slice()).ok().unwrap());
-        self.status = cipher_to_str(&encrypt(self.status.as_bytes(), key.as_slice(), iv.as_slice()).ok().unwrap());
-        self.last_touched = cipher_to_str(&encrypt(self.last_touched.as_bytes(), key.as_slice(), iv.as_slice()).ok().unwrap());
+        self.title = cipher_to_str(&encrypt(
+            self.title.as_bytes(),
+            key.as_slice(),
+            iv.as_slice()
+        ).ok().unwrap());
+        self.body = cipher_to_str(&encrypt(
+            self.body.as_bytes(),
+            key.as_slice(),
+            iv.as_slice()
+        ).ok().unwrap());
+        self.status = cipher_to_str(&encrypt(
+            self.status.as_bytes(),
+            key.as_slice(),
+            iv.as_slice()
+        ).ok().unwrap());
+        self.last_touched = cipher_to_str(&encrypt(
+            self.last_touched.as_bytes(),
+            key.as_slice(),
+            iv.as_slice()
+        ).ok().unwrap());
     }
 
     fn decrypt(&mut self, password: &str) {
         let (key, iv) = password_to_key(password);
-        self.title = String::from_utf8(decrypt(cipher_to_buf(&self.title).as_slice(), key.as_slice(), iv.as_slice()).ok().unwrap()).unwrap();
-        self.body = String::from_utf8(decrypt(cipher_to_buf(&self.body).as_slice(), key.as_slice(), iv.as_slice()).ok().unwrap()).unwrap();
-        self.status = String::from_utf8(decrypt(cipher_to_buf(&self.status).as_slice(), key.as_slice(), iv.as_slice()).ok().unwrap()).unwrap();
-        self.last_touched = String::from_utf8(decrypt(cipher_to_buf(&self.last_touched).as_slice(), key.as_slice(), iv.as_slice()).ok().unwrap()).unwrap();
+        self.title = String::from_utf8(decrypt(
+            cipher_to_buf(&self.title).as_slice(),
+            key.as_slice(),
+            iv.as_slice()
+        ).ok().unwrap()).unwrap();
+        self.body = String::from_utf8(decrypt(
+            cipher_to_buf(&self.body).as_slice(),
+            key.as_slice(),
+            iv.as_slice()
+        ).ok().unwrap()).unwrap();
+        self.status = String::from_utf8(decrypt(
+            cipher_to_buf(&self.status).as_slice(),
+            key.as_slice(),
+            iv.as_slice()
+        ).ok().unwrap()).unwrap();
+        self.last_touched = String::from_utf8(decrypt(
+            cipher_to_buf(&self.last_touched).as_slice(),
+            key.as_slice(),
+            iv.as_slice()
+        ).ok().unwrap()).unwrap();
     }
 
     fn print(&self, line_format: &LineFormat, args: &Args, body_ind: bool) {
@@ -274,13 +316,21 @@ impl ThecaItem {
         print!("{}", format_field(&self.id.to_string(), line_format.id_width, false));
         print!("{}", column_seperator);
         if !self.body.is_empty() && body_ind {
-            print!("{}", format_field(&("(+) ".to_string()+self.title.as_slice()), line_format.title_width, true));
+            print!("{}", format_field(
+                &("(+) ".to_string()+self.title.as_slice()),
+                line_format.title_width,
+                true)
+            );
         } else {
             print!("{}", format_field(&self.title, line_format.title_width, true));
         }
         print!("{}", column_seperator);
         if args.flag_c && self.status.len() > 0 {
-            print!("{}", format_field(&self.status.chars().nth(0).unwrap().to_string(), line_format.status_width, false));
+            print!("{}", format_field(
+                &self.status.chars().nth(0).unwrap().to_string(),
+                line_format.status_width,
+                false)
+            );
         } else {
             print!("{}", format_field(&self.status, line_format.status_width, false));
         }
@@ -310,7 +360,7 @@ fn encrypt(data: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, symmetricciphe
 
         match result {
             BufferResult::BufferUnderflow => break,
-            BufferResult::BufferOverflow => { }
+            BufferResult::BufferOverflow => {}
         }
     }
 
@@ -334,7 +384,7 @@ fn decrypt(encrypted_data: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, symm
         final_result.push_all(write_buffer.take_read_buffer().take_remaining());
         match result {
             BufferResult::BufferUnderflow => break,
-            BufferResult::BufferOverflow => { }
+            BufferResult::BufferOverflow => {}
         }
     }
 
