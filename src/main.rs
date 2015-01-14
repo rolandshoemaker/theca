@@ -19,7 +19,7 @@ use std::iter::{repeat};
 // random things
 use regex::{Regex};
 use rustc_serialize::{Encodable, Decodable, Encoder, json};
-use time::{now_utc, strftime};
+use time::{now_utc, strftime, get_time};
 use docopt::Docopt;
 use term::attr::Attr::{Bold};
 
@@ -576,10 +576,12 @@ impl ThecaProfile {
                 (write!(t, "title: ")).unwrap();
                 t.reset().unwrap();
                 (write!(t, "{}\n", self.notes[note_pos].title)).unwrap();
-                t.attr(Bold).unwrap();
-                (write!(t, "status: ")).unwrap();
-                t.reset().unwrap();
-                (write!(t, "{}\n", self.notes[note_pos].status)).unwrap();
+                if !self.notes[note_pos].status.is_empty() {
+                    t.attr(Bold).unwrap();
+                    (write!(t, "status: ")).unwrap();
+                    t.reset().unwrap();
+                    (write!(t, "{}\n", self.notes[note_pos].status)).unwrap();
+                }
                 t.attr(Bold).unwrap();
                 (write!(t, "last touched: ")).unwrap();
                 t.reset().unwrap();
@@ -589,19 +591,21 @@ impl ThecaProfile {
                 t.attr(Bold).unwrap();
                 (write!(t, "id\n--\n")).unwrap();
                 t.reset().unwrap();
-                (write!(t, "{}\n", self.notes[note_pos].id)).unwrap();
+                (write!(t, "{}\n\n", self.notes[note_pos].id)).unwrap();
                 t.attr(Bold).unwrap();
                 (write!(t, "title\n-----\n")).unwrap();
                 t.reset().unwrap();
-                (write!(t, "{}\n", self.notes[note_pos].title)).unwrap();
-                t.attr(Bold).unwrap();
-                (write!(t, "status\n------\n")).unwrap();
-                t.reset().unwrap();
-                (write!(t, "{}\n", self.notes[note_pos].status)).unwrap();
+                (write!(t, "{}\n\n", self.notes[note_pos].title)).unwrap();
+                if !self.notes[note_pos].status.is_empty() {
+                    t.attr(Bold).unwrap();
+                    (write!(t, "status\n------\n")).unwrap();
+                    t.reset().unwrap();
+                    (write!(t, "{}\n\n", self.notes[note_pos].status)).unwrap();
+                }
                 t.attr(Bold).unwrap();
                 (write!(t, "last touched\n------------\n")).unwrap();
                 t.reset().unwrap();
-                (write!(t, "{}\n", self.notes[note_pos].last_touched)).unwrap();
+                (write!(t, "{}\n\n", self.notes[note_pos].last_touched)).unwrap();
             }
         };
 
@@ -618,7 +622,7 @@ impl ThecaProfile {
                     t.attr(Bold).unwrap();
                     (write!(t, "body\n----\n")).unwrap();
                     t.reset().unwrap();
-                    (write!(t, "{}\n", self.notes[note_pos].body)).unwrap();
+                    (write!(t, "{}\n\n", self.notes[note_pos].body)).unwrap();
                 }
             };
         }
@@ -713,7 +717,8 @@ fn drop_to_editor(contents: &String) -> String {
         Err(e) => panic!("couldn't create temporary directory: {}", e)
     };
     // setup temporary file to write/read
-    let tmppath = tmpdir.path().join("something-unique");
+    let tmppath = tmpdir.path().join(get_time().sec.to_string());
+    // let tmppath = tmpdir.path().join("something-unique");
     let mut tmpfile = match File::open_mode(&tmppath, Open, ReadWrite) {
         Ok(f) => f,
         Err(e) => panic!("File error: {}", e)
