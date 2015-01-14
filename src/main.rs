@@ -21,7 +21,7 @@ use regex::{Regex};
 use rustc_serialize::{Encodable, Decodable, Encoder, json};
 use time::{now_utc, strftime};
 use docopt::Docopt;
-use term::attr::Attr::Bold;
+use term::attr::Attr::{Bold};
 
 // crypto imports
 use crypto::{symmetriccipher, buffer, aes, blockmodes};
@@ -81,6 +81,7 @@ static USAGE: &'static str = "
 theca - cli note taking tool
 
 Usage:
+    theca [options] info
     theca [options] new-profile <name> [--encrypted]
     theca [options] [-c] [-l LIMIT] [--reverse]
     theca [options] [-c] <id>
@@ -134,7 +135,8 @@ struct Args {
     cmd__: bool,
     arg_id: Vec<usize>,
     flag_h: bool,
-    flag_v: bool
+    flag_v: bool,
+    cmd_info: bool
 }
 
 impl Args {
@@ -530,6 +532,18 @@ impl ThecaProfile {
         println!("edited")
     }
 
+    fn stats(&mut self) {
+        let mut t = term::stdout().unwrap();
+        t.attr(Bold).unwrap();
+        (write!(t, "encrypted: ")).unwrap();
+        t.reset().unwrap();
+        (write!(t, "{}\n", self.encrypted)).unwrap();
+        t.attr(Bold).unwrap();
+        (write!(t, "notes: ")).unwrap();
+        t.reset().unwrap();
+        (write!(t, "{}\n", self.notes.len())).unwrap();
+    }
+
     fn print_header(&mut self, line_format: &LineFormat) {
         let mut t = term::stdout().unwrap();
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
@@ -751,7 +765,7 @@ fn main() {
     };
 
     // enc key
-    let key = match profile.encrypted {
+    let key = match profile.encrypted && !args.cmd_info {
         false => "".to_string(),
         true => {
             if args.flag_key.is_empty() {
@@ -765,7 +779,7 @@ fn main() {
     };
     // decrypt notes
     // so i wonder if decrypting the entire struct in memory is a good idea... lets see ._.
-    if profile.encrypted {
+    if profile.encrypted && !args.cmd_info {
         for i in range(0, profile.notes.len()) {
             profile.notes[i].decrypt(key.as_slice()); // add real password later!
         }
@@ -811,13 +825,15 @@ fn main() {
     } else if !args.arg_id.is_empty() {
         // view short item
         profile.view_item(args.arg_id[0], &args);
+    } else if args.cmd_info {
+        profile.stats();
     } else if !args.cmd_new_profile {
         // this should be the default for nothing
         profile.list_items(&args);
     }
 
     // it seems like this should only be done if we are saving the obj back to file...?
-    if profile.encrypted {
+    if profile.encrypted && !args.cmd_info {
         for i in range(0, profile.notes.len()) {
             profile.notes[i].encrypt(key.as_slice()); // add real password later!
         }
