@@ -385,7 +385,6 @@ impl Encodable for ThecaProfile {
 }
 
 impl ThecaProfile {
-    // this should be a method of ThecaProfile
     fn new(args: &Args) -> Result<ThecaProfile, String> {
         if args.cmd_new_profile {
             Ok(ThecaProfile {
@@ -796,10 +795,6 @@ fn main() {
     } else if args.cmd_search {
         // search for an item
         profile.search_items(args.arg_pattern.as_slice(), &args);
-        // match args.flag_body {
-        //     true => profile.search_items(args.arg_pattern.as_slice(), false, &args),
-        //     false => profile.search_items(args.arg_pattern.as_slice(), true, &args)
-        // }
     } else if !args.arg_id.is_empty() {
         // view short item
         profile.view_item(args.arg_id[0], &args);
