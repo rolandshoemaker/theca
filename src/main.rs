@@ -192,7 +192,7 @@ impl LineFormat {
         // find length of longest items to format line
         line_format.id_width = items.iter().max_by(|n| n.id.to_string().len()).unwrap().id.to_string().len();
         if line_format.id_width < 2 {line_format.id_width = 2;}
-        line_format.title_width = items.iter().max_by(|n| add_if(n.title.len(), 4, n.body.len().ne(&0))).unwrap().title.len();
+        line_format.title_width = add_if(items.iter().max_by(|n| n.title.len()).unwrap().title.len(), 4, items.iter().any(|n| !n.body.is_empty()));
         if line_format.title_width < 5 {line_format.title_width = 5;}
         if !args.flag_c {
             line_format.status_width = items.iter().max_by(|n| n.status.len()).unwrap().status.len();
@@ -208,6 +208,7 @@ impl LineFormat {
         // check to make sure our new line format isn't bigger than the console
         let line_width = line_format.line_width();
         if line_width > console_width && (line_format.title_width-(line_width-console_width)) > 0 {
+            println!("line too long! ({})", line_width);
             line_format.title_width -= line_width - console_width;
         }
 
