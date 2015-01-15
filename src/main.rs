@@ -273,19 +273,15 @@ impl Encodable for ThecaItem {
 }
 
 impl ThecaItem {
-    fn print(&self, line_format: &LineFormat, args: &Args, body_ind: bool) {
+    fn print(&self, line_format: &LineFormat, args: &Args) {
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         print!("{}", format_field(&self.id.to_string(), line_format.id_width, false));
         print!("{}", column_seperator);
-        if !self.body.is_empty() && body_ind {
-            print!("{}", format_field(
-                &("(+) ".to_string()+self.title.as_slice()),
-                line_format.title_width,
-                true)
-            );
-        } else {
-            print!("{}", format_field(&self.title, line_format.title_width, true));
+        let mut title_str = self.title.to_string();
+        if !self.body.is_empty() && !args.flag_body {
+            title_str = "(+) ".to_string()+title_str.as_slice();
         }
+        print!("{}", format_field(&title_str, line_format.title_width, true));
         print!("{}", column_seperator);
         if args.flag_c && self.status.len() > 0 {
             print!("{}", format_field(
@@ -696,11 +692,11 @@ impl ThecaProfile {
             match args.flag_reverse {
                 false => {
                     for i in range(0, list_range) {
-                        self.notes[i].print(&line_format, args, true);
+                        self.notes[i].print(&line_format, args);
                     }
                 }, true => {
                     for i in range(0, list_range).rev() {
-                        self.notes[i].print(&line_format, args, true);
+                        self.notes[i].print(&line_format, args);
                     }
                 }
             };
@@ -725,7 +721,7 @@ impl ThecaProfile {
         match args.flag_reverse {
             false => {
                 for i in range(0, notes.len()) {
-                    notes[i].print(&line_format, args, !args.flag_body);
+                    notes[i].print(&line_format, args);
                     if args.flag_body {
                         // println!("\t{}", notes[i].body);
                         for l in notes[i].body.lines() {
@@ -736,7 +732,7 @@ impl ThecaProfile {
             },
             true => {
                 for i in range(0, notes.len()).rev() {
-                    notes[i].print(&line_format, args, !args.flag_body);
+                    notes[i].print(&line_format, args);
                     if args.flag_body {
                         println!("\t{}", notes[i].body);
                     }
