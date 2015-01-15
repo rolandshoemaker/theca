@@ -196,6 +196,7 @@ impl LineFormat {
         // if longest id is 1 char and we are using extended printing
         // then set id_width to 2 so "id" isn't truncated
         if line_format.id_width < 2 && !args.flag_c {line_format.id_width = 2;}
+
         // get length of longest title string
         line_format.title_width = items.iter().max_by(|n| n.title.len()).unwrap().title.len();
         // if any item has a body assume the longest one does too so add 4
@@ -204,22 +205,22 @@ impl LineFormat {
         // if using extended and longest title is less than 5 chars
         // set title_width to 5 so "title" won't be truncated
         if line_format.title_width < 5 && !args.flag_c {line_format.title_width = 5;}
-        // silly status length stuff
-        if items.iter().any(|n| n.status.len() > 0) {
-            // at least one item has a status
-            if !args.flag_c {
-                // expanded print, get longest status (7 or 6 / started or urgent)
-                line_format.status_width = items.iter().max_by(|n| n.status.len()).unwrap()
-                                                .status.len()
-            } else {
-                // only display first char of status (e.g. S or U) for condensed print
-                line_format.status_width = 1;
-            }
-        } else {
+
+        // sstatus length stuff
+        line_format.status_width = match items.iter().any(|n| n.status.len() > 0) {
+            true => {
+                match args.flag_c {
+                    // expanded print, get longest status (7 or 6 / started or urgent)
+                    true => items.iter().max_by(|n| n.status.len()).unwrap().status.len(),
+                    // only display first char of status (e.g. S or U) for condensed print
+                    false => 1
+                }
+            },
             // no items have statuses so truncate column
-            line_format.status_width = 1;
-        }
-        // last_touched has fixed string length so no need for fancy iter stuff
+            false => 0
+        };
+
+        // last_touched has fixed string length so no need for silly iter stuff
         line_format.touched_width = match args.flag_c {
             true => 10, // condensed
             false => 19 // expanded
