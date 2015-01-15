@@ -239,36 +239,13 @@ impl LineFormat {
     }
 }
 
-#[derive(RustcDecodable, Clone)]
+#[derive(RustcDecodable, RustcEncodable, Clone)]
 pub struct ThecaItem {
     id: usize,
     title: String,
     status: String,
     body: String,
     last_touched: String
-}
-
-impl Encodable for ThecaItem {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), E::Error> {
-        match *self {
-            ThecaItem{id: ref p_id, title: ref p_title, status: ref p_status, body: ref p_body,
-                      last_touched: ref p_last_touched} => {
-                encoder.emit_struct("ThecaItem", 1, |encoder| {
-                    try!(encoder.emit_struct_field("id", 0, |encoder| p_id
-                                .encode(encoder)));
-                    try!(encoder.emit_struct_field("title", 1, |encoder| p_title
-                                .encode(encoder)));
-                    try!(encoder.emit_struct_field("status", 2, |encoder| p_status
-                                .encode(encoder)));
-                    try!(encoder.emit_struct_field("body", 3, |encoder| p_body
-                                .encode(encoder)));
-                    try!(encoder.emit_struct_field("last_touched", 4, |encoder| p_last_touched
-                                .encode(encoder)));
-                    Ok(())
-                })
-            }
-        }
-    }
 }
 
 impl ThecaItem {
@@ -297,32 +274,10 @@ impl ThecaItem {
     }
 }
 
-#[derive(RustcDecodable)]
+#[derive(RustcDecodable, RustcEncodable)]
 pub struct ThecaProfile {
     encrypted: bool,
     notes: Vec<ThecaItem>
-}
-
-impl Encodable for ThecaProfile {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), E::Error> {
-        match *self {
-            ThecaProfile{encrypted: ref p_encrypted, notes: ref p_notes} => {
-                encoder.emit_struct("ThecaProfile", 1, |encoder| {
-                    try!(encoder.emit_struct_field(
-                        "encrypted",
-                        0,
-                        |encoder| p_encrypted.encode(encoder)
-                    ));
-                    try!(encoder.emit_struct_field(
-                        "notes",
-                        1,
-                        |encoder| p_notes.encode(encoder)
-                    ));
-                    Ok(())
-                })
-            }
-        }
-    }
 }
 
 impl ThecaProfile {
