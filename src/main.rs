@@ -174,13 +174,6 @@ pub struct LineFormat {
     touched_width: usize
 }
 
-fn add_if(x: usize, y: usize, a: bool) -> usize {
-    match a {
-        true => x+y,
-        false => x
-    }
-}
-
 impl LineFormat {
     fn new(items: &Vec<ThecaItem>, args: &Args) -> LineFormat {
         // get termsize :>
@@ -197,9 +190,11 @@ impl LineFormat {
         line_format.id_width = items.iter().max_by(|n| n.id.to_string().len())
                                     .unwrap().id.to_string().len();
         if line_format.id_width < 2 {line_format.id_width = 2;}
-        line_format.title_width = add_if(items.iter().max_by(|n| n.title.len())
-                                              .unwrap().title.len(), 4, items.iter()
-                                              .any(|n| !n.body.is_empty()));
+        let title_width = items.iter().max_by(|n| n.title.len()).unwrap().title.len();
+        line_format.title_width = match items.iter().any(|n| !n.body.is_empty()) {
+            true => title_width+4,
+            false => title_width
+        };
         if line_format.title_width < 5 {line_format.title_width = 5;}
         if !args.flag_c {
             line_format.status_width = items.iter().max_by(|n| n.status.len()).unwrap()
