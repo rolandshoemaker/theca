@@ -38,6 +38,7 @@ pub mod crypt;
 
 static VERSION:  &'static str = "0.4.5-dev";
 
+// c calls for TIOCGWINSZ
 mod c {
     extern crate libc;
     pub use self::libc::{
@@ -65,8 +66,9 @@ mod c {
     }
 }
 
+// unsafety wrapper
 fn termsize() -> Option<usize> {
-    let ws = unsafe { c::dimensions() };
+    let ws = unsafe {c::dimensions()};
     if ws.ws_col == 0 || ws.ws_row == 0 {
         None
     }
@@ -185,6 +187,7 @@ impl LineFormat {
             true => 1,
             false => 2
         };
+
         let mut line_format = LineFormat {colsep: colsep, id_width:0, title_width:0,
                                           status_width:0, touched_width:0};
 
@@ -209,9 +212,9 @@ impl LineFormat {
             true => {
                 match args.flag_c {
                     // expanded print, get longest status (7 or 6 / started or urgent)
-                    true => items.iter().max_by(|n| n.status.len()).unwrap().status.len(),
+                    false => items.iter().max_by(|n| n.status.len()).unwrap().status.len(),
                     // only display first char of status (e.g. S or U) for condensed print
-                    false => 1
+                    true => 1
                 }
             },
             // no items have statuses so truncate column
@@ -259,15 +262,7 @@ impl ThecaItem {
         }
         print!("{}", format_field(&title_str, line_format.title_width, true));
         print!("{}", column_seperator);
-        if args.flag_c && self.status.len() > 0 {
-            print!("{}", format_field(
-                &self.status.chars().nth(0).unwrap().to_string(),
-                line_format.status_width,
-                false)
-            );
-        } else {
-            print!("{}", format_field(&self.status, line_format.status_width, false));
-        }
+        print!("{}", format_field(&self.status, line_format.status_width, false));
         print!("{}", column_seperator);
         print!("{}", format_field(&self.last_touched, line_format.touched_width, false));
         print!("\n");
