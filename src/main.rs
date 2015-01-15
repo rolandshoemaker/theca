@@ -182,29 +182,44 @@ impl LineFormat {
             Some(width) => width,
         };
 
-        // set minimums (header length) + colsep, this should probably do some other stuff?
-        let mut line_format = LineFormat {colsep: 2, id_width:0, title_width:0,
+        // set colsep
+        let colsep = match args.flag_c {
+            true => 1,
+            false => 2
+        };
+        let mut line_format = LineFormat {colsep: colsep, id_width:0, title_width:0,
                                           status_width:0, touched_width:0};
 
-        // find length of longest items to format line
+        // get length of longest id string
         line_format.id_width = items.iter().max_by(|n| n.id.to_string().len())
                                     .unwrap().id.to_string().len();
-        if line_format.id_width < 2 {line_format.id_width = 2;}
-        let title_width = items.iter().max_by(|n| n.title.len()).unwrap().title.len();
-        line_format.title_width = match items.iter().any(|n| !n.body.is_empty()) {
-            true => title_width+4,
-            false => title_width
-        };
-        if line_format.title_width < 5 {line_format.title_width = 5;}
-        if !args.flag_c {
-            line_format.status_width = items.iter().max_by(|n| n.status.len()).unwrap()
-                                            .status.len();
-            if line_format.status_width > 0 && line_format.status_width < 7 {
-                line_format.status_width = 7;
+        // if longest id is 1 char and we are using extended printing
+        // then set id_width to 2 so "id" isn't truncated
+        if line_format.id_width < 2 && !args.flag_c {line_format.id_width = 2;}
+        // get length of longest title string
+        line_format.title_width = items.iter().max_by(|n| n.title.len()).unwrap().title.len();
+        // if any item has a body assume the longest one does too so add 4
+        // to allow for use of "(+) " to indicate note body
+        if items.iter().any(|n| n.body.len() > 0) {line_format.title_width += 4;}
+        // if using extended and longest title is less than 5 chars
+        // set title_width to 5 so "title" won't be truncated
+        if line_format.title_width < 5 && !args.flag_c {line_format.title_width = 5;}
+        // silly status length stuff
+        if items.iter().any(|n| n.status.len() > 0) {
+            // at least one item has a status
+            if !args.flag_c {
+                // expanded print, get longest status (7 or 6 / started or urgent)
+                line_format.status_width = items.iter().max_by(|n| n.status.len()).unwrap()
+                                                .status.len()
+            } else {
+                // only display first char of status (e.g. S or U) for condensed print
+                line_format.status_width = 1;
             }
         } else {
+            // no items have statuses so truncate column
             line_format.status_width = 1;
         }
+        // last_touched has fixed string length so no need for fancy iter stuff
         line_format.touched_width = match args.flag_c {
             true => 10, // condensed
             false => 19 // expanded
@@ -213,6 +228,7 @@ impl LineFormat {
         // check to make sure our new line format isn't bigger than the console
         let line_width = line_format.line_width();
         if line_width > console_width && (line_format.title_width-(line_width-console_width)) > 0 {
+            // if it is trim text from the title width since it is always the biggest...
             line_format.title_width -= line_width - console_width;
         }
 
