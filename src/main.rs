@@ -308,7 +308,7 @@ impl error::FromError<ParseError> for ThecaError {
 
 impl error::FromError<FromUtf8Error> for ThecaError {
     fn from_error(err: FromUtf8Error) -> ThecaError {
-        ThecaError { kind: GenericError, desc: "Error parsing invalid UTF8 characters.".to_string(), detail: Some(err.to_string()) }
+        ThecaError { kind: GenericError, desc: format!("Error parsing file, {}.", err), detail: None }
     }
 }
 
@@ -330,7 +330,7 @@ impl error::FromError<core::fmt::Error> for ThecaError {
     }
 }
 
-macro_rules! generic_fail {
+macro_rules! specific_fail {
     ($short:expr) => ({
         return Err(::std::error::FromError::from_error(
             ThecaError {
@@ -369,9 +369,9 @@ impl ThecaProfile {
             match profile_path.is_file() {
                 false => {
                     if profile_path.exists() {
-                        generic_fail!(format!("{} is not a file.", profile_path.display()));
+                        specific_fail!(format!("{} is not a file.", profile_path.display()));
                     } else {
-                        generic_fail!(format!("{} does not exist.", profile_path.display()));
+                        specific_fail!(format!("{} does not exist.", profile_path.display()));
                     }
                 }
                 true => {
@@ -394,7 +394,7 @@ impl ThecaProfile {
                     };
                     let decoded: ThecaProfile = match json::decode(contents.as_slice()) {
                         Ok(s) => s,
-                        Err(_) => generic_fail!(format!("Invalid JSON in {}", profile_path.display()))
+                        Err(_) => specific_fail!(format!("Invalid JSON in {}", profile_path.display()))
                     };
                     Ok(decoded)
                 }
@@ -494,7 +494,7 @@ impl ThecaProfile {
         let item_pos: usize = match self.notes.iter()
                                               .position(|n| n.id == id) {
                 Some(i) => i,
-                None => generic_fail!(format!("note id#{} doesn't exist.", id))
+                None => specific_fail!(format!("note id#{} doesn't exist.", id))
             };
         if !args.arg_title.is_empty() {
             // change title
@@ -538,7 +538,7 @@ impl ThecaProfile {
     fn print_header(&mut self, line_format: &LineFormat) -> Result<(), ThecaError> {
         let mut t = match term::stdout() {
             Some(t) => t,
-            None => generic_fail!("could not retrieve Standard Output.".to_string())
+            None => specific_fail!("could not retrieve Standard Output.".to_string())
         };
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
@@ -561,7 +561,7 @@ impl ThecaProfile {
     fn view_item(&mut self, id: usize, args: &Args) -> Result<(), ThecaError> {
         let note_pos = match self.notes.iter().position(|n| n.id == id) {
             Some(i) => i,
-            None => generic_fail!(format!("note #{} doesn't exist.", id))
+            None => specific_fail!(format!("note #{} doesn't exist.", id))
         };
         let color = termsize() > 0;
 
@@ -639,7 +639,7 @@ impl ThecaProfile {
     fn search_items(&mut self, regex_pattern: &str, args: &Args) -> Result<(), ThecaError> {
         let re = match Regex::new(regex_pattern) {
             Ok(r) => r,
-            Err(e) => generic_fail!(format!("regex error: {}.", e))
+            Err(e) => specific_fail!(format!("regex error: {}.", e))
         };
         let notes: Vec<ThecaItem> = match args.flag_body {
             true => self.notes.iter().filter(|n| re.is_match(n.body.as_slice()))
@@ -679,7 +679,7 @@ impl ThecaProfile {
 fn pretty_line(bold: &str, plain: &String, color: bool) -> Result<(), ThecaError> {
     let mut t = match term::stdout() {
         Some(t) => t,
-        None => generic_fail!("could not retrieve Standard Output.".to_string())
+        None => specific_fail!("could not retrieve Standard Output.".to_string())
     };
     if color {try!(t.attr(Bold));}
     try!(write!(t, "{}", bold.to_string()));
@@ -708,14 +708,8 @@ fn find_profile_folder(args: &Args) -> Path {
 }
 
 fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
-    // this could probably be prettyified tbh!
-
     // setup temporary directory
     let tmpdir = try!(TempDir::new("theca"));
-    // let tmpdir = match TempDir::new("theca") {
-    //     Ok(dir) => dir,
-    //     Err(e) => generic_fail!(format!("couldn't create temporary directory: {}", e))
-    // };
     // setup temporary file to write/read
     let tmppath = tmpdir.path().join(get_time().sec.to_string());
     let mut tmpfile = try!(File::open_mode(&tmppath, Open, ReadWrite));
@@ -727,7 +721,7 @@ fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
         None => {
             match getenv("EDITOR") {
                 Some(val) => val,
-                None => generic_fail!("neither $VISUAL nor $EDITOR is set.".to_string())
+                None => specific_fail!("neither $VISUAL nor $EDITOR is set.".to_string())
             }
         }
     };
@@ -747,7 +741,7 @@ fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
             try!(tmpfile.seek(0, SeekSet));
             Ok(try!(tmpfile.read_to_string()))
         }
-        false => generic_fail!("The editor broke... I think".to_string())
+        false => specific_fail!("The editor broke... I think".to_string())
     }
 }
 
@@ -788,6 +782,8 @@ fn theca() -> Result<(), ThecaError> {
     }
 
     let mut profile = try!(ThecaProfile::new(&args));
+
+    // this could def be better
     // what root command was used
     if args.cmd_add {
         // add a item
