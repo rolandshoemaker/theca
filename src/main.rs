@@ -1,5 +1,6 @@
 #![allow(unstable)]
 
+extern crate core;
 extern crate libc;
 extern crate time;
 extern crate docopt;
@@ -323,6 +324,12 @@ impl error::FromError<docopt::Error> for ThecaError {
     }
 }
 
+impl error::FromError<core::fmt::Error> for ThecaError {
+    fn from_error(err: core::fmt::Error) -> ThecaError {
+        ThecaError { kind: GenericError, desc: "Formatting error.".to_string(), detail: None }
+    }
+}
+
 macro_rules! generic_fail {
     ($short:expr) => ({
         return Err(::std::error::FromError::from_error(
@@ -416,7 +423,7 @@ impl ThecaProfile {
         let mut buffer: Vec<u8> = Vec::new();
         {
             let mut encoder = json::PrettyEncoder::new(&mut buffer);
-            self.encode(&mut encoder).ok().expect("JSON encoding error.");
+            try!(self.encode(&mut encoder));
         }
 
         // encrypt json if its an encrypted profile
@@ -430,9 +437,7 @@ impl ThecaProfile {
         }
 
         // write buffer to file
-        file.write(buffer.as_slice())
-            .ok()
-            .expect(format!("Couldn't write to {}",profile_path.display()).as_slice());
+        try!(file.write(buffer.as_slice()));
 
         Ok(())
     }
@@ -466,7 +471,7 @@ impl ThecaProfile {
             body: body,
             last_touched: try!(strftime("%F %T", &now_utc()))
         });
-        println!("added");
+        println!("note added");
         Ok(())
     }
 
@@ -477,10 +482,10 @@ impl ThecaProfile {
             .is_some();
         match remove {
             true => {
-                println!("removed");
+                println!("note removed");
             }
             false => {
-                println!("not found");
+                println!("note #{} not found", id);
             }
         }
     }
@@ -533,7 +538,7 @@ impl ThecaProfile {
     fn print_header(&mut self, line_format: &LineFormat) -> Result<(), ThecaError> {
         let mut t = match term::stdout() {
             Some(t) => t,
-            None => generic_fail!("Could not retrieve Standard Output.".to_string())
+            None => generic_fail!("could not retrieve Standard Output.".to_string())
         };
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
@@ -556,7 +561,7 @@ impl ThecaProfile {
     fn view_item(&mut self, id: usize, args: &Args) -> Result<(), ThecaError> {
         let note_pos = match self.notes.iter().position(|n| n.id == id) {
             Some(i) => i,
-            None => generic_fail!(format!("Note #{} doesn't exist.", id))
+            None => generic_fail!(format!("note #{} doesn't exist.", id))
         };
         let color = termsize() > 0;
 
@@ -634,7 +639,7 @@ impl ThecaProfile {
     fn search_items(&mut self, regex_pattern: &str, args: &Args) -> Result<(), ThecaError> {
         let re = match Regex::new(regex_pattern) {
             Ok(r) => r,
-            Err(e) => generic_fail!(format!("Regex error: {}", e))
+            Err(e) => generic_fail!(format!("regex error: {}.", e))
         };
         let notes: Vec<ThecaItem> = match args.flag_body {
             true => self.notes.iter().filter(|n| re.is_match(n.body.as_slice()))
@@ -674,7 +679,7 @@ impl ThecaProfile {
 fn pretty_line(bold: &str, plain: &String, color: bool) -> Result<(), ThecaError> {
     let mut t = match term::stdout() {
         Some(t) => t,
-        None => generic_fail!("Could not retrieve Standard Output.".to_string())
+        None => generic_fail!("could not retrieve Standard Output.".to_string())
     };
     if color {try!(t.attr(Bold));}
     try!(write!(t, "{}", bold.to_string()));
@@ -714,7 +719,7 @@ fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
     // setup temporary file to write/read
     let tmppath = tmpdir.path().join(get_time().sec.to_string());
     let mut tmpfile = try!(File::open_mode(&tmppath, Open, ReadWrite));
-    tmpfile.write_line(contents.as_slice()).ok().expect("Failed to write line to temp file");
+    try!(tmpfile.write_line(contents.as_slice()));
     // we now have a temp file, at `tmppath`, that contains `contents`
     // first we need to know which onqe
     let editor = match getenv("VISUAL") {
@@ -722,7 +727,7 @@ fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
         None => {
             match getenv("EDITOR") {
                 Some(val) => val,
-                None => generic_fail!("Neither $VISUAL nor $EDITOR is set.".to_string())
+                None => generic_fail!("neither $VISUAL nor $EDITOR is set.".to_string())
             }
         }
     };
@@ -735,11 +740,11 @@ fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
     editor_command.stdout(InheritFd(STDOUT_FILENO));
     editor_command.stderr(InheritFd(STDERR_FILENO));
     let editor_proc = editor_command.spawn();
-    match editor_proc.ok().expect("Couldn't launch editor").wait().is_ok() {
+    match try!(editor_proc).wait().is_ok() {
         true => {
             // finished editing, time to read `tmpfile` for the final output
             // seek to start of `tmpfile`
-            tmpfile.seek(0, SeekSet).ok().expect("Can't seek to start of temp file");
+            try!(tmpfile.seek(0, SeekSet));
             Ok(try!(tmpfile.read_to_string()))
         }
         false => generic_fail!("The editor broke... I think".to_string())
@@ -818,8 +823,6 @@ fn theca() -> Result<(), ThecaError> {
 }
 
 fn main() {
-    // is anything stored in the ENV?
-
     // wooo error unwinding yay
     match theca() {
         Err(e) => println!("{}", e.desc),
