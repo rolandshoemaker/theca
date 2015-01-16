@@ -470,22 +470,12 @@ impl ThecaProfile {
     }
 
     fn stats(&mut self) {
-        let mut t = term::stdout().unwrap();
         let no_s = self.notes.iter().filter(|n| n.status == "").count();
         let started_s = self.notes.iter().filter(|n| n.status == "Started").count();
         let urgent_s = self.notes.iter().filter(|n| n.status == "Urgent").count();
-        t.attr(Bold).unwrap();
-        (write!(t, "encrypted: ")).unwrap();
-        t.reset().unwrap();
-        (write!(t, "{}\n", self.encrypted)).unwrap();
-        t.attr(Bold).unwrap();
-        (write!(t, "notes: ")).unwrap();
-        t.reset().unwrap();
-        (write!(t, "{}\n", self.notes.len())).unwrap();
-        t.attr(Bold).unwrap();
-        (write!(t, "statuses:")).unwrap();
-        t.reset().unwrap();
-        (write!(t, " [none: {}, started: {}, urgent: {}]\n", no_s, started_s, urgent_s)).unwrap();
+        pretty_line("encrypted: ", &format!("{}\n", self.encrypted));
+        pretty_line("notes: ", &format!("{}\n", self.notes.len()));
+        pretty_line("statuses: ", &format!("[none: {}, started: {}, urgent: {}]\n", no_s, started_s, urgent_s));
     }
 
     fn print_header(&mut self, line_format: &LineFormat) {
@@ -508,48 +498,32 @@ impl ThecaProfile {
 
     fn view_item(&mut self, id: usize, args: &Args) {
         let note_pos = self.notes.iter().position(|n| n.id == id).unwrap();
-        let mut t = term::stdout().unwrap();
 
         match args.flag_c {
             true => {
-                t.attr(Bold).unwrap();
-                (write!(t, "id: ")).unwrap();
-                t.reset().unwrap();
-                (write!(t, "{}\n", self.notes[note_pos].id)).unwrap();
-                t.attr(Bold).unwrap();
-                (write!(t, "title: ")).unwrap();
-                t.reset().unwrap();
-                (write!(t, "{}\n", self.notes[note_pos].title)).unwrap();
+                pretty_line("id: ", &format!("{}\n", self.notes[note_pos].id));
+                pretty_line("title: ", &format!("{}\n", self.notes[note_pos].title));
                 if !self.notes[note_pos].status.is_empty() {
-                    t.attr(Bold).unwrap();
-                    (write!(t, "status: ")).unwrap();
-                    t.reset().unwrap();
-                    (write!(t, "{}\n", self.notes[note_pos].status)).unwrap();
+                    pretty_line("status: ", &format!("{}\n", self.notes[note_pos].status));
                 }
-                t.attr(Bold).unwrap();
-                (write!(t, "last touched: ")).unwrap();
-                t.reset().unwrap();
-                (write!(t, "{}\n", self.notes[note_pos].last_touched)).unwrap();
+                pretty_line(
+                    "last touched: ",
+                    &format!("{}\n", self.notes[note_pos].last_touched)
+                );
             },
             false => {
-                t.attr(Bold).unwrap();
-                (write!(t, "id\n--\n")).unwrap();
-                t.reset().unwrap();
-                (write!(t, "{}\n\n", self.notes[note_pos].id)).unwrap();
-                t.attr(Bold).unwrap();
-                (write!(t, "title\n-----\n")).unwrap();
-                t.reset().unwrap();
-                (write!(t, "{}\n\n", self.notes[note_pos].title)).unwrap();
+                pretty_line("id\n--\n", &format!("{}\n\n", self.notes[note_pos].id));
+                pretty_line("title\n-----\n", &format!("{}\n\n", self.notes[note_pos].title));
                 if !self.notes[note_pos].status.is_empty() {
-                    t.attr(Bold).unwrap();
-                    (write!(t, "status\n------\n")).unwrap();
-                    t.reset().unwrap();
-                    (write!(t, "{}\n\n", self.notes[note_pos].status)).unwrap();
+                    pretty_line(
+                        "status\n------\n",
+                        &format!("{}\n\n", self.notes[note_pos].status)
+                    );
                 }
-                t.attr(Bold).unwrap();
-                (write!(t, "last touched\n------------\n")).unwrap();
-                t.reset().unwrap();
-                (write!(t, "{}\n\n", self.notes[note_pos].last_touched)).unwrap();
+                pretty_line(
+                    "last touched\n------------\n",
+                    &format!("{}\n\n", self.notes[note_pos].last_touched)
+                );
             }
         };
 
@@ -557,16 +531,10 @@ impl ThecaProfile {
         if !self.notes[note_pos].body.is_empty() {
             match args.flag_c {
                 true => {
-                    t.attr(Bold).unwrap();
-                    (write!(t, "body: ")).unwrap();
-                    t.reset().unwrap();
-                    (write!(t, "{}\n", self.notes[note_pos].body)).unwrap();
+                    pretty_line("body: ", &format!("{}\n", self.notes[note_pos].body));
                 },
                 false => {
-                    t.attr(Bold).unwrap();
-                    (write!(t, "body\n----\n")).unwrap();
-                    t.reset().unwrap();
-                    (write!(t, "{}\n\n", self.notes[note_pos].body)).unwrap();
+                    pretty_line("body\n----\n", &format!("{}\n\n", self.notes[note_pos].body));
                 }
             };
         }
@@ -636,6 +604,14 @@ impl ThecaProfile {
     }
 }
 
+fn pretty_line(bold: &str, plain: &String) {
+    let mut t = term::stdout().unwrap();
+    t.attr(Bold).unwrap();
+    (write!(t, "{}", bold.to_string())).unwrap();
+    t.reset().unwrap();
+    (write!(t, "{}", plain)).unwrap();
+}
+
 fn format_field(value: &String, width: usize, truncate: bool) -> String {
     if value.len() > width && width > 3 && truncate {
         format!("{: <1$.1$}...", value, width-3)
@@ -697,7 +673,7 @@ fn drop_to_editor(contents: &String) -> String {
             tmpfile.seek(0, SeekSet).ok().expect("Can't seek to start of temp file");
             tmpfile.read_to_string().unwrap()
         }
-        false => panic!("The editor broke")
+        false => panic!("The editor broke... I think")
     }
 }
 
@@ -760,4 +736,188 @@ fn main() {
     if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile {
         profile.save_to_file(&args);
     }
+}
+
+#[test]
+fn test_new_profile() {
+    let profile = ThecaProfile {
+        encrypted: false,
+        notes: vec![]
+    };
+    assert_eq!(profile.encrypted, false);
+}
+
+#[test]
+fn test_add_note() {
+    let mut profile = ThecaProfile {
+        encrypted: false,
+        notes: vec![]
+    };
+    let test_args = Args {
+        flag_profiles_folder: "".to_string(),
+        flag_p: "".to_string(),
+        cmd_new_profile: false,
+        cmd_search: false,
+        flag_body: false,
+        flag_reverse: false,
+        cmd_add: true,
+        cmd_edit: false,
+        cmd_del: false,
+        arg_name: "".to_string(),
+        arg_pattern: "".to_string(),
+        flag_encrypted: false,
+        flag_key: "".to_string(),
+        flag_c: false,
+        flag_l: 0,
+        arg_title: "the title".to_string(),
+        flag_started: false,
+        flag_urgent: false,
+        flag_none: false,
+        flag_b: "".to_string(),
+        flag_editor: false,
+        cmd__: false,
+        arg_id: vec![],
+        flag_h: false,
+        flag_v: false,
+        cmd_info: false
+    };
+    profile.add_item(&test_args);
+    assert_eq!(profile.notes[0].id, 1);
+    assert_eq!(profile.notes[0].title, "the title".to_string());
+    assert_eq!(profile.notes[0].status, "".to_string());
+    assert_eq!(profile.notes[0].body, "".to_string());
+}
+
+#[test]
+fn test_add_full_note() {
+    let mut profile = ThecaProfile {
+        encrypted: false,
+        notes: vec![]
+    };
+    let test_args = Args {
+        flag_profiles_folder: "".to_string(),
+        flag_p: "".to_string(),
+        cmd_new_profile: false,
+        cmd_search: false,
+        flag_body: false,
+        flag_reverse: false,
+        cmd_add: true,
+        cmd_edit: false,
+        cmd_del: false,
+        arg_name: "".to_string(),
+        arg_pattern: "".to_string(),
+        flag_encrypted: false,
+        flag_key: "".to_string(),
+        flag_c: false,
+        flag_l: 0,
+        arg_title: "the title".to_string(),
+        flag_started: true,
+        flag_urgent: false,
+        flag_none: false,
+        flag_b: "this is a body".to_string(),
+        flag_editor: false,
+        cmd__: false,
+        arg_id: vec![],
+        flag_h: false,
+        flag_v: false,
+        cmd_info: false
+    };
+    profile.add_item(&test_args);
+    assert_eq!(profile.notes[0].id, 1);
+    assert_eq!(profile.notes[0].title, "the title".to_string());
+    assert_eq!(profile.notes[0].status, "Started".to_string());
+    assert_eq!(profile.notes[0].body, "this is a body".to_string());
+}
+
+#[test]
+fn test_add_del_note() {
+    let mut profile = ThecaProfile {
+        encrypted: false,
+        notes: vec![]
+    };
+    let add_args = Args {
+        flag_profiles_folder: "".to_string(),
+        flag_p: "".to_string(),
+        cmd_new_profile: false,
+        cmd_search: false,
+        flag_body: false,
+        flag_reverse: false,
+        cmd_add: true,
+        cmd_edit: false,
+        cmd_del: false,
+        arg_name: "".to_string(),
+        arg_pattern: "".to_string(),
+        flag_encrypted: false,
+        flag_key: "".to_string(),
+        flag_c: false,
+        flag_l: 0,
+        arg_title: "the title".to_string(),
+        flag_started: true,
+        flag_urgent: false,
+        flag_none: false,
+        flag_b: "this is a body".to_string(),
+        flag_editor: false,
+        cmd__: false,
+        arg_id: vec![],
+        flag_h: false,
+        flag_v: false,
+        cmd_info: false
+    };
+
+    profile.add_item(&add_args);
+    profile.delete_item(1);
+
+    assert_eq!(profile.notes.len(), 0);
+}
+
+#[test]
+fn test_add_add_del_add_note() {
+    let mut profile = ThecaProfile {
+        encrypted: false,
+        notes: vec![]
+    };
+    let add_args = Args {
+        flag_profiles_folder: "".to_string(),
+        flag_p: "".to_string(),
+        cmd_new_profile: false,
+        cmd_search: false,
+        flag_body: false,
+        flag_reverse: false,
+        cmd_add: true,
+        cmd_edit: false,
+        cmd_del: false,
+        arg_name: "".to_string(),
+        arg_pattern: "".to_string(),
+        flag_encrypted: false,
+        flag_key: "".to_string(),
+        flag_c: false,
+        flag_l: 0,
+        arg_title: "the title".to_string(),
+        flag_started: true,
+        flag_urgent: false,
+        flag_none: false,
+        flag_b: "this is a body".to_string(),
+        flag_editor: false,
+        cmd__: false,
+        arg_id: vec![],
+        flag_h: false,
+        flag_v: false,
+        cmd_info: false
+    };
+
+    profile.add_item(&add_args);
+    profile.add_item(&add_args);
+    profile.add_item(&add_args);
+    profile.delete_item(2);
+    profile.add_item(&add_args);
+
+    assert_eq!(profile.notes[0].id, 1);
+    assert_eq!(profile.notes[0].title, "the title".to_string());
+    assert_eq!(profile.notes[0].status, "Started".to_string());
+    assert_eq!(profile.notes[0].body, "this is a body".to_string());
+
+    assert_eq!(profile.notes[2].id, 4);
+    assert_eq!(profile.notes[2].title, "the title".to_string());
+    assert_eq!(profile.notes[2].status, "Started".to_string());
+    assert_eq!(profile.notes[2].body, "this is a body".to_string());
 }
