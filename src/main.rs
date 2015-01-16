@@ -33,7 +33,6 @@ pub use self::libc::{
     STDERR_FILENO
 };
 
-
 pub mod crypt;
 
 static VERSION:  &'static str = "0.4.5-dev";
@@ -67,13 +66,13 @@ mod c {
 }
 
 // unsafety wrapper
-fn termsize() -> Option<usize> {
+fn termsize() -> usize {
     let ws = unsafe {c::dimensions()};
     if ws.ws_col == 0 || ws.ws_row == 0 {
-        None
+        0
     }
     else {
-        Some(ws.ws_col as usize)
+        ws.ws_col as usize
     }
 }
 
@@ -177,10 +176,7 @@ pub struct LineFormat {
 impl LineFormat {
     fn new(items: &Vec<ThecaItem>, args: &Args) -> LineFormat {
         // get termsize :>
-        let console_width = match termsize() {
-            None => panic!("Cannot retrieve terminal information"),
-            Some(width) => width,
-        };
+        let console_width = termsize();
 
         // set colsep
         let colsep = match args.flag_c {
@@ -229,7 +225,8 @@ impl LineFormat {
 
         // check to make sure our new line format isn't bigger than the console
         let line_width = line_format.line_width();
-        if line_width > console_width && (line_format.title_width-(line_width-console_width)) > 0 {
+        if console_width > 0 && line_width > console_width &&
+           (line_format.title_width-(line_width-console_width)) > 0 {
             // if it is trim text from the title width since it is always the biggest...
             line_format.title_width -= line_width - console_width;
         }
@@ -473,16 +470,18 @@ impl ThecaProfile {
         let no_s = self.notes.iter().filter(|n| n.status == "").count();
         let started_s = self.notes.iter().filter(|n| n.status == "Started").count();
         let urgent_s = self.notes.iter().filter(|n| n.status == "Urgent").count();
-        pretty_line("encrypted: ", &format!("{}\n", self.encrypted));
-        pretty_line("notes: ", &format!("{}\n", self.notes.len()));
-        pretty_line("statuses: ", &format!("[none: {}, started: {}, urgent: {}]\n", no_s, started_s, urgent_s));
+        let color = termsize() > 0;
+        pretty_line("encrypted: ", &format!("{}\n", self.encrypted), color);
+        pretty_line("notes: ", &format!("{}\n", self.notes.len()), color);
+        pretty_line("statuses: ", &format!("[none: {}, started: {}, urgent: {}]\n", no_s, started_s, urgent_s), color);
     }
 
     fn print_header(&mut self, line_format: &LineFormat) {
         let mut t = term::stdout().unwrap();
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
-        t.attr(Bold).unwrap();
+        let color = termsize() > 0;
+        if color {t.attr(Bold).unwrap();}
         (write!(
             t, 
             "{1}{0}{2}{0}{3}{0}{4}\n{5}\n",
@@ -493,36 +492,40 @@ impl ThecaProfile {
             format_field(&"last touched".to_string(), line_format.touched_width, false),
             header_seperator
         )).unwrap();
-        t.reset().unwrap();
+        if color {t.reset().unwrap();}
     }
 
     fn view_item(&mut self, id: usize, args: &Args) {
         let note_pos = self.notes.iter().position(|n| n.id == id).unwrap();
+        let color = termsize() > 0;
 
         match args.flag_c {
             true => {
-                pretty_line("id: ", &format!("{}\n", self.notes[note_pos].id));
-                pretty_line("title: ", &format!("{}\n", self.notes[note_pos].title));
+                pretty_line("id: ", &format!("{}\n", self.notes[note_pos].id), color);
+                pretty_line("title: ", &format!("{}\n", self.notes[note_pos].title), color);
                 if !self.notes[note_pos].status.is_empty() {
-                    pretty_line("status: ", &format!("{}\n", self.notes[note_pos].status));
+                    pretty_line("status: ", &format!("{}\n", self.notes[note_pos].status), color);
                 }
                 pretty_line(
                     "last touched: ",
-                    &format!("{}\n", self.notes[note_pos].last_touched)
+                    &format!("{}\n", self.notes[note_pos].last_touched),
+                    color
                 );
             },
             false => {
-                pretty_line("id\n--\n", &format!("{}\n\n", self.notes[note_pos].id));
-                pretty_line("title\n-----\n", &format!("{}\n\n", self.notes[note_pos].title));
+                pretty_line("id\n--\n", &format!("{}\n\n", self.notes[note_pos].id), color);
+                pretty_line("title\n-----\n", &format!("{}\n\n", self.notes[note_pos].title), color);
                 if !self.notes[note_pos].status.is_empty() {
                     pretty_line(
                         "status\n------\n",
-                        &format!("{}\n\n", self.notes[note_pos].status)
+                        &format!("{}\n\n", self.notes[note_pos].status),
+                        color
                     );
                 }
                 pretty_line(
                     "last touched\n------------\n",
-                    &format!("{}\n\n", self.notes[note_pos].last_touched)
+                    &format!("{}\n\n", self.notes[note_pos].last_touched),
+                    color
                 );
             }
         };
@@ -531,10 +534,10 @@ impl ThecaProfile {
         if !self.notes[note_pos].body.is_empty() {
             match args.flag_c {
                 true => {
-                    pretty_line("body: ", &format!("{}\n", self.notes[note_pos].body));
+                    pretty_line("body: ", &format!("{}\n", self.notes[note_pos].body), color);
                 },
                 false => {
-                    pretty_line("body\n----\n", &format!("{}\n\n", self.notes[note_pos].body));
+                    pretty_line("body\n----\n", &format!("{}\n\n", self.notes[note_pos].body), color);
                 }
             };
         }
@@ -604,11 +607,11 @@ impl ThecaProfile {
     }
 }
 
-fn pretty_line(bold: &str, plain: &String) {
+fn pretty_line(bold: &str, plain: &String, color: bool) {
     let mut t = term::stdout().unwrap();
-    t.attr(Bold).unwrap();
+    if color {t.attr(Bold).unwrap();}
     (write!(t, "{}", bold.to_string())).unwrap();
-    t.reset().unwrap();
+    if color {t.reset().unwrap();}
     (write!(t, "{}", plain)).unwrap();
 }
 
