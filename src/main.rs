@@ -10,22 +10,30 @@ extern crate term;
 
 // std lib imports...
 use std::os::{getenv, homedir};
+use std::error;
 use std::io::fs;
 use std::io::fs::PathExtensions;
 use std::io::process::{InheritFd};
 use std::io::{File, Truncate, Write, Read, Open, ReadWrite,
-              TempDir, Command, SeekSet, stdin, USER_RWX};
+              TempDir, Command, SeekSet, stdin, USER_RWX, IoError};
 use std::iter::{repeat};
+use std::string::FromUtf8Error;
 
 // random things
 use regex::{Regex};
 use rustc_serialize::{Encodable, Decodable, Encoder, json};
-use time::{now_utc, strftime, get_time};
+use time::{now_utc, strftime, get_time, ParseError};
 use docopt::Docopt;
 use term::attr::Attr::{Bold};
 
 // crypto imports
 use crypt::{encrypt, decrypt, password_to_key};
+use crypto::symmetriccipher::SymmetricCipherError;
+
+pub use self::ErrorKind::{
+    InternalIoError,
+    GenericError
+};
 
 pub use self::libc::{
     STDIN_FILENO,
@@ -139,27 +147,6 @@ struct Args {
     cmd_info: bool
 }
 
-impl Args {
-    fn check_env(&mut self) {
-        match getenv("THECA_DEFAULT_PROFILE") {
-            Some(val) => {
-                if self.flag_p.is_empty() {
-                    self.flag_p = val;
-                }
-            },
-            None => ()
-        };
-        match getenv("THECA_PROFILE_FOLDER") {
-            Some(val) => {
-                if self.flag_profiles_folder.is_empty() {
-                    self.flag_profiles_folder = val;
-                }
-            },
-            None => ()
-        };
-    }
-}
-
 static NOSTATUS: &'static str = "";
 static STARTED: &'static str = "Started";
 static URGENT: &'static str = "Urgent";
@@ -174,7 +161,7 @@ pub struct LineFormat {
 }
 
 impl LineFormat {
-    fn new(items: &Vec<ThecaItem>, args: &Args) -> LineFormat {
+    fn new(items: &Vec<ThecaItem>, args: &Args) -> Result<LineFormat, ThecaError> {
         // get termsize :>
         let console_width = termsize();
 
@@ -188,17 +175,25 @@ impl LineFormat {
                                           status_width:0, touched_width:0};
 
         // get length of longest id string
-        line_format.id_width = items.iter().max_by(|n| n.id.to_string().len())
-                                    .unwrap().id.to_string().len();
+        line_format.id_width = match items.iter().max_by(|n| n.id.to_string()) {
+            Some(w) => w.id.to_string().len(),
+            None => 0
+        };
         // if longest id is 1 char and we are using extended printing
         // then set id_width to 2 so "id" isn't truncated
         if line_format.id_width < 2 && !args.flag_c {line_format.id_width = 2;}
 
         // get length of longest title string
-        line_format.title_width = items.iter().max_by(|n| n.title.len()).unwrap().title.len();
-        // if any item has a body assume the longest one does too so add 4
-        // to allow for use of "(+) " to indicate note body
-        if items.iter().any(|n| n.body.len() > 0) {line_format.title_width += 4;}
+        line_format.title_width = match items.iter().max_by(|n| n.title.len()) {
+            Some(w) => {
+                if items.iter().any(|n| n.body.len() > 0) {
+                    w.title.len()+4
+                } else {
+                    w.title.len()
+                }
+            },
+            None => 0
+        };
         // if using extended and longest title is less than 5 chars
         // set title_width to 5 so "title" won't be truncated
         if line_format.title_width < 5 && !args.flag_c {line_format.title_width = 5;}
@@ -208,7 +203,12 @@ impl LineFormat {
             true => {
                 match args.flag_c {
                     // expanded print, get longest status (7 or 6 / started or urgent)
-                    false => items.iter().max_by(|n| n.status.len()).unwrap().status.len(),
+                    false => {
+                        match items.iter().max_by(|n| n.status.len()) {
+                            Some(w) => w.status.len(),
+                            None => 0
+                        }
+                    },
                     // only display first char of status (e.g. S or U) for condensed print
                     true => 1
                 }
@@ -231,7 +231,7 @@ impl LineFormat {
             line_format.title_width -= line_width - console_width;
         }
 
-        line_format
+        Ok(line_format)
     }
 
     fn line_width(&self) -> usize {
@@ -272,20 +272,76 @@ pub struct ThecaProfile {
     notes: Vec<ThecaItem>
 }
 
+pub enum ErrorKind {
+    InternalIoError(IoError),
+    GenericError
+}
+
+pub struct ThecaError {
+    pub kind: ErrorKind,
+    pub desc: String,
+    pub detail: Option<String>
+}
+
+impl error::FromError<IoError> for ThecaError {
+    fn from_error(err: IoError) -> ThecaError {
+        ThecaError {
+            kind: InternalIoError(err),
+            desc: "An internal IO error ocurred.".to_string(),
+            detail: None
+        }
+    }
+}
+
+impl error::FromError<(ErrorKind, &'static str)> for ThecaError {
+    fn from_error((kind, desc): (ErrorKind, &'static str)) -> ThecaError {
+        ThecaError { kind: kind, desc: desc.to_string(), detail: None }
+    }
+}
+
+impl error::FromError<ParseError> for ThecaError {
+    fn from_error(err: ParseError) -> ThecaError {
+        ThecaError { kind: GenericError, desc: "Time parsing error".to_string(), detail: Some(err.to_string()) }
+    }
+}
+
+impl error::FromError<FromUtf8Error> for ThecaError {
+    fn from_error(err: FromUtf8Error) -> ThecaError {
+        ThecaError { kind: GenericError, desc: "Error parsing invalid UTF8 characters.".to_string(), detail: Some(err.to_string()) }
+    }
+}
+
+impl error::FromError<SymmetricCipherError> for ThecaError {
+    fn from_error(err: SymmetricCipherError) -> ThecaError {
+        ThecaError { kind: GenericError, desc: "SymmetricCipherError, that's bad.".to_string(), detail: None }
+    }
+}
+
+impl error::FromError<docopt::Error> for ThecaError {
+    fn from_error(err: docopt::Error) -> ThecaError {
+        ThecaError { kind: GenericError, desc: err.to_string(), detail: None }
+    }
+}
+
+macro_rules! generic_fail {
+    ($short:expr) => ({
+        return Err(::std::error::FromError::from_error(
+            ThecaError {
+                kind: GenericError,
+                desc: $short,
+                detail: None
+            }
+        ))
+    })
+}
+
 impl ThecaProfile {
-    fn new(args: &Args) -> Result<ThecaProfile, String> {
+    fn new(args: &Args) -> Result<ThecaProfile, ThecaError> {
         if args.cmd_new_profile {
             let profile_path = find_profile_folder(args);
             // if the folder doesn't exist, make it yo!
             if !profile_path.exists() {
-                match fs::mkdir(&profile_path, USER_RWX) {
-                    Ok(_) => (),
-                    Err(e) => panic!(
-                        "Creating folder {} failed. {}",
-                        profile_path.display(),
-                        e.desc
-                    )
-                };
+                try!(fs::mkdir(&profile_path, USER_RWX));
             }
             Ok(ThecaProfile {
                 encrypted: args.flag_encrypted,
@@ -306,38 +362,32 @@ impl ThecaProfile {
             match profile_path.is_file() {
                 false => {
                     if profile_path.exists() {
-                        Err(format!("{} is not a file.", profile_path.display()))
+                        generic_fail!(format!("{} is not a file.", profile_path.display()));
                     } else {
-                        Err(format!("{} does not exist.", profile_path.display()))
+                        generic_fail!(format!("{} does not exist.", profile_path.display()));
                     }
                 }
                 true => {
                     if args.cmd_info {
                         println!("# Loading {}", profile_path.display());
                     }
-                    let mut file = match File::open_mode(&profile_path, Open, Read) {
-                        Ok(t) => t,
-                        Err(e) => panic!("{}", e.desc)
-                    };
-                    let contents_buf = match file.read_to_end() {
-                        Ok(t) => t,
-                        Err(e) => panic!("{}", e.desc)
-                    };
+                    let mut file = try!(File::open_mode(&profile_path, Open, Read));
+                    let contents_buf = try!(file.read_to_end());
                     // decrypt the file if flag_encrypted
                     let contents = match args.flag_encrypted {
-                        false => String::from_utf8(contents_buf).unwrap(),
+                        false => try!(String::from_utf8(contents_buf)),
                         true => {
                             let (key, iv) = password_to_key(args.flag_key.as_slice());
-                                String::from_utf8(decrypt(
+                                try!(String::from_utf8(try!(decrypt(
                                     contents_buf.as_slice(),
                                     key.as_slice(),
                                     iv.as_slice()
-                                ).ok().unwrap()).unwrap()
+                                ))))
                         }
                     };
                     let decoded: ThecaProfile = match json::decode(contents.as_slice()) {
                         Ok(s) => s,
-                        Err(_) => panic!("Invalid JSON in {}", profile_path.display())
+                        Err(_) => generic_fail!(format!("Invalid JSON in {}", profile_path.display()))
                     };
                     Ok(decoded)
                 }
@@ -345,7 +395,7 @@ impl ThecaProfile {
         }
     }
 
-    fn save_to_file(&mut self, args: &Args) {
+    fn save_to_file(&mut self, args: &Args) -> Result<(), ThecaError> {
         // set profile folder
         let mut profile_path = find_profile_folder(args);
 
@@ -360,10 +410,7 @@ impl ThecaProfile {
         }
 
         // open file
-        let mut file = match File::open_mode(&profile_path, Truncate, Write) {
-            Ok(f) => f,
-            Err(e) => panic!("File error: {}", e)
-        };
+        let mut file = try!(File::open_mode(&profile_path, Truncate, Write));
 
         // encode to buffer
         let mut buffer: Vec<u8> = Vec::new();
@@ -375,20 +422,22 @@ impl ThecaProfile {
         // encrypt json if its an encrypted profile
         if self.encrypted {
             let (key, iv) = password_to_key(args.flag_key.as_slice());
-            buffer = encrypt(
+            buffer = try!(encrypt(
                 buffer.as_slice(),
                 key.as_slice(),
                 iv.as_slice()
-            ).ok().unwrap();
+            ));
         }
 
         // write buffer to file
         file.write(buffer.as_slice())
             .ok()
             .expect(format!("Couldn't write to {}",profile_path.display()).as_slice());
+
+        Ok(())
     }
 
-    fn add_item(&mut self, args: &Args) {
+    fn add_item(&mut self, args: &Args) -> Result<(), ThecaError> {
         let title = args.arg_title.replace("\n", "").to_string();
         let status = if args.flag_started {
             STARTED.to_string()
@@ -400,9 +449,9 @@ impl ThecaProfile {
         let body = if !args.flag_b.is_empty() {
             args.flag_b.to_string()
         } else if args.flag_editor {
-            drop_to_editor(&"".to_string())
+            try!(drop_to_editor(&"".to_string()))
         } else if args.cmd__ {
-            stdin().lock().read_to_string().unwrap()
+            try!(stdin().lock().read_to_string())
         } else {
             "".to_string()
         };
@@ -415,9 +464,10 @@ impl ThecaProfile {
             title: title,
             status: status,
             body: body,
-            last_touched: strftime("%F %T", &now_utc()).ok().unwrap()
+            last_touched: try!(strftime("%F %T", &now_utc()))
         });
         println!("added");
+        Ok(())
     }
 
     fn delete_item(&mut self, id: usize) {
@@ -435,10 +485,12 @@ impl ThecaProfile {
         }
     }
 
-    fn edit_item(&mut self, id: usize, args: &Args) {
-        let item_pos: usize = self.notes.iter()
-            .position(|n| n.id == id)
-            .unwrap();
+    fn edit_item(&mut self, id: usize, args: &Args) -> Result<(), ThecaError> {
+        let item_pos: usize = match self.notes.iter()
+                                              .position(|n| n.id == id) {
+                Some(i) => i,
+                None => generic_fail!(format!("note id#{} doesn't exist.", id))
+            };
         if !args.arg_title.is_empty() {
             // change title
             self.notes[item_pos].title = args.arg_title.replace("\n", "").to_string();
@@ -456,77 +508,86 @@ impl ThecaProfile {
             if !args.flag_b.is_empty() {
                 self.notes[item_pos].body = args.flag_b.to_string();
             } else if args.flag_editor {
-                self.notes[item_pos].body = drop_to_editor(&self.notes[item_pos].body);
+                self.notes[item_pos].body = try!(drop_to_editor(&self.notes[item_pos].body));
             } else if args.cmd__ {
-                stdin().lock().read_to_string().unwrap();
+                try!(stdin().lock().read_to_string());
             }
         }
         // update last_touched
-        self.notes[item_pos].last_touched = strftime("%F %T", &now_utc()).ok().unwrap();
-        println!("edited")
+        self.notes[item_pos].last_touched = try!(strftime("%F %T", &now_utc()));
+        println!("edited");
+        Ok(())
     }
 
-    fn stats(&mut self) {
+    fn stats(&mut self) -> Result<(), ThecaError> {
         let no_s = self.notes.iter().filter(|n| n.status == "").count();
         let started_s = self.notes.iter().filter(|n| n.status == "Started").count();
         let urgent_s = self.notes.iter().filter(|n| n.status == "Urgent").count();
         let color = termsize() > 0;
-        pretty_line("encrypted: ", &format!("{}\n", self.encrypted), color);
-        pretty_line("notes: ", &format!("{}\n", self.notes.len()), color);
-        pretty_line("statuses: ", &format!("[none: {}, started: {}, urgent: {}]\n", no_s, started_s, urgent_s), color);
+        try!(pretty_line("encrypted: ", &format!("{}\n", self.encrypted), color));
+        try!(pretty_line("notes: ", &format!("{}\n", self.notes.len()), color));
+        try!(pretty_line("statuses: ", &format!("[none: {}, started: {}, urgent: {}]\n", no_s, started_s, urgent_s), color));
+        Ok(())
     }
 
-    fn print_header(&mut self, line_format: &LineFormat) {
-        let mut t = term::stdout().unwrap();
+    fn print_header(&mut self, line_format: &LineFormat) -> Result<(), ThecaError> {
+        let mut t = match term::stdout() {
+            Some(t) => t,
+            None => generic_fail!("Could not retrieve Standard Output.".to_string())
+        };
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
         let color = termsize() > 0;
-        if color {t.attr(Bold).unwrap();}
-        (write!(
-            t, 
-            "{1}{0}{2}{0}{3}{0}{4}\n{5}\n",
-            column_seperator,
-            format_field(&"id".to_string(), line_format.id_width, false),
-            format_field(&"title".to_string(), line_format.title_width, false),
-            format_field(&"status".to_string(), line_format.status_width, false),
-            format_field(&"last touched".to_string(), line_format.touched_width, false),
-            header_seperator
-        )).unwrap();
-        if color {t.reset().unwrap();}
+        if color {try!(t.attr(Bold));}
+        try!(write!(
+                    t, 
+                    "{1}{0}{2}{0}{3}{0}{4}\n{5}\n",
+                    column_seperator,
+                    format_field(&"id".to_string(), line_format.id_width, false),
+                    format_field(&"title".to_string(), line_format.title_width, false),
+                    format_field(&"status".to_string(), line_format.status_width, false),
+                    format_field(&"last touched".to_string(), line_format.touched_width, false),
+                    header_seperator
+                ));
+        if color {try!(t.reset());}
+        Ok(())
     }
 
-    fn view_item(&mut self, id: usize, args: &Args) {
-        let note_pos = self.notes.iter().position(|n| n.id == id).unwrap();
+    fn view_item(&mut self, id: usize, args: &Args) -> Result<(), ThecaError> {
+        let note_pos = match self.notes.iter().position(|n| n.id == id) {
+            Some(i) => i,
+            None => generic_fail!(format!("Note #{} doesn't exist.", id))
+        };
         let color = termsize() > 0;
 
         match args.flag_c {
             true => {
-                pretty_line("id: ", &format!("{}\n", self.notes[note_pos].id), color);
-                pretty_line("title: ", &format!("{}\n", self.notes[note_pos].title), color);
+                try!(pretty_line("id: ", &format!("{}\n", self.notes[note_pos].id), color));
+                try!(pretty_line("title: ", &format!("{}\n", self.notes[note_pos].title), color));
                 if !self.notes[note_pos].status.is_empty() {
-                    pretty_line("status: ", &format!("{}\n", self.notes[note_pos].status), color);
+                    try!(pretty_line("status: ", &format!("{}\n", self.notes[note_pos].status), color));
                 }
-                pretty_line(
+                try!(pretty_line(
                     "last touched: ",
                     &format!("{}\n", self.notes[note_pos].last_touched),
                     color
-                );
+                ));
             },
             false => {
-                pretty_line("id\n--\n", &format!("{}\n\n", self.notes[note_pos].id), color);
-                pretty_line("title\n-----\n", &format!("{}\n\n", self.notes[note_pos].title), color);
+                try!(pretty_line("id\n--\n", &format!("{}\n\n", self.notes[note_pos].id), color));
+                try!(pretty_line("title\n-----\n", &format!("{}\n\n", self.notes[note_pos].title), color));
                 if !self.notes[note_pos].status.is_empty() {
-                    pretty_line(
+                    try!(pretty_line(
                         "status\n------\n",
                         &format!("{}\n\n", self.notes[note_pos].status),
                         color
-                    );
+                    ));
                 }
-                pretty_line(
+                try!(pretty_line(
                     "last touched\n------------\n",
                     &format!("{}\n\n", self.notes[note_pos].last_touched),
                     color
-                );
+                ));
             }
         };
 
@@ -534,20 +595,21 @@ impl ThecaProfile {
         if !self.notes[note_pos].body.is_empty() {
             match args.flag_c {
                 true => {
-                    pretty_line("body: ", &format!("{}\n", self.notes[note_pos].body), color);
+                    try!(pretty_line("body: ", &format!("{}\n", self.notes[note_pos].body), color));
                 },
                 false => {
-                    pretty_line("body\n----\n", &format!("{}\n\n", self.notes[note_pos].body), color);
+                    try!(pretty_line("body\n----\n", &format!("{}\n\n", self.notes[note_pos].body), color));
                 }
             };
         }
+        Ok(())
     }
 
-    fn list_items(&mut self, args: &Args) {
+    fn list_items(&mut self, args: &Args) -> Result<(), ThecaError> {
         if self.notes.len() > 0 {
-            let line_format = LineFormat::new(&self.notes, args);
+            let line_format = try!(LineFormat::new(&self.notes, args));
             if !args.flag_c {
-                self.print_header(&line_format);
+                try!(self.print_header(&line_format));
             }
             let list_range = if args.flag_l > 0 {
                 args.flag_l
@@ -566,12 +628,13 @@ impl ThecaProfile {
                 }
             };
         }
+        Ok(())
     }
 
-    fn search_items(&mut self, regex_pattern: &str, args: &Args) {
+    fn search_items(&mut self, regex_pattern: &str, args: &Args) -> Result<(), ThecaError> {
         let re = match Regex::new(regex_pattern) {
             Ok(r) => r,
-            Err(e) => panic!("{}", e)
+            Err(e) => generic_fail!(format!("Regex error: {}", e))
         };
         let notes: Vec<ThecaItem> = match args.flag_body {
             true => self.notes.iter().filter(|n| re.is_match(n.body.as_slice()))
@@ -579,9 +642,9 @@ impl ThecaProfile {
             false => self.notes.iter().filter(|n| re.is_match(n.title.as_slice()))
                                .map(|n| n.clone()).collect()
         };
-        let line_format = LineFormat::new(&notes, args);
+        let line_format = try!(LineFormat::new(&notes, args));
         if !args.flag_c {
-            self.print_header(&line_format);
+            try!(self.print_header(&line_format));
         }
         match args.flag_reverse {
             false => {
@@ -604,15 +667,20 @@ impl ThecaProfile {
                 }
             }
         };
+        Ok(())
     }
 }
 
-fn pretty_line(bold: &str, plain: &String, color: bool) {
-    let mut t = term::stdout().unwrap();
-    if color {t.attr(Bold).unwrap();}
-    (write!(t, "{}", bold.to_string())).unwrap();
-    if color {t.reset().unwrap();}
-    (write!(t, "{}", plain)).unwrap();
+fn pretty_line(bold: &str, plain: &String, color: bool) -> Result<(), ThecaError> {
+    let mut t = match term::stdout() {
+        Some(t) => t,
+        None => generic_fail!("Could not retrieve Standard Output.".to_string())
+    };
+    if color {try!(t.attr(Bold));}
+    try!(write!(t, "{}", bold.to_string()));
+    if color {try!(t.reset());}
+    try!(write!(t, "{}", plain));
+    Ok(())
 }
 
 fn format_field(value: &String, width: usize, truncate: bool) -> String {
@@ -634,20 +702,18 @@ fn find_profile_folder(args: &Args) -> Path {
     }
 }
 
-fn drop_to_editor(contents: &String) -> String {
+fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
     // this could probably be prettyified tbh!
 
     // setup temporary directory
-    let tmpdir = match TempDir::new("theca") {
-        Ok(dir) => dir,
-        Err(e) => panic!("couldn't create temporary directory: {}", e)
-    };
+    let tmpdir = try!(TempDir::new("theca"));
+    // let tmpdir = match TempDir::new("theca") {
+    //     Ok(dir) => dir,
+    //     Err(e) => generic_fail!(format!("couldn't create temporary directory: {}", e))
+    // };
     // setup temporary file to write/read
     let tmppath = tmpdir.path().join(get_time().sec.to_string());
-    let mut tmpfile = match File::open_mode(&tmppath, Open, ReadWrite) {
-        Ok(f) => f,
-        Err(e) => panic!("File error: {}", e)
-    };
+    let mut tmpfile = try!(File::open_mode(&tmppath, Open, ReadWrite));
     tmpfile.write_line(contents.as_slice()).ok().expect("Failed to write line to temp file");
     // we now have a temp file, at `tmppath`, that contains `contents`
     // first we need to know which onqe
@@ -656,7 +722,7 @@ fn drop_to_editor(contents: &String) -> String {
         None => {
             match getenv("EDITOR") {
                 Some(val) => val,
-                None => panic!("Neither $VISUAL nor $EDITOR is set.")
+                None => generic_fail!("Neither $VISUAL nor $EDITOR is set.".to_string())
             }
         }
     };
@@ -674,46 +740,56 @@ fn drop_to_editor(contents: &String) -> String {
             // finished editing, time to read `tmpfile` for the final output
             // seek to start of `tmpfile`
             tmpfile.seek(0, SeekSet).ok().expect("Can't seek to start of temp file");
-            tmpfile.read_to_string().unwrap()
+            Ok(try!(tmpfile.read_to_string()))
         }
-        false => panic!("The editor broke... I think")
+        false => generic_fail!("The editor broke... I think".to_string())
     }
 }
 
-fn get_password() -> String {
+fn get_password() -> Result<String, ThecaError> {
     // should really turn off terminal echo...
     print!("Key: ");
     let mut stdin = std::io::stdio::stdin();
     // since this only reads one line of stdin it could still feasibly
     // be used with `-` to set note body?
-    stdin.read_line().unwrap().trim().to_string()
+    let key = try!(stdin.read_line());
+    Ok(key.trim().to_string())
 }
 
-fn main() {
-    let mut args: Args = Docopt::new(USAGE)
-                            .and_then(|d| d.decode())
-                            .unwrap_or_else(|e| e.exit());
+fn theca() -> Result<(), ThecaError> {
+    let mut args: Args = try!(Docopt::new(USAGE)
+                            .and_then(|d| d.decode()));
 
-    // is anything stored in the ENV?
-    args.check_env();
-
+    match getenv("THECA_DEFAULT_PROFILE") {
+        Some(val) => {
+            if args.flag_p.is_empty() {
+                args.flag_p = val;
+            }
+        },
+        None => ()
+    };
+    match getenv("THECA_PROFILE_FOLDER") {
+        Some(val) => {
+            if args.flag_profiles_folder.is_empty() {
+                args.flag_profiles_folder = val;
+            }
+        },
+        None => ()
+    };
+    
+    // if profile in ecnrypted try to set the key
     if args.flag_encrypted && args.flag_key.is_empty() {
-        args.flag_key = get_password();
+        args.flag_key = try!(get_password());
     }
 
-    // Setup a ThecaProfile struct
-    let mut profile = match ThecaProfile::new(&args) {
-        Ok(p) => p,
-        Err(e) => panic!("{}", e)
-    };
-
+    let mut profile = try!(ThecaProfile::new(&args));
     // what root command was used
     if args.cmd_add {
         // add a item
-        profile.add_item(&args);
+        try!(profile.add_item(&args));
     } else if args.cmd_edit {
         // edit a item
-        profile.edit_item(args.arg_id[0], &args);
+        try!(profile.edit_item(args.arg_id[0], &args));
     } else if args.cmd_del {
         // delete a item
         profile.delete_item(args.arg_id[0]);
@@ -722,21 +798,31 @@ fn main() {
         println!("theca v{}", VERSION);
     } else if args.cmd_search {
         // search for an item
-        profile.search_items(args.arg_pattern.as_slice(), &args);
+        try!(profile.search_items(args.arg_pattern.as_slice(), &args));
     } else if !args.arg_id.is_empty() {
         // view short item
-        profile.view_item(args.arg_id[0], &args);
+        try!(profile.view_item(args.arg_id[0], &args));
     } else if args.cmd_info {
-
-        profile.stats();
+        try!(profile.stats());
     } else if !args.cmd_new_profile {
         // this should be the default for nothing
-        profile.list_items(&args);
+        try!(profile.list_items(&args));
     }
 
     // save altered profile back to disk
     // this should only be triggered by commands that make transactions to the profile
     if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile {
-        profile.save_to_file(&args);
+        try!(profile.save_to_file(&args));
     }
+    Ok(())
+}
+
+fn main() {
+    // is anything stored in the ENV?
+
+    // wooo error unwinding yay
+    match theca() {
+        Err(e) => println!("{}", e.desc),
+        Ok(_) => ()
+    };
 }
