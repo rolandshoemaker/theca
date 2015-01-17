@@ -11,30 +11,25 @@ extern crate term;
 
 // std lib imports...
 use std::os::{getenv, homedir};
-use std::error;
 use std::io::fs;
 use std::io::fs::PathExtensions;
 use std::io::process::{InheritFd};
 use std::io::{File, Truncate, Write, Read, Open, ReadWrite,
-              TempDir, Command, SeekSet, stdin, USER_RWX, IoError};
+              TempDir, Command, SeekSet, stdin, USER_RWX};
 use std::iter::{repeat};
-use std::string::FromUtf8Error;
 
 // random things
 use regex::{Regex};
 use rustc_serialize::{Encodable, Decodable, Encoder, json};
-use time::{now_utc, strftime, get_time, ParseError};
+use time::{now_utc, strftime, get_time};
 use docopt::Docopt;
 use term::attr::Attr::{Bold};
 
 // crypto imports
+use errors::{ThecaError, GenericError};
 use crypt::{encrypt, decrypt, password_to_key};
-use crypto::symmetriccipher::SymmetricCipherError;
-
-pub use self::ErrorKind::{
-    InternalIoError,
-    GenericError
-};
+// use utils::{print_header, sorted_print, pretty_line, format_field,
+//             find_profile_folder, drop_to_editor, get_password};
 
 pub use self::libc::{
     STDIN_FILENO,
@@ -42,6 +37,7 @@ pub use self::libc::{
     STDERR_FILENO
 };
 
+#[macro_use] pub mod errors;
 pub mod crypt;
 
 static VERSION:  &'static str = "0.4.5-dev";
@@ -110,6 +106,7 @@ Options:
     -k KEY, --key KEY                   Encryption key to use for encryption/decryption,
                                         a prompt will be displayed if no key is provided.
     -l LIMIT                            Limit listing to LIMIT items [default: 0].
+    --datesort                          Sort items by date, can be used with --reverse.
     --none                              No status. (default)
     --started                           Started status.
     --urgent                            Urgent status.
@@ -135,6 +132,7 @@ struct Args {
     flag_key: String,
     flag_c: bool,
     flag_l: usize,
+    flag_datesort: bool,
     arg_title: String,
     flag_started: bool,
     flag_urgent: bool,
@@ -250,12 +248,12 @@ pub struct ThecaItem {
 }
 
 impl ThecaItem {
-    fn print(&self, line_format: &LineFormat, args: &Args) {
+    fn print(&self, line_format: &LineFormat, body_search: bool) {
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         print!("{}", format_field(&self.id.to_string(), line_format.id_width, false));
         print!("{}", column_seperator);
         let mut title_str = self.title.to_string();
-        if !self.body.is_empty() && !args.flag_body {
+        if !self.body.is_empty() && !body_search {
             title_str = "(+) ".to_string()+title_str.as_slice();
         }
         print!("{}", format_field(&title_str, line_format.title_width, true));
@@ -264,6 +262,11 @@ impl ThecaItem {
         print!("{}", column_seperator);
         print!("{}", format_field(&self.last_touched, line_format.touched_width, false));
         print!("\n");
+        if body_search {
+            for l in self.body.lines() {
+                println!("\t{}", l);
+            }
+        }
     }
 }
 
@@ -273,79 +276,10 @@ pub struct ThecaProfile {
     notes: Vec<ThecaItem>
 }
 
-pub enum ErrorKind {
-    InternalIoError(IoError),
-    GenericError
-}
-
-pub struct ThecaError {
-    pub kind: ErrorKind,
-    pub desc: String,
-    pub detail: Option<String>
-}
-
-impl error::FromError<IoError> for ThecaError {
-    fn from_error(err: IoError) -> ThecaError {
-        ThecaError {
-            kind: InternalIoError(err),
-            desc: "An internal IO error ocurred.".to_string(),
-            detail: None
-        }
-    }
-}
-
-impl error::FromError<(ErrorKind, &'static str)> for ThecaError {
-    fn from_error((kind, desc): (ErrorKind, &'static str)) -> ThecaError {
-        ThecaError { kind: kind, desc: desc.to_string(), detail: None }
-    }
-}
-
-impl error::FromError<ParseError> for ThecaError {
-    fn from_error(err: ParseError) -> ThecaError {
-        ThecaError { kind: GenericError, desc: "Time parsing error".to_string(), detail: Some(err.to_string()) }
-    }
-}
-
-impl error::FromError<FromUtf8Error> for ThecaError {
-    fn from_error(err: FromUtf8Error) -> ThecaError {
-        ThecaError { kind: GenericError, desc: format!("Error parsing file, {}.", err), detail: None }
-    }
-}
-
-impl error::FromError<SymmetricCipherError> for ThecaError {
-    fn from_error(err: SymmetricCipherError) -> ThecaError {
-        ThecaError { kind: GenericError, desc: "SymmetricCipherError, that's bad.".to_string(), detail: None }
-    }
-}
-
-impl error::FromError<docopt::Error> for ThecaError {
-    fn from_error(err: docopt::Error) -> ThecaError {
-        ThecaError { kind: GenericError, desc: err.to_string(), detail: None }
-    }
-}
-
-impl error::FromError<core::fmt::Error> for ThecaError {
-    fn from_error(err: core::fmt::Error) -> ThecaError {
-        ThecaError { kind: GenericError, desc: "Formatting error.".to_string(), detail: None }
-    }
-}
-
-macro_rules! specific_fail {
-    ($short:expr) => ({
-        return Err(::std::error::FromError::from_error(
-            ThecaError {
-                kind: GenericError,
-                desc: $short,
-                detail: None
-            }
-        ))
-    })
-}
-
 impl ThecaProfile {
     fn new(args: &Args) -> Result<ThecaProfile, ThecaError> {
         if args.cmd_new_profile {
-            let profile_path = find_profile_folder(args);
+            let profile_path = try!(find_profile_folder(args));
             // if the folder doesn't exist, make it yo!
             if !profile_path.exists() {
                 try!(fs::mkdir(&profile_path, USER_RWX));
@@ -356,7 +290,7 @@ impl ThecaProfile {
             })
         } else {
             // set profile folder
-            let mut profile_path = find_profile_folder(args);
+            let mut profile_path = try!(find_profile_folder(args));
 
             // set profile name
             if !args.flag_p.is_empty() {
@@ -404,7 +338,7 @@ impl ThecaProfile {
 
     fn save_to_file(&mut self, args: &Args) -> Result<(), ThecaError> {
         // set profile folder
-        let mut profile_path = find_profile_folder(args);
+        let mut profile_path = try!(find_profile_folder(args));
 
         // set file name
         // this needs some work.
@@ -535,28 +469,6 @@ impl ThecaProfile {
         Ok(())
     }
 
-    fn print_header(&mut self, line_format: &LineFormat) -> Result<(), ThecaError> {
-        let mut t = match term::stdout() {
-            Some(t) => t,
-            None => specific_fail!("could not retrieve Standard Output.".to_string())
-        };
-        let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
-        let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
-        let color = termsize() > 0;
-        if color {try!(t.attr(Bold));}
-        try!(write!(
-                    t, 
-                    "{1}{0}{2}{0}{3}{0}{4}\n{5}\n",
-                    column_seperator,
-                    format_field(&"id".to_string(), line_format.id_width, false),
-                    format_field(&"title".to_string(), line_format.title_width, false),
-                    format_field(&"status".to_string(), line_format.status_width, false),
-                    format_field(&"last touched".to_string(), line_format.touched_width, false),
-                    header_seperator
-                ));
-        if color {try!(t.reset());}
-        Ok(())
-    }
 
     fn view_item(&mut self, id: usize, args: &Args) -> Result<(), ThecaError> {
         let note_pos = match self.notes.iter().position(|n| n.id == id) {
@@ -612,26 +524,7 @@ impl ThecaProfile {
 
     fn list_items(&mut self, args: &Args) -> Result<(), ThecaError> {
         if self.notes.len() > 0 {
-            let line_format = try!(LineFormat::new(&self.notes, args));
-            if !args.flag_c {
-                try!(self.print_header(&line_format));
-            }
-            let list_range = if args.flag_l > 0 {
-                args.flag_l
-            } else {
-                self.notes.len()
-            };
-            match args.flag_reverse {
-                false => {
-                    for i in range(0, list_range) {
-                        self.notes[i].print(&line_format, args);
-                    }
-                }, true => {
-                    for i in range(0, list_range).rev() {
-                        self.notes[i].print(&line_format, args);
-                    }
-                }
-            };
+            try!(sorted_print(&mut self.notes.clone(), args));
         }
         Ok(())
     }
@@ -647,33 +540,49 @@ impl ThecaProfile {
             false => self.notes.iter().filter(|n| re.is_match(n.title.as_slice()))
                                .map(|n| n.clone()).collect()
         };
-        let line_format = try!(LineFormat::new(&notes, args));
-        if !args.flag_c {
-            try!(self.print_header(&line_format));
+        if notes.len() > 0 {
+            try!(sorted_print(&mut notes.clone(), args));
         }
-        match args.flag_reverse {
-            false => {
-                for i in range(0, notes.len()) {
-                    notes[i].print(&line_format, args);
-                    if args.flag_body {
-                        // println!("\t{}", notes[i].body);
-                        for l in notes[i].body.lines() {
-                            println!("\t{}", l);
-                        }
-                    }
-                }
-            },
-            true => {
-                for i in range(0, notes.len()).rev() {
-                    notes[i].print(&line_format, args);
-                    if args.flag_body {
-                        println!("\t{}", notes[i].body);
-                    }
-                }
-            }
-        };
         Ok(())
     }
+}
+
+fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
+    let mut t = match term::stdout() {
+        Some(t) => t,
+        None => specific_fail!("could not retrieve Standard Output.".to_string())
+    };
+    let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
+    let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
+    let color = termsize() > 0;
+    if color {try!(t.attr(Bold));}
+    try!(write!(
+                t, 
+                "{1}{0}{2}{0}{3}{0}{4}\n{5}\n",
+                column_seperator,
+                format_field(&"id".to_string(), line_format.id_width, false),
+                format_field(&"title".to_string(), line_format.title_width, false),
+                format_field(&"status".to_string(), line_format.status_width, false),
+                format_field(&"last touched".to_string(), line_format.touched_width, false),
+                header_seperator
+            ));
+    if color {try!(t.reset());}
+    Ok(())
+}
+
+fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaError> {
+    let line_format = try!(LineFormat::new(notes, args));
+    if !args.flag_c {
+        try!(print_header(&line_format));
+    }
+    if args.flag_datesort {
+        notes.sort_by(|a, b| a.last_touched.cmp(&b.last_touched));
+    }
+    match args.flag_reverse {
+        false => for n in notes.iter() {n.print(&line_format, args.flag_body)},
+        true => for n in notes.iter().rev() {n.print(&line_format, args.flag_body)}
+    };
+    Ok(())
 }
 
 fn pretty_line(bold: &str, plain: &String, color: bool) -> Result<(), ThecaError> {
@@ -696,13 +605,13 @@ fn format_field(value: &String, width: usize, truncate: bool) -> String {
     }
 }
 
-fn find_profile_folder(args: &Args) -> Path {
+fn find_profile_folder(args: &Args) -> Result<Path, ThecaError> {
     if !args.flag_profiles_folder.is_empty() {
-        Path::new(args.flag_profiles_folder.to_string())
+        Ok(Path::new(args.flag_profiles_folder.to_string()))
     } else {
         match homedir() {
-            Some(ref p) => p.join(".theca"),
-            None => Path::new(".").join(".theca")
+            Some(ref p) => Ok(p.join(".theca")),
+            None => specific_fail!("failed to find your home directory".to_string())
         }
     }
 }
