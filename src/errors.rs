@@ -55,8 +55,8 @@ impl error::FromError<time::ParseError> for ThecaError {
     fn from_error(err: time::ParseError) -> ThecaError {
         ThecaError {
             kind: GenericError,
-            desc: "Time parsing error".to_string(),
-            detail: Some(err.to_string())
+            desc: format!("Time parsing error: {}.", err),
+            detail: None
         }
     }
 }
@@ -72,7 +72,7 @@ impl error::FromError<FromUtf8Error> for ThecaError {
 }
 
 impl error::FromError<SymmetricCipherError> for ThecaError {
-    fn from_error(err: SymmetricCipherError) -> ThecaError {
+    fn from_error(_: SymmetricCipherError) -> ThecaError {
         ThecaError {
             kind: GenericError,
             desc: "SymmetricCipherError, that's bad.".to_string(),
@@ -88,7 +88,7 @@ impl error::FromError<docopt::Error> for ThecaError {
 }
 
 impl error::FromError<core::fmt::Error> for ThecaError {
-    fn from_error(err: core::fmt::Error) -> ThecaError {
+    fn from_error(_: core::fmt::Error) -> ThecaError {
         ThecaError {
             kind: GenericError,
             desc: "Formatting error.".to_string(),

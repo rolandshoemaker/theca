@@ -28,8 +28,6 @@ use term::attr::Attr::{Bold};
 // crypto imports
 use errors::{ThecaError, GenericError};
 use crypt::{encrypt, decrypt, password_to_key};
-// use utils::{print_header, sorted_print, pretty_line, format_field,
-//             find_profile_folder, drop_to_editor, get_password};
 
 pub use self::libc::{
     STDIN_FILENO,
@@ -85,7 +83,6 @@ static USAGE: &'static str = "
 theca - cli note taking tool
 
 Usage:
-    theca [options] info
     theca [options] new-profile <name>
     theca [options] [-c] [-l LIMIT] [--reverse]
     theca [options] [-c] <id>
@@ -93,16 +90,17 @@ Usage:
     theca [options] add <title> [--started|--urgent] [-b BODY|--editor|-]
     theca [options] edit <id> [<title>] [--started|--urgent|--none] [-b BODY|--editor|-]
     theca [options] del <id>
+    theca [options] info
     theca (-h | --help)
     theca --version
 
 Options:
     -h, --help                          Show this screen.
     -v, --version                       Show the version of theca.
-    --profiles-folder PROFILEPATH       Path to folder container profile.json files.
+    --profiles-folder PROFILEPATH       Path to folder containing profile.json files.
     -p PROFILE, --profile PROFILE       Specify non-default profile.
     -c, --condensed                     Use the condensed print format.
-    --encrypted                         Specifies using an encrypted profile.
+    -e, --encrypted                     Specifies using an encrypted profile.
     -k KEY, --key KEY                   Encryption key to use for encryption/decryption,
                                         a prompt will be displayed if no key is provided.
     -l LIMIT                            Limit listing to LIMIT items [default: 0].
@@ -416,10 +414,10 @@ impl ThecaProfile {
             .is_some();
         match remove {
             true => {
-                println!("note removed");
+                println!("note {} removed", id);
             }
             false => {
-                println!("note #{} not found", id);
+                println!("note {} doesn't exist", id);
             }
         }
     }
@@ -428,7 +426,7 @@ impl ThecaProfile {
         let item_pos: usize = match self.notes.iter()
                                               .position(|n| n.id == id) {
                 Some(i) => i,
-                None => specific_fail!(format!("note id#{} doesn't exist.", id))
+                None => specific_fail!(format!("note {} doesn't exist", id))
             };
         if !args.arg_title.is_empty() {
             // change title
@@ -473,7 +471,7 @@ impl ThecaProfile {
     fn view_item(&mut self, id: usize, args: &Args) -> Result<(), ThecaError> {
         let note_pos = match self.notes.iter().position(|n| n.id == id) {
             Some(i) => i,
-            None => specific_fail!(format!("note #{} doesn't exist.", id))
+            None => specific_fail!(format!("note {} doesn't exist", id))
         };
         let color = termsize() > 0;
 
@@ -532,7 +530,7 @@ impl ThecaProfile {
     fn search_items(&mut self, regex_pattern: &str, args: &Args) -> Result<(), ThecaError> {
         let re = match Regex::new(regex_pattern) {
             Ok(r) => r,
-            Err(e) => specific_fail!(format!("regex error: {}.", e))
+            Err(e) => specific_fail!(format!("regex error: {}.", e.msg))
         };
         let notes: Vec<ThecaItem> = match args.flag_body {
             true => self.notes.iter().filter(|n| re.is_match(n.body.as_slice()))
@@ -550,7 +548,7 @@ impl ThecaProfile {
 fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
     let mut t = match term::stdout() {
         Some(t) => t,
-        None => specific_fail!("could not retrieve Standard Output.".to_string())
+        None => specific_fail!("could not retrieve standard output.".to_string())
     };
     let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
     let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
@@ -588,7 +586,7 @@ fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaErro
 fn pretty_line(bold: &str, plain: &String, color: bool) -> Result<(), ThecaError> {
     let mut t = match term::stdout() {
         Some(t) => t,
-        None => specific_fail!("could not retrieve Standard Output.".to_string())
+        None => specific_fail!("could not retrieve standard output.".to_string())
     };
     if color {try!(t.attr(Bold));}
     try!(write!(t, "{}", bold.to_string()));
@@ -720,7 +718,7 @@ fn theca() -> Result<(), ThecaError> {
     }
 
     // save altered profile back to disk
-    // this should only be triggered by commands that make transactions to the profile
+    // this should only be triggered by commands that make alterations to the profile
     if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile {
         try!(profile.save_to_file(&args));
     }
