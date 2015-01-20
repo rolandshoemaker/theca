@@ -101,6 +101,35 @@ pub fn get_password() -> Result<String, ThecaError> {
     Ok(key.trim().to_string())
 }
 
+pub fn get_yn_input() -> Result<bool, ThecaError> {
+    let mut stdin = std::io::stdio::stdin();
+    let mut answer;
+    let yes = vec!["y", "Y", "yes", "YES", "Yes"];
+    let no = vec!["n", "N", "no", "NO", "No"];
+    loop {
+        print!("[y/n]# ");
+        let mut input = try!(stdin.read_line());
+        input = input.trim().to_string();
+        match yes.iter().any(|n| n.as_slice() == input) {
+            true => {
+                answer = true;
+                break;
+            },
+            false => {
+                match no.iter().any(|n| n.as_slice() == input) {
+                    true => {
+                        answer = false;
+                        break;
+                    },
+                    false => ()
+                }
+            }
+        };
+        println!("invalid input.");
+    }
+    Ok(answer)
+}
+
 pub fn pretty_line(bold: &str, plain: &String, color: bool) -> Result<(), ThecaError> {
     let mut t = match term::stdout() {
         Some(t) => t,

@@ -25,7 +25,8 @@ use docopt::Docopt;
 use term::attr::Attr::{Bold};
 
 // crypto imports
-use utils::{termsize, drop_to_editor, get_password, pretty_line, format_field};
+use utils::{termsize, drop_to_editor, get_password, pretty_line, format_field,
+            get_yn_input};
 use errors::{ThecaError, GenericError};
 use crypt::{encrypt, decrypt, password_to_key};
 
@@ -39,32 +40,36 @@ pub use self::libc::{
 pub mod utils;
 pub mod crypt;
 
-static VERSION:  &'static str = "0.4.5-dev";
+static VERSION:  &'static str = "0.5.0-dev";
 
 static USAGE: &'static str = "
 theca - cli note taking tool
 
 Usage:
     theca [options] new-profile <name>
+    theca [options] info
+    theca [options] clear
     theca [options] [-c] [-l LIMIT] [--reverse]
     theca [options] [-c] <id>
-    theca [options] [-c] search [--body] [-l LIMIT] [--reverse] <pattern>
+    theca [options] [-c] search [--regex, --body] <pattern>
     theca [options] add <title> [--started|--urgent] [-b BODY|--editor|-]
     theca [options] edit <id> [<title>] [--started|--urgent|--none] [-b BODY|--editor|-]
     theca [options] del <id>
-    theca [options] info
     theca (-h | --help)
     theca --version
 
 Options:
     -h, --help                          Show this screen.
     -v, --version                       Show the version of theca.
-    --profiles-folder PROFILEPATH       Path to folder containing profile.json files.
+    --profile-folder PROFILEPATH       Path to folder containing profile.json files.
     -p PROFILE, --profile PROFILE       Specify non-default profile.
     -c, --condensed                     Use the condensed printing format.
     -e, --encrypted                     Specifies using an encrypted profile.
     -k KEY, --key KEY                   Encryption key to use for encryption/decryption,
                                         a prompt will be displayed if no key is provided.
+    -y, --yes                           Silently agree to any y/n prompts.
+    --regex                             Set search pattern to regex (default is plaintext).
+    --body                              Search the body of notes instead of the title.
     -l LIMIT                            Limit listing to LIMIT items [default: 0].
     --datesort                          Sort items by date, can be used with --reverse.
     --none                              No status. (default)
@@ -77,10 +82,11 @@ Options:
 
 #[derive(RustcDecodable, Show)]
 struct Args {
-    flag_profiles_folder: String,
+    flag_profile_folder: String,
     flag_p: String,
     cmd_new_profile: bool,
     cmd_search: bool,
+    flag_regex: bool,
     flag_body: bool,
     flag_reverse: bool,
     cmd_add: bool,
@@ -103,7 +109,9 @@ struct Args {
     arg_id: Vec<usize>,
     flag_h: bool,
     flag_v: bool,
-    cmd_info: bool
+    cmd_clear: bool,
+    cmd_info: bool,
+    flag_y: bool
 }
 
 static NOSTATUS: &'static str = "";
@@ -369,9 +377,9 @@ impl ThecaProfile {
         Ok(())
     }
 
-    fn delete_item(&mut self, id: usize) {
+    fn delete_item(&mut self, id: &usize) {
         let remove = self.notes.iter()
-            .position(|n| n.id == id)
+            .position(|n| n.id == *id)
             .map(|e| self.notes.remove(e))
             .is_some();
         match remove {
@@ -408,6 +416,18 @@ impl ThecaProfile {
             if !args.flag_b.is_empty() {
                 self.notes[item_pos].body = args.flag_b.to_string();
             } else if args.flag_editor {
+                if args.flag_encrypted && !args.flag_y {
+                    // leak to disk warning
+                    println!(
+                        "{}\n{}\n{}\n{}\n{}",
+                        "*******************************************************************",
+                        "* Warning: this will write the decrypted note to disk temporarily *",
+                        "* for editing, it will be deleted when you are done, but this     *",
+                        "* increases the chance that it may be recovered at a later date.  *",
+                        "*******************************************************************");
+                    println!("Do you want to continue?");
+                    if !try!(get_yn_input()) {specific_fail!("ok, bye".to_string());}
+                }
                 self.notes[item_pos].body = try!(drop_to_editor(&self.notes[item_pos].body));
             } else if args.cmd__ {
                 try!(stdin().lock().read_to_string());
@@ -491,16 +511,25 @@ impl ThecaProfile {
         Ok(())
     }
 
-    fn search_items(&mut self, regex_pattern: &str, args: &Args) -> Result<(), ThecaError> {
-        let re = match Regex::new(regex_pattern) {
-            Ok(r) => r,
-            Err(e) => specific_fail!(format!("regex error: {}.", e.msg))
-        };
-        let notes: Vec<ThecaItem> = match args.flag_body {
-            true => self.notes.iter().filter(|n| re.is_match(n.body.as_slice()))
-                              .map(|n| n.clone()).collect(),
-            false => self.notes.iter().filter(|n| re.is_match(n.title.as_slice()))
-                               .map(|n| n.clone()).collect()
+    fn search_items(&mut self, args: &Args) -> Result<(), ThecaError> {
+        let pattern = args.arg_pattern.as_slice();
+        let notes: Vec<ThecaItem> = match args.flag_regex {
+            true => {
+                let re = match Regex::new(pattern) {
+                    Ok(r) => r,
+                    Err(e) => specific_fail!(format!("regex error: {}.", e.msg))
+                };
+                self.notes.iter().filter(|n| match args.flag_body {
+                    true => re.is_match(n.body.as_slice()),
+                    false => re.is_match(n.title.as_slice())
+                }).map(|n| n.clone()).collect()
+            },
+            false => {
+                self.notes.iter().filter(|n| match args.flag_body {
+                    true => n.body.contains(pattern),
+                    false => n.title.contains(pattern)
+                }).map(|n| n.clone()).collect()
+            }
         };
         if notes.len() > 0 {
             try!(sorted_print(&mut notes.clone(), args));
@@ -538,7 +567,6 @@ fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaErro
         true => args.flag_l,
         false => notes.len()
     };
-    println!("{} something", limit);
     if !args.flag_c {
         try!(print_header(&line_format));
     }
@@ -557,8 +585,8 @@ fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaErro
 }
 
 fn find_profile_folder(args: &Args) -> Result<Path, ThecaError> {
-    if !args.flag_profiles_folder.is_empty() {
-        Ok(Path::new(args.flag_profiles_folder.to_string()))
+    if !args.flag_profile_folder.is_empty() {
+        Ok(Path::new(args.flag_profile_folder.to_string()))
     } else {
         match homedir() {
             Some(ref p) => Ok(p.join(".theca")),
@@ -582,13 +610,18 @@ fn theca() -> Result<(), ThecaError> {
 
     match getenv("THECA_PROFILE_FOLDER") {
         Some(val) => {
-            if args.flag_profiles_folder.is_empty() {
-                args.flag_profiles_folder = val;
+            if args.flag_profile_folder.is_empty() {
+                args.flag_profile_folder = val;
             }
         },
         None => ()
     };
-    
+
+    // if key is provided but --encrypted not set, it prob should be
+    if !args.flag_key.is_empty() && !args.flag_encrypted {
+        args.flag_encrypted = true;
+    }
+
     // if profile is encrypted try to set the key
     if args.flag_encrypted && args.flag_key.is_empty() {
         args.flag_key = try!(get_password());
@@ -606,13 +639,17 @@ fn theca() -> Result<(), ThecaError> {
         try!(profile.edit_item(&args));
     } else if args.cmd_del {
         // delete a item
-        profile.delete_item(args.arg_id[0]);
+        profile.delete_item(&args.arg_id[0]);
+    } else if args.cmd_clear {
+        println!("Are you sure you want to delete all notes in this profile?");
+        if !args.flag_y && !try!(get_yn_input()) {specific_fail!("ok, bye".to_string());}
+        profile.notes.truncate(0);
     } else if args.flag_v {
         // display theca version
         println!("theca v{}", VERSION);
     } else if args.cmd_search {
         // search for an item
-        try!(profile.search_items(args.arg_pattern.as_slice(), &args));
+        try!(profile.search_items(&args));
     } else if !args.arg_id.is_empty() {
         // view short item
         try!(profile.view_item(&args));
@@ -625,7 +662,7 @@ fn theca() -> Result<(), ThecaError> {
 
     // save altered profile back to disk
     // this should only be triggered by commands that make alterations to the profile
-    if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile {
+    if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile || args.cmd_clear {
         try!(profile.save_to_file(&args));
     }
     Ok(())

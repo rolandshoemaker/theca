@@ -75,7 +75,7 @@ impl error::FromError<SymmetricCipherError> for ThecaError {
     fn from_error(_: SymmetricCipherError) -> ThecaError {
         ThecaError {
             kind: GenericError,
-            desc: "SymmetricCipherError, that's bad.".to_string(),
+            desc: "invalid encryption key".to_string(),
             detail: None
         }
     }
