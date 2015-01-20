@@ -534,6 +534,11 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
 
 fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaError> {
     let line_format = try!(LineFormat::new(notes, args));
+    let limit = match args.flag_l != 0 && notes.len() >= args.flag_l {
+        true => args.flag_l,
+        false => notes.len()
+    };
+    println!("{} something", limit);
     if !args.flag_c {
         try!(print_header(&line_format));
     }
@@ -541,13 +546,11 @@ fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaErro
         notes.sort_by(|a, b| a.last_touched.cmp(&b.last_touched));
     }
     match args.flag_reverse {
-        false => for (i, n) in notes.iter().enumerate() {
+        false => for n in notes[0..limit].iter() {
             n.print(&line_format, args.flag_body);
-            if !args.flag_l > 0 && (i+1) == args.flag_l {break;}
         },
-        true => for (i, n) in notes.iter().rev().enumerate() {
+        true => for n in notes[notes.len()-limit..notes.len()].iter().rev() {
             n.print(&line_format, args.flag_body);
-            if !args.flag_l > 0 && (i+1) == args.flag_l {break;}
         }
     };
     Ok(())
