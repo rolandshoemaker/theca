@@ -61,7 +61,7 @@ Options:
     -v, --version                       Show the version of theca.
     --profiles-folder PROFILEPATH       Path to folder containing profile.json files.
     -p PROFILE, --profile PROFILE       Specify non-default profile.
-    -c, --condensed                     Use the condensed print format.
+    -c, --condensed                     Use the condensed printing format.
     -e, --encrypted                     Specifies using an encrypted profile.
     -k KEY, --key KEY                   Encryption key to use for encryption/decryption,
                                         a prompt will be displayed if no key is provided.
@@ -384,7 +384,8 @@ impl ThecaProfile {
         }
     }
 
-    fn edit_item(&mut self, id: usize, args: &Args) -> Result<(), ThecaError> {
+    fn edit_item(&mut self, args: &Args) -> Result<(), ThecaError> {
+        let id = args.arg_id[0];
         let item_pos: usize = match self.notes.iter()
                                               .position(|n| n.id == id) {
                 Some(i) => i,
@@ -430,7 +431,8 @@ impl ThecaProfile {
     }
 
 
-    fn view_item(&mut self, id: usize, args: &Args) -> Result<(), ThecaError> {
+    fn view_item(&mut self, args: &Args) -> Result<(), ThecaError> {
+        let id = args.arg_id[0];
         let note_pos = match self.notes.iter().position(|n| n.id == id) {
             Some(i) => i,
             None => specific_fail!(format!("note {} doesn't exist", id))
@@ -539,8 +541,14 @@ fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaErro
         notes.sort_by(|a, b| a.last_touched.cmp(&b.last_touched));
     }
     match args.flag_reverse {
-        false => for n in notes.iter() {n.print(&line_format, args.flag_body)},
-        true => for n in notes.iter().rev() {n.print(&line_format, args.flag_body)}
+        false => for (i, n) in notes.iter().enumerate() {
+            n.print(&line_format, args.flag_body);
+            if !args.flag_l > 0 && (i+1) == args.flag_l {break;}
+        },
+        true => for (i, n) in notes.iter().rev().enumerate() {
+            n.print(&line_format, args.flag_body);
+            if !args.flag_l > 0 && (i+1) == args.flag_l {break;}
+        }
     };
     Ok(())
 }
@@ -568,6 +576,7 @@ fn theca() -> Result<(), ThecaError> {
         },
         None => ()
     };
+
     match getenv("THECA_PROFILE_FOLDER") {
         Some(val) => {
             if args.flag_profiles_folder.is_empty() {
@@ -577,7 +586,7 @@ fn theca() -> Result<(), ThecaError> {
         None => ()
     };
     
-    // if profile in ecnrypted try to set the key
+    // if profile is encrypted try to set the key
     if args.flag_encrypted && args.flag_key.is_empty() {
         args.flag_key = try!(get_password());
     }
@@ -591,7 +600,7 @@ fn theca() -> Result<(), ThecaError> {
         try!(profile.add_item(&args));
     } else if args.cmd_edit {
         // edit a item
-        try!(profile.edit_item(args.arg_id[0], &args));
+        try!(profile.edit_item(&args));
     } else if args.cmd_del {
         // delete a item
         profile.delete_item(args.arg_id[0]);
@@ -603,7 +612,7 @@ fn theca() -> Result<(), ThecaError> {
         try!(profile.search_items(args.arg_pattern.as_slice(), &args));
     } else if !args.arg_id.is_empty() {
         // view short item
-        try!(profile.view_item(args.arg_id[0], &args));
+        try!(profile.view_item(&args));
     } else if args.cmd_info {
         try!(profile.stats());
     } else if !args.cmd_new_profile {
