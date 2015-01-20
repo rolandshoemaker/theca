@@ -13,19 +13,19 @@ extern crate term;
 use std::os::{getenv, homedir};
 use std::io::fs;
 use std::io::fs::PathExtensions;
-use std::io::process::{InheritFd};
-use std::io::{File, Truncate, Write, Read, Open, ReadWrite,
-              TempDir, Command, SeekSet, stdin, USER_RWX};
+use std::io::{File, Truncate, Write, Read, Open,
+              stdin, USER_RWX};
 use std::iter::{repeat};
 
 // random things
 use regex::{Regex};
 use rustc_serialize::{Encodable, Decodable, Encoder, json};
-use time::{now_utc, strftime, get_time};
+use time::{now_utc, strftime};
 use docopt::Docopt;
 use term::attr::Attr::{Bold};
 
 // crypto imports
+use utils::{termsize, drop_to_editor, get_password, pretty_line, format_field};
 use errors::{ThecaError, GenericError};
 use crypt::{encrypt, decrypt, password_to_key};
 
@@ -36,48 +36,10 @@ pub use self::libc::{
 };
 
 #[macro_use] pub mod errors;
+pub mod utils;
 pub mod crypt;
 
 static VERSION:  &'static str = "0.4.5-dev";
-
-// c calls for TIOCGWINSZ
-mod c {
-    extern crate libc;
-    pub use self::libc::{
-        c_int,
-        c_ushort,
-        c_ulong,
-        STDOUT_FILENO
-    };
-    use std::mem::zeroed;
-    pub struct Winsize {
-        pub ws_row: c_ushort,
-        pub ws_col: c_ushort
-    }
-    #[cfg(any(target_os = "linux", target_os = "android"))]
-    static TIOCGWINSZ: c_ulong = 0x5413;
-    #[cfg(any(target_os = "macos", target_os = "ios"))]
-    static TIOCGWINSZ: c_ulong = 0x40087468;
-    extern {
-        pub fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
-    }
-    pub unsafe fn dimensions() -> Winsize {
-        let mut window: Winsize = zeroed();
-        ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut window as *mut Winsize);
-        window
-    }
-}
-
-// unsafety wrapper
-fn termsize() -> usize {
-    let ws = unsafe {c::dimensions()};
-    if ws.ws_col == 0 || ws.ws_row == 0 {
-        0
-    }
-    else {
-        ws.ws_col as usize
-    }
-}
 
 static USAGE: &'static str = "
 theca - cli note taking tool
@@ -583,26 +545,6 @@ fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaErro
     Ok(())
 }
 
-fn pretty_line(bold: &str, plain: &String, color: bool) -> Result<(), ThecaError> {
-    let mut t = match term::stdout() {
-        Some(t) => t,
-        None => specific_fail!("could not retrieve standard output.".to_string())
-    };
-    if color {try!(t.attr(Bold));}
-    try!(write!(t, "{}", bold.to_string()));
-    if color {try!(t.reset());}
-    try!(write!(t, "{}", plain));
-    Ok(())
-}
-
-fn format_field(value: &String, width: usize, truncate: bool) -> String {
-    if value.len() > width && width > 3 && truncate {
-        format!("{: <1$.1$}...", value, width-3)
-    } else {
-        format!("{: <1$.1$}", value, width)
-    }
-}
-
 fn find_profile_folder(args: &Args) -> Result<Path, ThecaError> {
     if !args.flag_profiles_folder.is_empty() {
         Ok(Path::new(args.flag_profiles_folder.to_string()))
@@ -612,54 +554,6 @@ fn find_profile_folder(args: &Args) -> Result<Path, ThecaError> {
             None => specific_fail!("failed to find your home directory".to_string())
         }
     }
-}
-
-fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
-    // setup temporary directory
-    let tmpdir = try!(TempDir::new("theca"));
-    // setup temporary file to write/read
-    let tmppath = tmpdir.path().join(get_time().sec.to_string());
-    let mut tmpfile = try!(File::open_mode(&tmppath, Open, ReadWrite));
-    try!(tmpfile.write_line(contents.as_slice()));
-    // we now have a temp file, at `tmppath`, that contains `contents`
-    // first we need to know which onqe
-    let editor = match getenv("VISUAL") {
-        Some(val) => val,
-        None => {
-            match getenv("EDITOR") {
-                Some(val) => val,
-                None => specific_fail!("neither $VISUAL nor $EDITOR is set.".to_string())
-            }
-        }
-    };
-    // lets start `editor` and edit the file at `tmppath`
-    // first we need to set STDIN, STDOUT, and STDERR to those that theca is
-    // currently using so we can display the editor
-    let mut editor_command = Command::new(editor);
-    editor_command.arg(tmppath.display().to_string());
-    editor_command.stdin(InheritFd(STDIN_FILENO));
-    editor_command.stdout(InheritFd(STDOUT_FILENO));
-    editor_command.stderr(InheritFd(STDERR_FILENO));
-    let editor_proc = editor_command.spawn();
-    match try!(editor_proc).wait().is_ok() {
-        true => {
-            // finished editing, time to read `tmpfile` for the final output
-            // seek to start of `tmpfile`
-            try!(tmpfile.seek(0, SeekSet));
-            Ok(try!(tmpfile.read_to_string()))
-        }
-        false => specific_fail!("The editor broke... I think".to_string())
-    }
-}
-
-fn get_password() -> Result<String, ThecaError> {
-    // should really turn off terminal echo...
-    print!("Key: ");
-    let mut stdin = std::io::stdio::stdin();
-    // since this only reads one line of stdin it could still feasibly
-    // be used with `-` to set note body?
-    let key = try!(stdin.read_line());
-    Ok(key.trim().to_string())
 }
 
 fn theca() -> Result<(), ThecaError> {
