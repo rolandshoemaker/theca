@@ -55,7 +55,7 @@ impl error::FromError<time::ParseError> for ThecaError {
     fn from_error(err: time::ParseError) -> ThecaError {
         ThecaError {
             kind: GenericError,
-            desc: format!("Time parsing error: {}.", err),
+            desc: format!("time parsing error: {}.", err),
             detail: None
         }
     }
@@ -65,7 +65,7 @@ impl error::FromError<FromUtf8Error> for ThecaError {
     fn from_error(err: FromUtf8Error) -> ThecaError {
         ThecaError {
             kind: GenericError,
-            desc: format!("Error parsing file, {}.", err),
+            desc: format!("error parsing utf-8, is profile encrypted?\n({})", err),
             detail: None
         }
     }
@@ -91,7 +91,7 @@ impl error::FromError<core::fmt::Error> for ThecaError {
     fn from_error(_: core::fmt::Error) -> ThecaError {
         ThecaError {
             kind: GenericError,
-            desc: "Formatting error.".to_string(),
+            desc: "formatting error.".to_string(),
             detail: None
         }
     }

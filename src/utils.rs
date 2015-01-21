@@ -87,7 +87,7 @@ pub fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
             try!(tmpfile.seek(0, SeekSet));
             Ok(try!(tmpfile.read_to_string()))
         }
-        false => specific_fail!("The editor broke... I think".to_string())
+        false => specific_fail!("the editor broke... I think".to_string())
     }
 }
 

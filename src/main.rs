@@ -52,6 +52,7 @@ Usage:
     theca [options] [-c] [-l LIMIT] [--reverse]
     theca [options] [-c] <id>
     theca [options] [-c] search [--regex, --body] <pattern>
+    theca [options] transfer <id> to <name>
     theca [options] add <title> [--started|--urgent] [-b BODY|--editor|-]
     theca [options] edit <id> [<title>] [--started|--urgent|--none] [-b BODY|--editor|-]
     theca [options] del <id>
@@ -61,8 +62,10 @@ Usage:
 Options:
     -h, --help                          Show this screen.
     -v, --version                       Show the version of theca.
-    --profile-folder PROFILEPATH       Path to folder containing profile.json files.
-    -p PROFILE, --profile PROFILE       Specify non-default profile.
+    --profile-folder PROFILEPATH        Path to folder containing profile.json files [default
+                                        can be set with env var THECA_PROFILE_FOLDER].
+    -p PROFILE, --profile PROFILE       Specify non-default profile [default can be set 
+                                        with env var THECA_DEFAULT_PROFILE].
     -c, --condensed                     Use the condensed printing format.
     -e, --encrypted                     Specifies using an encrypted profile.
     -k KEY, --key KEY                   Encryption key to use for encryption/decryption,
@@ -80,7 +83,7 @@ Options:
     -                                   Set body of the item from STDIN.
 ";
 
-#[derive(RustcDecodable, Show)]
+#[derive(RustcDecodable, Show, Clone)]
 struct Args {
     flag_profile_folder: String,
     flag_p: String,
@@ -111,7 +114,8 @@ struct Args {
     flag_v: bool,
     cmd_clear: bool,
     cmd_info: bool,
-    flag_y: bool
+    flag_y: bool,
+    cmd_transfer: bool
 }
 
 static NOSTATUS: &'static str = "";
@@ -165,7 +169,7 @@ impl LineFormat {
         // set title_width to 5 so "title" won't be truncated
         if line_format.title_width < 5 && !args.flag_c {line_format.title_width = 5;}
 
-        // sstatus length stuff
+        // status length stuff
         line_format.status_width = match items.iter().any(|n| n.status.len() > 0) {
             true => {
                 match args.flag_c {
@@ -173,7 +177,10 @@ impl LineFormat {
                     false => {
                         match items.iter().max_by(|n| n.status.len()) {
                             Some(w) => w.status.len(),
-                            None => 0
+                            None => {
+                                line_format.title_width += 2;
+                                0
+                            }
                         }
                     },
                     // only display first char of status (e.g. S or U) for condensed print
@@ -181,7 +188,10 @@ impl LineFormat {
                 }
             },
             // no items have statuses so truncate column
-            false => 0
+            false => {
+                line_format.title_width += 2;
+                0
+            }
         };
 
         // last_touched has fixed string length so no need for silly iter stuff
@@ -202,7 +212,11 @@ impl LineFormat {
     }
 
     fn line_width(&self) -> usize {
-        self.id_width+self.title_width+self.status_width+self.touched_width+(3*self.colsep)
+        let columns = match self.status_width == 0 {
+            true => 2*self.colsep,
+            false => 3*self.colsep
+        };
+        self.id_width+self.title_width+self.status_width+self.touched_width+columns
     }
 }
 
@@ -222,12 +236,14 @@ impl ThecaItem {
         print!("{}", column_seperator);
         let mut title_str = self.title.to_string();
         if !self.body.is_empty() && !body_search {
-            title_str = "(+) ".to_string()+title_str.as_slice();
+            title_str = "(+) ".to_string()+&*title_str;
         }
         print!("{}", format_field(&title_str, line_format.title_width, true));
         print!("{}", column_seperator);
-        print!("{}", format_field(&self.status, line_format.status_width, false));
-        print!("{}", column_seperator);
+        if line_format.status_width != 0 {
+            print!("{}", format_field(&self.status, line_format.status_width, false));
+            print!("{}", column_seperator);
+        }
         print!("{}", format_field(&self.last_touched, line_format.touched_width, false));
         print!("\n");
         if body_search {
@@ -286,15 +302,15 @@ impl ThecaProfile {
                     let contents = match args.flag_encrypted {
                         false => try!(String::from_utf8(contents_buf)),
                         true => {
-                            let (key, iv) = password_to_key(args.flag_key.as_slice());
+                            let (key, iv) = password_to_key(&*args.flag_key);
                                 try!(String::from_utf8(try!(decrypt(
-                                    contents_buf.as_slice(),
-                                    key.as_slice(),
-                                    iv.as_slice()
+                                    &*contents_buf,
+                                    &*key,
+                                    &*iv
                                 ))))
                         }
                     };
-                    let decoded: ThecaProfile = match json::decode(contents.as_slice()) {
+                    let decoded: ThecaProfile = match json::decode(&*contents) {
                         Ok(s) => s,
                         Err(_) => specific_fail!(format!("Invalid JSON in {}", profile_path.display()))
                     };
@@ -330,17 +346,32 @@ impl ThecaProfile {
 
         // encrypt json if its an encrypted profile
         if self.encrypted {
-            let (key, iv) = password_to_key(args.flag_key.as_slice());
+            let (key, iv) = password_to_key(&*args.flag_key);
             buffer = try!(encrypt(
-                buffer.as_slice(),
-                key.as_slice(),
-                iv.as_slice()
+                &*buffer,
+                &*key,
+                &*iv
             ));
         }
 
         // write buffer to file
-        try!(file.write(buffer.as_slice()));
+        try!(file.write(&*buffer));
 
+        Ok(())
+    }
+
+    fn import_note(&mut self, note: ThecaItem) -> Result<(), ThecaError> {
+        let new_id = match self.notes.last() {
+            Some(n) => n.id,
+            None => 0
+        };
+        self.notes.push(ThecaItem {
+            id: new_id + 1,
+            title: note.title.clone(),
+            status: note.status.clone(),
+            body: note.body.clone(),
+            last_touched: try!(strftime("%F %T", &now_utc()))
+        });
         Ok(())
     }
 
@@ -507,12 +538,14 @@ impl ThecaProfile {
     fn list_items(&mut self, args: &Args) -> Result<(), ThecaError> {
         if self.notes.len() > 0 {
             try!(sorted_print(&mut self.notes.clone(), args));
+        } else {
+            println!("this profile is empty");
         }
         Ok(())
     }
 
     fn search_items(&mut self, args: &Args) -> Result<(), ThecaError> {
-        let pattern = args.arg_pattern.as_slice();
+        let pattern = &*args.arg_pattern;
         let notes: Vec<ThecaItem> = match args.flag_regex {
             true => {
                 let re = match Regex::new(pattern) {
@@ -520,8 +553,8 @@ impl ThecaProfile {
                     Err(e) => specific_fail!(format!("regex error: {}.", e.msg))
                 };
                 self.notes.iter().filter(|n| match args.flag_body {
-                    true => re.is_match(n.body.as_slice()),
-                    false => re.is_match(n.title.as_slice())
+                    true => re.is_match(&*n.body),
+                    false => re.is_match(&*n.title)
                 }).map(|n| n.clone()).collect()
             },
             false => {
@@ -533,6 +566,8 @@ impl ThecaProfile {
         };
         if notes.len() > 0 {
             try!(sorted_print(&mut notes.clone(), args));
+        } else {
+            println!("nothing found");
         }
         Ok(())
     }
@@ -547,13 +582,18 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
     let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
     let color = termsize() > 0;
     if color {try!(t.attr(Bold));}
+    let status = match line_format.status_width == 0 {
+        true => "".to_string(),
+        false => format_field(&"status".to_string(), line_format.status_width, false)+&*column_seperator
+    };
     try!(write!(
                 t, 
-                "{1}{0}{2}{0}{3}{0}{4}\n{5}\n",
+                "{1}{0}{2}{0}{3}{4}\n{5}\n",
                 column_seperator,
                 format_field(&"id".to_string(), line_format.id_width, false),
                 format_field(&"title".to_string(), line_format.title_width, false),
-                format_field(&"status".to_string(), line_format.status_width, false),
+                // format_field(&"status".to_string(), line_format.status_width, false),
+                status,
                 format_field(&"last touched".to_string(), line_format.touched_width, false),
                 header_seperator
             ));
@@ -628,10 +668,46 @@ fn theca() -> Result<(), ThecaError> {
     }
 
     let mut profile = try!(ThecaProfile::new(&args));
+    if args.flag_p.is_empty() {
+        args.flag_p = "default".to_string();
+    }
+
 
     // this could def be better
     // what root command was used
-    if args.cmd_add {
+    if args.cmd_transfer {
+        if args.flag_p == args.arg_name {
+            specific_fail!(format!(
+                "cannot transfer a note from a profile to itself ({} -> {})",
+                args.flag_p,
+                args.arg_name
+            ));
+        }
+
+        let mut trans_args = args.clone();
+        trans_args.flag_p = args.arg_name.clone();
+        let mut trans_profile = try!(ThecaProfile::new(&trans_args));
+
+        match profile.notes.iter().find(|n| n.id == args.arg_id[0]).map(|n| trans_profile.import_note(n.clone())).is_some() {
+            true =>  {
+                match profile.notes.iter().position(|n| n.id == args.arg_id[0])
+                                   .map(|e| profile.notes.remove(e)).is_some() {
+                    true => try!(trans_profile.save_to_file(&trans_args)),
+                    false => specific_fail!(format!(
+                        "couldn't remove note {} in {}, aborting nothing will be saved",
+                        args.arg_id[0],
+                        args.flag_p
+                    ))
+                };
+            },
+            false => specific_fail!(format!(
+                "could not transfer note {} from {} -> {}",
+                args.arg_id[0],
+                args.flag_p,
+                args.arg_name
+            ))
+        };
+    } else if args.cmd_add {
         // add a item
         try!(profile.add_item(&args));
     } else if args.cmd_edit {
@@ -650,19 +726,19 @@ fn theca() -> Result<(), ThecaError> {
     } else if args.cmd_search {
         // search for an item
         try!(profile.search_items(&args));
-    } else if !args.arg_id.is_empty() {
+    } else if !args.arg_id.is_empty() && !args.cmd_transfer {
         // view short item
         try!(profile.view_item(&args));
     } else if args.cmd_info {
         try!(profile.stats());
-    } else if !args.cmd_new_profile {
+    } else if !args.cmd_new_profile && !args.cmd_transfer {
         // this should be the default for nothing
         try!(profile.list_items(&args));
     }
 
     // save altered profile back to disk
     // this should only be triggered by commands that make alterations to the profile
-    if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile || args.cmd_clear {
+    if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile || args.cmd_clear || args.cmd_transfer {
         try!(profile.save_to_file(&args));
     }
     Ok(())
