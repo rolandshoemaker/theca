@@ -267,7 +267,10 @@ impl ThecaProfile {
             // if the folder doesn't exist, make it yo!
             if !profile_path.exists() {
                 if !args.flag_y {
-                    println!("{} doesn't exist, would you like to create it?", profile_path.display());
+                    println!(
+                        "{} doesn't exist, would you like to create it?",
+                        profile_path.display()
+                    );
                     if !try!(get_yn_input()) {specific_fail!("ok bye".to_string());}
                 }
                 try!(fs::mkdir(&profile_path, USER_RWX));
@@ -291,9 +294,15 @@ impl ThecaProfile {
             match profile_path.is_file() {
                 false => {
                     if profile_path.exists() {
-                        specific_fail!(format!("{} is not a file.", profile_path.display()));
+                        specific_fail!(format!(
+                            "{} is not a file.",
+                            profile_path.display()
+                        ));
                     } else {
-                        specific_fail!(format!("{} does not exist.", profile_path.display()));
+                        specific_fail!(format!(
+                            "{} does not exist.",
+                            profile_path.display()
+                        ));
                     }
                 }
                 true => {
@@ -316,7 +325,10 @@ impl ThecaProfile {
                     };
                     let decoded: ThecaProfile = match json::decode(&*contents) {
                         Ok(s) => s,
-                        Err(_) => specific_fail!(format!("Invalid JSON in {}", profile_path.display()))
+                        Err(_) => specific_fail!(format!(
+                            "Invalid JSON in {}",
+                            profile_path.display()
+                        ))
                     };
                     Ok(decoded)
                 }
@@ -481,7 +493,12 @@ impl ThecaProfile {
         let color = termsize() > 0;
         try!(pretty_line("encrypted: ", &format!("{}\n", self.encrypted), color));
         try!(pretty_line("notes: ", &format!("{}\n", self.notes.len()), color));
-        try!(pretty_line("statuses: ", &format!("[none: {}, started: {}, urgent: {}]\n", no_s, started_s, urgent_s), color));
+        try!(pretty_line("statuses: ", &format!(
+            "[none: {}, started: {}, urgent: {}]\n",
+            no_s,
+            started_s,
+            urgent_s
+        ), color));
         Ok(())
     }
 
@@ -496,10 +513,22 @@ impl ThecaProfile {
 
         match args.flag_c {
             true => {
-                try!(pretty_line("id: ", &format!("{}\n", self.notes[note_pos].id), color));
-                try!(pretty_line("title: ", &format!("{}\n", self.notes[note_pos].title), color));
+                try!(pretty_line("id: ", &format!(
+                    "{}\n",
+                    self.notes[note_pos].id),
+                    color
+                ));
+                try!(pretty_line("title: ", &format!(
+                    "{}\n",
+                    self.notes[note_pos].title),
+                    color
+                ));
                 if !self.notes[note_pos].status.is_empty() {
-                    try!(pretty_line("status: ", &format!("{}\n", self.notes[note_pos].status), color));
+                    try!(pretty_line("status: ", &format!(
+                        "{}\n",
+                        self.notes[note_pos].status),
+                        color
+                    ));
                 }
                 try!(pretty_line(
                     "last touched: ",
@@ -508,8 +537,16 @@ impl ThecaProfile {
                 ));
             },
             false => {
-                try!(pretty_line("id\n--\n", &format!("{}\n\n", self.notes[note_pos].id), color));
-                try!(pretty_line("title\n-----\n", &format!("{}\n\n", self.notes[note_pos].title), color));
+                try!(pretty_line("id\n--\n", &format!(
+                    "{}\n\n",
+                    self.notes[note_pos].id),
+                    color
+                ));
+                try!(pretty_line("title\n-----\n", &format!(
+                    "{}\n\n",
+                    self.notes[note_pos].title),
+                    color
+                ));
                 if !self.notes[note_pos].status.is_empty() {
                     try!(pretty_line(
                         "status\n------\n",
@@ -529,10 +566,18 @@ impl ThecaProfile {
         if !self.notes[note_pos].body.is_empty() {
             match args.flag_c {
                 true => {
-                    try!(pretty_line("body: ", &format!("{}\n", self.notes[note_pos].body), color));
+                    try!(pretty_line("body: ", &format!(
+                        "{}\n",
+                        self.notes[note_pos].body),
+                        color
+                    ));
                 },
                 false => {
-                    try!(pretty_line("body\n----\n", &format!("{}\n\n", self.notes[note_pos].body), color));
+                    try!(pretty_line("body\n----\n", &format!(
+                        "{}\n\n",
+                        self.notes[note_pos].body),
+                        color
+                    ));
                 }
             };
         }
@@ -588,7 +633,11 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
     if color {try!(t.attr(Bold));}
     let status = match line_format.status_width == 0 {
         true => "".to_string(),
-        false => format_field(&"status".to_string(), line_format.status_width, false)+&*column_seperator
+        false => format_field(
+            &"status".to_string(),
+            line_format.status_width,
+            false
+        )+&*column_seperator
     };
     try!(write!(
                 t, 
@@ -691,7 +740,8 @@ fn theca() -> Result<(), ThecaError> {
         trans_args.flag_p = args.arg_name.clone();
         let mut trans_profile = try!(ThecaProfile::new(&trans_args));
 
-        match profile.notes.iter().find(|n| n.id == args.arg_id[0]).map(|n| trans_profile.import_note(n.clone())).is_some() {
+        match profile.notes.iter().find(|n| n.id == args.arg_id[0])
+                           .map(|n| trans_profile.import_note(n.clone())).is_some() {
             true =>  {
                 match profile.notes.iter().position(|n| n.id == args.arg_id[0])
                                    .map(|e| profile.notes.remove(e)).is_some() {
@@ -741,7 +791,8 @@ fn theca() -> Result<(), ThecaError> {
 
     // save altered profile back to disk
     // this should only be triggered by commands that make alterations to the profile
-    if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile || args.cmd_clear || args.cmd_transfer {
+    if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile ||
+       args.cmd_clear || args.cmd_transfer {
         try!(profile.save_to_file(&args));
     }
     Ok(())
