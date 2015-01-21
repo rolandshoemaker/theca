@@ -266,6 +266,10 @@ impl ThecaProfile {
             let profile_path = try!(find_profile_folder(args));
             // if the folder doesn't exist, make it yo!
             if !profile_path.exists() {
+                if !args.flag_y {
+                    println!("{} doesn't exist, would you like to create it?", profile_path.display());
+                    if !try!(get_yn_input()) {specific_fail!("ok bye".to_string());}
+                }
                 try!(fs::mkdir(&profile_path, USER_RWX));
             }
             Ok(ThecaProfile {
@@ -592,7 +596,6 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
                 column_seperator,
                 format_field(&"id".to_string(), line_format.id_width, false),
                 format_field(&"title".to_string(), line_format.title_width, false),
-                // format_field(&"status".to_string(), line_format.status_width, false),
                 status,
                 format_field(&"last touched".to_string(), line_format.touched_width, false),
                 header_seperator
