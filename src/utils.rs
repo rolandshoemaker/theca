@@ -140,6 +140,7 @@ pub fn get_password() -> Result<String, ThecaError> {
     // be used with `-` to set note body?
     let key = try!(stdin.read_line());
     try!(set_term_echo(true));
+    println!("");
     Ok(key.trim().to_string())
 }
 
