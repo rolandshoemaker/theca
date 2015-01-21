@@ -715,7 +715,7 @@ fn theca() -> Result<(), ThecaError> {
     }
 
     // if profile is encrypted try to set the key
-    if args.flag_encrypted && args.flag_key.is_empty() {
+    if args.flag_encrypted && args.flag_key.is_empty() && !args.flag_y {
         args.flag_key = try!(get_password());
     }
 
@@ -723,7 +723,6 @@ fn theca() -> Result<(), ThecaError> {
     if args.flag_p.is_empty() {
         args.flag_p = "default".to_string();
     }
-
 
     // this could def be better
     // what root command was used

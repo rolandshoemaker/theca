@@ -24,7 +24,7 @@ pub struct ThecaError {
 
 #[macro_export]
 macro_rules! specific_fail {
-    ($short:expr) => ({
+    ($short:expr) => {
         return Err(::std::error::FromError::from_error(
             ThecaError {
                 kind: GenericError,
@@ -32,7 +32,20 @@ macro_rules! specific_fail {
                 detail: None
             }
         ))
-    })
+    }
+}
+
+macro_rules! try_errno {
+    ($e:expr) => {
+        {
+            use std::io::{IoError};
+            use std::os::errno;
+            let err = $e;
+            if err != 0 {
+                return Err(::std::error::FromError::from_error(IoError::from_errno(errno() as usize, true)));
+            }
+        }
+    }
 }
 
 impl error::FromError<IoError> for ThecaError {

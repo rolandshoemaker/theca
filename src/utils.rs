@@ -19,8 +19,10 @@ mod c {
     extern crate libc;
     pub use self::libc::{
         c_int,
+        c_uint,
         c_ushort,
         c_ulong,
+        c_uchar,
         STDOUT_FILENO
     };
     use std::mem::zeroed;
@@ -28,6 +30,33 @@ mod c {
         pub ws_row: c_ushort,
         pub ws_col: c_ushort
     }
+    #[repr(C)]
+    pub struct Termios {
+        pub c_iflag: c_uint,
+        pub c_oflag: c_uint,
+        pub c_cflag: c_uint,
+        pub c_lflag: c_uint,
+        pub c_line: c_uchar,
+        pub c_cc: [c_uchar; 32us],
+        pub c_ispeed: c_uint,
+        pub c_ospeed: c_uint,
+    }
+    impl Termios {
+        pub fn new() -> Termios {
+            unsafe {zeroed()}
+        }
+    }
+    pub fn tcgetattr(fd: c_int, termios_p: &mut Termios) -> c_int {
+        extern { fn tcgetattr(fd: c_int, termios_p: *mut Termios) -> c_int; }
+        unsafe { tcgetattr(fd, termios_p as *mut _) }
+    }
+    pub fn tcsetattr(fd: c_int, optional_actions: c_int, termios_p: &Termios) -> c_int {
+        extern { fn tcsetattr(fd: c_int, optional_actions: c_int,
+                              termios_p: *const Termios) -> c_int; }
+        unsafe { tcsetattr(fd, optional_actions, termios_p as *const _) }
+    }
+    pub const ECHO:c_uint = 8;
+    pub const TCSANOW: c_int = 0;
     #[cfg(any(target_os = "linux", target_os = "android"))]
     static TIOCGWINSZ: c_ulong = 0x5413;
     #[cfg(any(target_os = "macos", target_os = "ios"))]
@@ -40,6 +69,17 @@ mod c {
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut window as *mut Winsize);
         window
     }
+}
+
+pub fn set_term_echo(echo: bool) -> Result<(), ThecaError> {
+    let mut t = c::Termios::new();
+    try_errno!(c::tcgetattr(STDIN_FILENO, &mut t));
+    match echo {
+        true => t.c_lflag |= c::ECHO,  // on
+        false => t.c_lflag &= !c::ECHO  // off
+    }
+    try_errno!(c::tcsetattr(STDIN_FILENO, c::TCSANOW, &mut t));
+    Ok(())
 }
 
 // unsafety wrapper
@@ -94,10 +134,12 @@ pub fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
 pub fn get_password() -> Result<String, ThecaError> {
     // should really turn off terminal echo...
     print!("Key: ");
+    try!(set_term_echo(false));
     let mut stdin = std::io::stdio::stdin();
     // since this only reads one line of stdin it could still feasibly
     // be used with `-` to set note body?
     let key = try!(stdin.read_line());
+    try!(set_term_echo(true));
     Ok(key.trim().to_string())
 }
 
