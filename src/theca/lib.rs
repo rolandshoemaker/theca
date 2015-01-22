@@ -25,7 +25,8 @@ use time::{now, strftime};
 
 // crypto imports
 use lineformat::{LineFormat};
-use utils::{termsize, drop_to_editor, pretty_line, format_field,
+use utils::c::{istty};
+use utils::{drop_to_editor, pretty_line, format_field,
             get_yn_input, sorted_print, localize_last_touched_string, parse_last_touched,
             find_profile_folder, get_password};
 use errors::{ThecaError, GenericError};
@@ -128,7 +129,7 @@ pub struct ThecaProfile {
 }
 
 impl ThecaProfile {
-    pub fn new(args: &Args) -> Result<ThecaProfile, ThecaError> {
+    pub fn new(args: &Args) -> Result<(ThecaProfile, u64), ThecaError> {
         if args.cmd_new_profile {
             let profile_path = try!(find_profile_folder(args));
             // if the folder doesn't exist, make it yo!
@@ -138,25 +139,21 @@ impl ThecaProfile {
                         "{} doesn't exist, would you like to create it?",
                         profile_path.display()
                     );
-                    if !try!(get_yn_input()) {specific_fail!("ok bye".to_string());}
+                    if !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
                 }
                 try!(mkdir(&profile_path, USER_RWX));
             }
-            Ok(ThecaProfile {
+            Ok((ThecaProfile {
                 encrypted: args.flag_encrypted,
                 notes: vec![]
-            })
+            }, 0u64))
         } else {
             // set profile folder
             let mut profile_path = try!(find_profile_folder(args));
 
             // set profile name
-            if !args.flag_p.is_empty() {
-                profile_path.push(args.flag_p.to_string() + ".json");
-            } else {
-                profile_path.push("default".to_string() + ".json");
-            }
-
+            profile_path.push(args.flag_p.to_string() + ".json");
+            
             // attempt to read profile
             match profile_path.is_file() {
                 false => {
@@ -173,9 +170,6 @@ impl ThecaProfile {
                     }
                 }
                 true => {
-                    if args.cmd_info {
-                        println!("# Loading {}", profile_path.display());
-                    }
                     let mut file = try!(File::open_mode(&profile_path, Open, Read));
                     let contents_buf = try!(file.read_to_end());
                     // decrypt the file if flag_encrypted
@@ -197,7 +191,7 @@ impl ThecaProfile {
                             profile_path.display()
                         ))
                     };
-                    Ok(decoded)
+                    Ok((decoded, try!(profile_path.stat()).modified))
                 }
             }
         }
@@ -205,23 +199,29 @@ impl ThecaProfile {
 
     pub fn clear(&mut self, args: &Args) -> Result<(), ThecaError> {
         println!("are you sure you want to delete all the notes in this profile?");
-        if !args.flag_y && !try!(get_yn_input()) {specific_fail!("ok, bye".to_string());}
+        if !args.flag_y && !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
         self.notes.truncate(0);
         Ok(())
     }
 
-    pub fn save_to_file(&mut self, args: &Args) -> Result<(), ThecaError> {
+    pub fn save_to_file(&mut self, args: &Args, fingerprint: &u64) -> Result<(), ThecaError> {
         // set profile folder
         let mut profile_path = try!(find_profile_folder(args));
 
         // set file name
-        // this needs some work.
-        if !args.flag_p.is_empty() {
-            profile_path.push(args.flag_p.to_string() + ".json");
-        } else if args.cmd_new_profile && !args.arg_name.is_empty() {
-            profile_path.push(args.arg_name.to_string() + ".json");
-        } else {
-            profile_path.push("default".to_string() + ".json");
+        match args.cmd_new_profile {
+            true => profile_path.push(args.arg_name.to_string() + ".json"),
+            false => profile_path.push(args.flag_p.to_string() + ".json")
+        }
+
+        println!("{}", fingerprint);
+        if fingerprint > &0u64 {
+            let new_fingerprint = try!(profile_path.stat()).modified;
+            if &new_fingerprint != fingerprint {
+                println!("changes have been made to the profile '{}' on disk since it was loaded, would you like to attempt to merge them?", args.flag_p);
+                if !args.flag_y && !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
+                // FIXME
+            }
         }
 
         // open file
@@ -276,14 +276,14 @@ impl ThecaProfile {
 
         let mut trans_args = args.clone();
         trans_args.flag_p = args.arg_name.clone();
-        let mut trans_profile = try!(ThecaProfile::new(&trans_args));
+        let (mut trans_profile, trans_fingerprint) = try!(ThecaProfile::new(&trans_args));
 
         match self.notes.iter().find(|n| n.id == args.arg_id[0])
                         .map(|n| trans_profile.import_note(n.clone())).is_some() {
             true =>  {
                 match self.notes.iter().position(|n| n.id == args.arg_id[0])
                                    .map(|e| self.notes.remove(e)).is_some() {
-                    true => try!(trans_profile.save_to_file(&trans_args)),
+                    true => try!(trans_profile.save_to_file(&trans_args, &trans_fingerprint)),
                     false => specific_fail!(format!(
                         "couldn't remove note {} in {}, aborting nothing will be saved",
                         args.arg_id[0],
@@ -394,7 +394,10 @@ impl ThecaProfile {
                     println!("Do you want to continue?");
                     if !try!(get_yn_input()) {specific_fail!("ok, bye".to_string());}
                 }
-                self.notes[item_pos].body = try!(drop_to_editor(&self.notes[item_pos].body));
+                let new_body = try!(drop_to_editor(&self.notes[item_pos].body));
+                if self.notes[item_pos].body != new_body {
+                    self.notes[item_pos].body = new_body;
+                }
             } else if args.cmd__ {
                 try!(stdin().lock().read_to_string());
             }
@@ -409,31 +412,31 @@ impl ThecaProfile {
         let no_s = self.notes.iter().filter(|n| n.status == "").count();
         let started_s = self.notes.iter().filter(|n| n.status == "Started").count();
         let urgent_s = self.notes.iter().filter(|n| n.status == "Urgent").count();
-        let color = termsize() > 0;
+        let tty = istty(STDOUT_FILENO);
         let min = match self.notes.iter().min_by(|n| match parse_last_touched(&*n.last_touched) {
             Ok(o) => o,
             Err(_) => now() // FIXME
         }) {
             Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
-            None => specific_fail!("bad".to_string())
+            None => specific_fail!("last_touched is not properly formated".to_string())
         };
         let max = match self.notes.iter().max_by(|n| match parse_last_touched(&*n.last_touched) {
             Ok(o) => o,
             Err(_) => now() // FIXME
         }) {
             Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
-            None => specific_fail!("bad".to_string())
+            None => specific_fail!("last_touched is not properly formated".to_string())
         };
-        try!(pretty_line("name: ", &format!("{}\n", args.flag_p), color));
-        try!(pretty_line("encrypted: ", &format!("{}\n", self.encrypted), color));
-        try!(pretty_line("notes: ", &format!("{}\n", self.notes.len()), color));
+        try!(pretty_line("name: ", &format!("{}\n", args.flag_p), tty));
+        try!(pretty_line("encrypted: ", &format!("{}\n", self.encrypted), tty));
+        try!(pretty_line("notes: ", &format!("{}\n", self.notes.len()), tty));
         try!(pretty_line("statuses: ", &format!(
             "none: {}, started: {}, urgent: {}\n",
             no_s,
             started_s,
             urgent_s
-        ), color));
-        try!(pretty_line("note ages: ", &format!("oldest: {}, newest: {}\n", min, max), color));
+        ), tty));
+        try!(pretty_line("note ages: ", &format!("oldest: {}, newest: {}\n", min, max), tty));
         Ok(())
     }
 
@@ -443,55 +446,55 @@ impl ThecaProfile {
             Some(i) => i,
             None => specific_fail!(format!("note {} doesn't exist", id))
         };
-        let color = termsize() > 0;
+        let tty = istty(STDOUT_FILENO);
 
         match args.flag_c {
             true => {
                 try!(pretty_line("id: ", &format!(
                     "{}\n",
                     self.notes[note_pos].id),
-                    color
+                    tty
                 ));
                 try!(pretty_line("title: ", &format!(
                     "{}\n",
                     self.notes[note_pos].title),
-                    color
+                    tty
                 ));
                 if !self.notes[note_pos].status.is_empty() {
                     try!(pretty_line("status: ", &format!(
                         "{}\n",
                         self.notes[note_pos].status),
-                        color
+                        tty
                     ));
                 }
                 try!(pretty_line(
                     "last touched: ",
                     &format!("{}\n", try!(localize_last_touched_string(&*self.notes[note_pos].last_touched))),
-                    color
+                    tty
                 ));
             },
             false => {
                 try!(pretty_line("id\n--\n", &format!(
                     "{}\n\n",
                     self.notes[note_pos].id),
-                    color
+                    tty
                 ));
                 try!(pretty_line("title\n-----\n", &format!(
                     "{}\n\n",
                     self.notes[note_pos].title),
-                    color
+                    tty
                 ));
                 if !self.notes[note_pos].status.is_empty() {
                     try!(pretty_line(
                         "status\n------\n",
                         &format!("{}\n\n", self.notes[note_pos].status),
-                        color
+                        tty
                     ));
                 }
                 try!(pretty_line(
                     "last touched\n------------\n",
                     &format!("{}\n\n", try!(localize_last_touched_string(&*self.notes[note_pos].last_touched))),
-                    color
+                    tty
                 ));
             }
         };
@@ -503,14 +506,14 @@ impl ThecaProfile {
                     try!(pretty_line("body: ", &format!(
                         "{}\n",
                         self.notes[note_pos].body),
-                        color
+                        tty
                     ));
                 },
                 false => {
                     try!(pretty_line("body\n----\n", &format!(
                         "{}\n\n",
                         self.notes[note_pos].body),
-                        color
+                        tty
                     ));
                 }
             };

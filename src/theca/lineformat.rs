@@ -85,8 +85,8 @@ impl LineFormat {
             // if it is trim text from the title width since it is always the biggest...
             // if there isn't any statuses, also give the title the colsep char space
             line_format.title_width -= match line_format.status_width == 0 {
-                true => (line_width - console_width) + 2,
-                false => line_width - console_width
+                true => (line_width-console_width)+2,
+                false => line_width-console_width
             };
         }
 

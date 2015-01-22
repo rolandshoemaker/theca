@@ -57,7 +57,7 @@ pub fn theca_main() -> Result<(), ThecaError> {
 
     try!(setup_args(&mut args));
 
-    let mut profile = try!(ThecaProfile::new(&args));
+    let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(&args));
 
     // this could def be better
     // what root command was used
@@ -94,7 +94,7 @@ pub fn theca_main() -> Result<(), ThecaError> {
     // this should only be triggered by commands that make alterations to the profile
     if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile ||
        args.cmd_clear || args.cmd_transfer {
-        try!(profile.save_to_file(&args));
+        try!(profile.save_to_file(&args, &profile_fingerprint));
     }
     Ok(())
 }

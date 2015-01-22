@@ -23,7 +23,7 @@ pub use libc::{
 };
 
 // c calls for TIOCGWINSZ
-mod c {
+pub mod c {
     extern crate libc;
     pub use self::libc::{
         c_int,
@@ -31,14 +31,17 @@ mod c {
         c_ushort,
         c_ulong,
         c_uchar,
-        STDOUT_FILENO
+        STDOUT_FILENO,
+        isatty
     };
     use std::mem::zeroed;
+    #[derive(Copy)]
     pub struct Winsize {
         pub ws_row: c_ushort,
         pub ws_col: c_ushort
     }
     #[repr(C)]
+    #[derive(Copy)]
     pub struct Termios {
         pub c_iflag: c_uint,
         pub c_oflag: c_uint,
@@ -77,6 +80,10 @@ mod c {
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut window as *mut Winsize);
         window
     }
+    pub fn istty(fd: c_int) -> bool {
+        let isit = unsafe {isatty(fd as i32)};
+        isit != 0
+    }
 }
 
 fn set_term_echo(echo: bool) -> Result<(), ThecaError> {
@@ -85,7 +92,7 @@ fn set_term_echo(echo: bool) -> Result<(), ThecaError> {
     match echo {
         true => t.c_lflag |= c::ECHO,  // on
         false => t.c_lflag &= !c::ECHO  // off
-    }
+    };
     try_errno!(c::tcsetattr(STDIN_FILENO, c::TCSANOW, &mut t));
     Ok(())
 }
@@ -93,7 +100,7 @@ fn set_term_echo(echo: bool) -> Result<(), ThecaError> {
 // unsafety wrapper
 pub fn termsize() -> usize {
     let ws = unsafe {c::dimensions()};
-    if ws.ws_col == 0 || ws.ws_row == 0 {
+    if ws.ws_col <= 0 || ws.ws_row <= 0 {
         0
     }
     else {
@@ -142,12 +149,13 @@ pub fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
 pub fn get_password() -> Result<String, ThecaError> {
     // should really turn off terminal echo...
     print!("Key: ");
-    try!(set_term_echo(false));
+    let tty = c::istty(STDIN_FILENO);
+    if tty {try!(set_term_echo(false));}
     let mut stdin = stdin();
     // since this only reads one line of stdin it could still feasibly
     // be used with `-` to set note body?
     let key = try!(stdin.read_line());
-    try!(set_term_echo(true));
+    if tty {try!(set_term_echo(true));}
     println!("");
     Ok(key.trim().to_string())
 }
@@ -181,14 +189,14 @@ pub fn get_yn_input() -> Result<bool, ThecaError> {
     Ok(answer)
 }
 
-pub fn pretty_line(bold: &str, plain: &String, color: bool) -> Result<(), ThecaError> {
+pub fn pretty_line(bold: &str, plain: &String, tty: bool) -> Result<(), ThecaError> {
     let mut t = match stdout() {
         Some(t) => t,
         None => specific_fail!("could not retrieve standard output.".to_string())
     };
-    if color {try!(t.attr(Bold));}
+    if tty {try!(t.attr(Bold));}
     try!(write!(t, "{}", bold.to_string()));
-    if color {try!(t.reset());}
+    if tty {try!(t.reset());}
     try!(write!(t, "{}", plain));
     Ok(())
 }
@@ -208,7 +216,7 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
     };
     let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
     let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
-    let color = termsize() > 0;
+    let tty = c::istty(STDOUT_FILENO);
     let status = match line_format.status_width == 0 {
         true => "".to_string(),
         false => format_field(
@@ -217,7 +225,7 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
             false
         )+&*column_seperator
     };
-    if color {try!(t.attr(Bold));}
+    if tty {try!(t.attr(Bold));}
     try!(write!(
                 t, 
                 "{1}{0}{2}{0}{3}{4}\n{5}\n",
@@ -228,7 +236,7 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
                 format_field(&"last touched".to_string(), line_format.touched_width, false),
                 header_seperator
             ));
-    if color {try!(t.reset());}
+    if tty {try!(t.reset());}
     Ok(())
 }
 
