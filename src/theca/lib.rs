@@ -18,12 +18,12 @@ use std::io::fs::PathExtensions;
 use std::io::{File, Truncate, Write, Read, Open,
               stdin, USER_RWX};
 use std::iter::{repeat};
+use std::cmp::Ordering;
 
 // random things
 use regex::{Regex};
-use rustc_serialize::{Encodable, Decodable, Encoder, json};
-use time::{now, strftime};
-use docopt::Docopt;
+use rustc_serialize::{Encodable, Encoder, json};
+use time::{now, strftime, strptime, at};
 use term::attr::Attr::{Bold};
 
 // crypto imports
@@ -42,84 +42,39 @@ pub use self::libc::{
 pub mod utils;
 pub mod crypt;
 
-static VERSION:  &'static str = "0.5.0-dev";
-
-static USAGE: &'static str = "
-theca - cli note taking tool
-
-Usage:
-    theca [options] new-profile <name>
-    theca [options] info
-    theca [options] clear
-    theca [options] [-c] [-l LIMIT] [--reverse]
-    theca [options] [-c] <id>
-    theca [options] [-c] search [--regex, --body] <pattern>
-    theca [options] transfer <id> to <name>
-    theca [options] add <title> [--started|--urgent] [-b BODY|--editor|-]
-    theca [options] edit <id>  [<title>|--append TEXT|--prepend TEXT] [--started|--urgent|--none] [-b BODY|--editor|-]
-    theca [options] del <id>
-    theca (-h | --help)
-    theca --version
-
-Options:
-    -h, --help                          Show this screen.
-    -v, --version                       Show the version of theca.
-    --profile-folder PROFILEPATH        Path to folder containing profile.json files [default
-                                        can be set with env var THECA_PROFILE_FOLDER].
-    -p PROFILE, --profile PROFILE       Specify non-default profile [default can be set 
-                                        with env var THECA_DEFAULT_PROFILE].
-    -c, --condensed                     Use the condensed printing format.
-    -e, --encrypted                     Specifies using an encrypted profile.
-    -k KEY, --key KEY                   Encryption key to use for encryption/decryption,
-                                        a prompt will be displayed if no key is provided.
-    -y, --yes                           Silently agree to any y/n prompts.
-    --regex                             Set search pattern to regex (default is plaintext).
-    --body                              Search the body of notes instead of the title.
-    -l LIMIT                            Limit listing to LIMIT items [default: 0].
-    --datesort                          Sort items by date, can be used with --reverse.
-    --none                              No status. (default)
-    --started                           Started status.
-    --urgent                            Urgent status.
-    --append TEXT                       Append TEXT to the note title.
-    --prepend TEXT                      Prepend TEXT to the note title.
-    -b BODY                             Set body of the item from BODY.
-    --editor                            Drop to $EDITOR to set/edit item body.
-    -                                   Set body of the item from STDIN.
-";
-
 #[derive(RustcDecodable, Show, Clone)]
-struct Args {
+pub struct Args {
+    pub cmd_new_profile: bool,
+    pub cmd_search: bool,
+    pub cmd_add: bool,
+    pub cmd_edit: bool,
+    pub cmd_del: bool,
+    pub cmd_clear: bool,
+    pub cmd_info: bool,
+    pub cmd_transfer: bool,
+    pub arg_id: Vec<usize>,
+    pub flag_v: bool,
+    cmd__: bool,
+    arg_name: String,
+    arg_pattern: String,
+    arg_title: String,
     flag_profile_folder: String,
     flag_p: String,
-    cmd_new_profile: bool,
-    cmd_search: bool,
     flag_regex: bool,
     flag_body: bool,
     flag_reverse: bool,
-    cmd_add: bool,
-    cmd_edit: bool,
-    cmd_del: bool,
-    arg_name: String,
-    arg_pattern: String,
     flag_encrypted: bool,
     flag_key: String,
     flag_c: bool,
     flag_l: usize,
     flag_datesort: bool,
-    arg_title: String,
     flag_started: bool,
     flag_urgent: bool,
     flag_none: bool,
     flag_b: String,
     flag_editor: bool,
-    cmd__: bool,
-    arg_id: Vec<usize>,
     flag_h: bool,
-    flag_v: bool,
-    cmd_clear: bool,
-    cmd_info: bool,
     flag_y: bool,
-    cmd_transfer: bool,
     flag_append: String,
     flag_prepend: String
 }
@@ -127,6 +82,9 @@ struct Args {
 static NOSTATUS: &'static str = "";
 static STARTED: &'static str = "Started";
 static URGENT: &'static str = "Urgent";
+
+static DATEFMT: &'static str = "%F %T %z";
+static DATEFMT_SHORT: &'static str = "%F %T";
 
 #[derive(Copy)]
 pub struct LineFormat {
@@ -152,7 +110,7 @@ impl LineFormat {
                                           status_width:0, touched_width:0};
 
         // get length of longest id string
-        line_format.id_width = match items.iter().max_by(|n| n.id.to_string()) {
+        line_format.id_width = match items.iter().max_by(|n| n.id.to_string().len()) {
             Some(w) => w.id.to_string().len(),
             None => 0
         };
@@ -238,7 +196,7 @@ pub struct ThecaItem {
 }
 
 impl ThecaItem {
-    fn print(&self, line_format: &LineFormat, body_search: bool) {
+    fn print(&self, line_format: &LineFormat, body_search: bool) -> Result<(), ThecaError> {
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         print!("{}", format_field(&self.id.to_string(), line_format.id_width, false));
         print!("{}", column_seperator);
@@ -252,24 +210,25 @@ impl ThecaItem {
             print!("{}", format_field(&self.status, line_format.status_width, false));
             print!("{}", column_seperator);
         }
-        print!("{}", format_field(&self.last_touched, line_format.touched_width, false));
+        print!("{}", format_field(&try!(localize_last_touched_string(&*self.last_touched)), line_format.touched_width, false));
         print!("\n");
         if body_search {
             for l in self.body.lines() {
                 println!("\t{}", l);
             }
         }
+        Ok(())
     }
 }
 
 #[derive(RustcDecodable, RustcEncodable)]
 pub struct ThecaProfile {
     encrypted: bool,
-    notes: Vec<ThecaItem>
+    pub notes: Vec<ThecaItem>
 }
 
 impl ThecaProfile {
-    fn new(args: &Args) -> Result<ThecaProfile, ThecaError> {
+    pub fn new(args: &Args) -> Result<ThecaProfile, ThecaError> {
         if args.cmd_new_profile {
             let profile_path = try!(find_profile_folder(args));
             // if the folder doesn't exist, make it yo!
@@ -344,7 +303,14 @@ impl ThecaProfile {
         }
     }
 
-    fn save_to_file(&mut self, args: &Args) -> Result<(), ThecaError> {
+    pub fn clear(&mut self, args: &Args) -> Result<(), ThecaError> {
+        println!("are you sure you want to delete all the notes in this profile?");
+        if !args.flag_y && !try!(get_yn_input()) {specific_fail!("ok, bye".to_string());}
+        self.notes.truncate(0);
+        Ok(())
+    }
+
+    pub fn save_to_file(&mut self, args: &Args) -> Result<(), ThecaError> {
         // set profile folder
         let mut profile_path = try!(find_profile_folder(args));
 
@@ -384,7 +350,7 @@ impl ThecaProfile {
         Ok(())
     }
 
-    fn import_note(&mut self, note: ThecaItem) -> Result<(), ThecaError> {
+    pub fn import_note(&mut self, note: ThecaItem) -> Result<(), ThecaError> {
         let new_id = match self.notes.last() {
             Some(n) => n.id,
             None => 0
@@ -394,12 +360,12 @@ impl ThecaProfile {
             title: note.title.clone(),
             status: note.status.clone(),
             body: note.body.clone(),
-            last_touched: try!(strftime("%F %T", &now()))
+            last_touched: try!(strftime(DATEFMT, &now()))
         });
         Ok(())
     }
 
-    fn transfer_note(&mut self, args: &Args) -> Result<(), ThecaError> {
+    pub fn transfer_note(&mut self, args: &Args) -> Result<(), ThecaError> {
         if args.flag_p == args.arg_name {
             specific_fail!(format!(
                 "cannot transfer a note from a profile to itself ({} -> {})",
@@ -435,7 +401,7 @@ impl ThecaProfile {
         Ok(())
     }
 
-    fn add_item(&mut self, args: &Args) -> Result<(), ThecaError> {
+    pub fn add_item(&mut self, args: &Args) -> Result<(), ThecaError> {
         let title = args.arg_title.replace("\n", "").to_string();
         let status = if args.flag_started {
             STARTED.to_string()
@@ -462,13 +428,13 @@ impl ThecaProfile {
             title: title,
             status: status,
             body: body,
-            last_touched: try!(strftime("%F %T", &now()))
+            last_touched: try!(strftime(DATEFMT, &now()))
         });
         println!("note added");
         Ok(())
     }
 
-    fn delete_item(&mut self, id: &usize) {
+    pub fn delete_item(&mut self, id: &usize) {
         let remove = self.notes.iter()
             .position(|n| n.id == *id)
             .map(|e| self.notes.remove(e))
@@ -483,7 +449,7 @@ impl ThecaProfile {
         }
     }
 
-    fn edit_item(&mut self, args: &Args) -> Result<(), ThecaError> {
+    pub fn edit_item(&mut self, args: &Args) -> Result<(), ThecaError> {
         let id = args.arg_id[0];
         let item_pos: usize = match self.notes.iter()
                                               .position(|n| n.id == id) {
@@ -534,29 +500,38 @@ impl ThecaProfile {
             }
         }
         // update last_touched
-        self.notes[item_pos].last_touched = try!(strftime("%F %T", &now()));
+        self.notes[item_pos].last_touched = try!(strftime(DATEFMT, &now()));
         println!("edited");
         Ok(())
     }
 
-    fn stats(&mut self) -> Result<(), ThecaError> {
+    pub fn stats(&mut self, args: &Args) -> Result<(), ThecaError> {
         let no_s = self.notes.iter().filter(|n| n.status == "").count();
         let started_s = self.notes.iter().filter(|n| n.status == "Started").count();
         let urgent_s = self.notes.iter().filter(|n| n.status == "Urgent").count();
         let color = termsize() > 0;
+        let min = match self.notes.iter().min_by(|n| at(strptime(&*n.last_touched, DATEFMT).unwrap().to_timespec())) { // FIXME
+            Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
+            None => specific_fail!("bad".to_string())
+        };
+        let max = match self.notes.iter().max_by(|n| at(strptime(&*n.last_touched, DATEFMT).unwrap().to_timespec())) { // FIXME
+            Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
+            None => specific_fail!("bad".to_string())
+        };
+        try!(pretty_line("name: ", &format!("{}\n", args.flag_p), color));
         try!(pretty_line("encrypted: ", &format!("{}\n", self.encrypted), color));
         try!(pretty_line("notes: ", &format!("{}\n", self.notes.len()), color));
         try!(pretty_line("statuses: ", &format!(
-            "[none: {}, started: {}, urgent: {}]\n",
+            "none: {}, started: {}, urgent: {}\n",
             no_s,
             started_s,
             urgent_s
         ), color));
+        try!(pretty_line("note ages: ", &format!("oldest: {}, newest: {}\n", min, max), color));
         Ok(())
     }
 
-
-    fn view_item(&mut self, args: &Args) -> Result<(), ThecaError> {
+    pub fn view_item(&mut self, args: &Args) -> Result<(), ThecaError> {
         let id = args.arg_id[0];
         let note_pos = match self.notes.iter().position(|n| n.id == id) {
             Some(i) => i,
@@ -585,7 +560,7 @@ impl ThecaProfile {
                 }
                 try!(pretty_line(
                     "last touched: ",
-                    &format!("{}\n", self.notes[note_pos].last_touched),
+                    &format!("{}\n", try!(localize_last_touched_string(&*self.notes[note_pos].last_touched))),
                     color
                 ));
             },
@@ -609,7 +584,7 @@ impl ThecaProfile {
                 }
                 try!(pretty_line(
                     "last touched\n------------\n",
-                    &format!("{}\n\n", self.notes[note_pos].last_touched),
+                    &format!("{}\n\n", try!(localize_last_touched_string(&*self.notes[note_pos].last_touched))),
                     color
                 ));
             }
@@ -637,7 +612,7 @@ impl ThecaProfile {
         Ok(())
     }
 
-    fn list_items(&mut self, args: &Args) -> Result<(), ThecaError> {
+    pub fn list_items(&mut self, args: &Args) -> Result<(), ThecaError> {
         if self.notes.len() > 0 {
             try!(sorted_print(&mut self.notes.clone(), args));
         } else {
@@ -646,7 +621,7 @@ impl ThecaProfile {
         Ok(())
     }
 
-    fn search_items(&mut self, args: &Args) -> Result<(), ThecaError> {
+    pub fn search_items(&mut self, args: &Args) -> Result<(), ThecaError> {
         let pattern = &*args.arg_pattern;
         let notes: Vec<ThecaItem> = match args.flag_regex {
             true => {
@@ -715,15 +690,20 @@ fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaErro
     if !args.flag_c {
         try!(print_header(&line_format));
     }
+    // im not really sure why this... works?
     if args.flag_datesort {
-        notes.sort_by(|a, b| a.last_touched.cmp(&b.last_touched));
+        notes.sort_by(|a, b| match cmp_last_touched(&*a.last_touched, &*b.last_touched) {
+            Ok(o) => o,
+            Err(_) => a.last_touched.cmp(&b.last_touched) // FIXME(?)
+            // Err(_) => Ordering::Equal                  // FIXME(?)
+        });
     }
     match args.flag_reverse {
         false => for n in notes[0..limit].iter() {
-            n.print(&line_format, args.flag_body);
+            try!(n.print(&line_format, args.flag_body));
         },
         true => for n in notes[notes.len()-limit..notes.len()].iter().rev() {
-            n.print(&line_format, args.flag_body);
+            try!(n.print(&line_format, args.flag_body));
         }
     };
     Ok(())
@@ -740,7 +720,7 @@ fn find_profile_folder(args: &Args) -> Result<Path, ThecaError> {
     }
 }
 
-fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
+pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
     match getenv("THECA_DEFAULT_PROFILE") {
         Some(val) => {
             if args.flag_p.is_empty() {
@@ -776,52 +756,17 @@ fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
     Ok(())
 }
 
-pub fn theca() -> Result<(), ThecaError> {
-    let mut args: Args = try!(Docopt::new(USAGE)
-                            .and_then(|d| d.decode()));
+fn parse_last_touched(lt: &str) -> Result<time::Tm, ThecaError> {
+    Ok(at(try!(strptime(lt, DATEFMT)).to_timespec()))
+}
 
-    try!(setup_args(&mut args));
+fn localize_last_touched_string(lt: &str) -> Result<String, ThecaError> {
+    let t = try!(parse_last_touched(lt));
+    Ok(try!(strftime(DATEFMT_SHORT, &t)))
+}
 
-    let mut profile = try!(ThecaProfile::new(&args));
-
-    // this could def be better
-    // what root command was used
-    if args.cmd_transfer {
-        try!(profile.transfer_note(&args))
-    } else if args.cmd_add {
-        // add a item
-        try!(profile.add_item(&args));
-    } else if args.cmd_edit {
-        // edit a item
-        try!(profile.edit_item(&args));
-    } else if args.cmd_del {
-        // delete a item
-        profile.delete_item(&args.arg_id[0]);
-    } else if args.cmd_clear {
-        println!("are you sure you want to delete all the notes in this profile?");
-        if !args.flag_y && !try!(get_yn_input()) {specific_fail!("ok, bye".to_string());}
-        profile.notes.truncate(0);
-    } else if args.flag_v {
-        // display theca version
-        println!("theca v{}", VERSION);
-    } else if args.cmd_search {
-        // search for an item
-        try!(profile.search_items(&args));
-    } else if !args.arg_id.is_empty() && !args.cmd_transfer {
-        // view short item
-        try!(profile.view_item(&args));
-    } else if args.cmd_info {
-        try!(profile.stats());
-    } else if !args.cmd_new_profile {
-        // this should be the default for nothing
-        try!(profile.list_items(&args));
-    }
-
-    // save altered profile back to disk
-    // this should only be triggered by commands that make alterations to the profile
-    if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile ||
-       args.cmd_clear || args.cmd_transfer {
-        try!(profile.save_to_file(&args));
-    }
-    Ok(())
+fn cmp_last_touched(a: &str, b: &str) -> Result<Ordering, ThecaError> {
+    let a_tm = try!(parse_last_touched(a));
+    let b_tm = try!(parse_last_touched(b));
+    Ok(a_tm.cmp(&b_tm))
 }

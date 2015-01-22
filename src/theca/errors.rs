@@ -51,8 +51,8 @@ macro_rules! try_errno {
 impl error::FromError<IoError> for ThecaError {
     fn from_error(err: IoError) -> ThecaError {
         ThecaError {
-            kind: InternalIoError(err),
-            desc: "An internal IO error ocurred.".to_string(),
+            kind: GenericError,
+            desc: err.desc.to_string(),
             detail: None
         }
     }

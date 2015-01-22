@@ -8,14 +8,14 @@ authors = ["Roland Shoemaker <roland@bind.es>"]
 name = "theca"
 path = "src/theca/lib.rs"
 
+[[bin]]
+name = "theca"
+test = false
+doc = false
+
 [dependencies]
 time = "*"
 rustc-serialize = "*"
 docopt = "*"
 rust-crypto = "*"
 regex_macros = "*"
-
-[[bin]]
-name = "theca"
-test = false
-doc = false

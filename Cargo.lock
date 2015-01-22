@@ -20,7 +20,7 @@ dependencies = [
 
 [[package]]
 name = "gcc"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -55,6 +55,6 @@ name = "time"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "gcc 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gcc 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

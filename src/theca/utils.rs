@@ -47,13 +47,13 @@ mod c {
         }
     }
     pub fn tcgetattr(fd: c_int, termios_p: &mut Termios) -> c_int {
-        extern { fn tcgetattr(fd: c_int, termios_p: *mut Termios) -> c_int; }
-        unsafe { tcgetattr(fd, termios_p as *mut _) }
+        extern {fn tcgetattr(fd: c_int, termios_p: *mut Termios) -> c_int;}
+        unsafe {tcgetattr(fd, termios_p as *mut _)}
     }
     pub fn tcsetattr(fd: c_int, optional_actions: c_int, termios_p: &Termios) -> c_int {
-        extern { fn tcsetattr(fd: c_int, optional_actions: c_int,
-                              termios_p: *const Termios) -> c_int; }
-        unsafe { tcsetattr(fd, optional_actions, termios_p as *const _) }
+        extern {fn tcsetattr(fd: c_int, optional_actions: c_int,
+                              termios_p: *const Termios) -> c_int;}
+        unsafe {tcsetattr(fd, optional_actions, termios_p as *const _)}
     }
     pub const ECHO:c_uint = 8;
     pub const TCSANOW: c_int = 0;
