@@ -1,3 +1,5 @@
+#![crate_name="theca"]
+#![crate_type="lib"]
 #![allow(unstable)]
 
 extern crate core;
@@ -20,7 +22,7 @@ use std::iter::{repeat};
 // random things
 use regex::{Regex};
 use rustc_serialize::{Encodable, Decodable, Encoder, json};
-use time::{now_utc, strftime};
+use time::{now, strftime};
 use docopt::Docopt;
 use term::attr::Attr::{Bold};
 
@@ -54,7 +56,7 @@ Usage:
     theca [options] [-c] search [--regex, --body] <pattern>
     theca [options] transfer <id> to <name>
     theca [options] add <title> [--started|--urgent] [-b BODY|--editor|-]
-    theca [options] edit <id> [<title>] [--started|--urgent|--none] [-b BODY|--editor|-]
+    theca [options] edit <id>  [<title>|--append TEXT|--prepend TEXT] [--started|--urgent|--none] [-b BODY|--editor|-]
     theca [options] del <id>
     theca (-h | --help)
     theca --version
@@ -78,6 +80,8 @@ Options:
     --none                              No status. (default)
     --started                           Started status.
     --urgent                            Urgent status.
+    --append TEXT                       Append TEXT to the note title.
+    --prepend TEXT                      Prepend TEXT to the note title.
     -b BODY                             Set body of the item from BODY.
     --editor                            Drop to $EDITOR to set/edit item body.
     -                                   Set body of the item from STDIN.
@@ -115,7 +119,9 @@ struct Args {
     cmd_clear: bool,
     cmd_info: bool,
     flag_y: bool,
-    cmd_transfer: bool
+    cmd_transfer: bool,
+    flag_append: String,
+    flag_prepend: String
 }
 
 static NOSTATUS: &'static str = "";
@@ -203,6 +209,7 @@ impl LineFormat {
         if console_width > 0 && line_width > console_width &&
            (line_format.title_width-(line_width-console_width)) > 0 {
             // if it is trim text from the title width since it is always the biggest...
+            // if there isn't any statuses, also give the title the colsep char space
             line_format.title_width -= match line_format.status_width == 0 {
                 true => (line_width - console_width) + 2,
                 false => line_width - console_width
@@ -387,7 +394,7 @@ impl ThecaProfile {
             title: note.title.clone(),
             status: note.status.clone(),
             body: note.body.clone(),
-            last_touched: try!(strftime("%F %T", &now_utc()))
+            last_touched: try!(strftime("%F %T", &now()))
         });
         Ok(())
     }
@@ -455,7 +462,7 @@ impl ThecaProfile {
             title: title,
             status: status,
             body: body,
-            last_touched: try!(strftime("%F %T", &now_utc()))
+            last_touched: try!(strftime("%F %T", &now()))
         });
         println!("note added");
         Ok(())
@@ -486,7 +493,14 @@ impl ThecaProfile {
         if !args.arg_title.is_empty() {
             // change title
             self.notes[item_pos].title = args.arg_title.replace("\n", "").to_string();
-        } 
+        } else if !args.flag_prepend.is_empty() || !args.flag_append.is_empty() {
+            self.notes[item_pos].title = format!(
+                "{}{}{}",
+                args.flag_prepend,
+                self.notes[item_pos].title,
+                args.flag_append
+            );
+        }
         if args.flag_started || args.flag_urgent || args.flag_none {
             // change status
             if args.flag_started {
@@ -520,7 +534,7 @@ impl ThecaProfile {
             }
         }
         // update last_touched
-        self.notes[item_pos].last_touched = try!(strftime("%F %T", &now_utc()));
+        self.notes[item_pos].last_touched = try!(strftime("%F %T", &now()));
         println!("edited");
         Ok(())
     }
@@ -726,10 +740,7 @@ fn find_profile_folder(args: &Args) -> Result<Path, ThecaError> {
     }
 }
 
-fn theca() -> Result<(), ThecaError> {
-    let mut args: Args = try!(Docopt::new(USAGE)
-                            .and_then(|d| d.decode()));
-
+fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
     match getenv("THECA_DEFAULT_PROFILE") {
         Some(val) => {
             if args.flag_p.is_empty() {
@@ -758,10 +769,20 @@ fn theca() -> Result<(), ThecaError> {
         args.flag_key = try!(get_password());
     }
 
-    let mut profile = try!(ThecaProfile::new(&args));
     if args.flag_p.is_empty() {
         args.flag_p = "default".to_string();
     }
+
+    Ok(())
+}
+
+pub fn theca() -> Result<(), ThecaError> {
+    let mut args: Args = try!(Docopt::new(USAGE)
+                            .and_then(|d| d.decode()));
+
+    try!(setup_args(&mut args));
+
+    let mut profile = try!(ThecaProfile::new(&args));
 
     // this could def be better
     // what root command was used
@@ -803,12 +824,4 @@ fn theca() -> Result<(), ThecaError> {
         try!(profile.save_to_file(&args));
     }
     Ok(())
-}
-
-fn main() {
-    // wooo error unwinding yay
-    match theca() {
-        Err(e) => println!("{}", e.desc),
-        Ok(_) => ()
-    };
 }
