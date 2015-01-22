@@ -71,7 +71,7 @@ mod c {
     }
 }
 
-pub fn set_term_echo(echo: bool) -> Result<(), ThecaError> {
+fn set_term_echo(echo: bool) -> Result<(), ThecaError> {
     let mut t = c::Termios::new();
     try_errno!(c::tcgetattr(STDIN_FILENO, &mut t));
     match echo {

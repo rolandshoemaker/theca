@@ -178,7 +178,6 @@ impl LineFormat {
                         match items.iter().max_by(|n| n.status.len()) {
                             Some(w) => w.status.len(),
                             None => {
-                                line_format.title_width += 2;
                                 0
                             }
                         }
@@ -189,7 +188,6 @@ impl LineFormat {
             },
             // no items have statuses so truncate column
             false => {
-                line_format.title_width += 2;
                 0
             }
         };
@@ -205,7 +203,10 @@ impl LineFormat {
         if console_width > 0 && line_width > console_width &&
            (line_format.title_width-(line_width-console_width)) > 0 {
             // if it is trim text from the title width since it is always the biggest...
-            line_format.title_width -= line_width - console_width;
+            line_format.title_width -= match line_format.status_width == 0 {
+                true => (line_width - console_width) + 2,
+                false => line_width - console_width
+            };
         }
 
         Ok(line_format)
@@ -391,6 +392,42 @@ impl ThecaProfile {
         Ok(())
     }
 
+    fn transfer_note(&mut self, args: &Args) -> Result<(), ThecaError> {
+        if args.flag_p == args.arg_name {
+            specific_fail!(format!(
+                "cannot transfer a note from a profile to itself ({} -> {})",
+                args.flag_p,
+                args.arg_name
+            ));
+        }
+
+        let mut trans_args = args.clone();
+        trans_args.flag_p = args.arg_name.clone();
+        let mut trans_profile = try!(ThecaProfile::new(&trans_args));
+
+        match self.notes.iter().find(|n| n.id == args.arg_id[0])
+                        .map(|n| trans_profile.import_note(n.clone())).is_some() {
+            true =>  {
+                match self.notes.iter().position(|n| n.id == args.arg_id[0])
+                                   .map(|e| self.notes.remove(e)).is_some() {
+                    true => try!(trans_profile.save_to_file(&trans_args)),
+                    false => specific_fail!(format!(
+                        "couldn't remove note {} in {}, aborting nothing will be saved",
+                        args.arg_id[0],
+                        args.flag_p
+                    ))
+                };
+            },
+            false => specific_fail!(format!(
+                "could not transfer note {} from {} -> {}",
+                args.arg_id[0],
+                args.flag_p,
+                args.arg_name
+            ))
+        };
+        Ok(())
+    }
+
     fn add_item(&mut self, args: &Args) -> Result<(), ThecaError> {
         let title = args.arg_title.replace("\n", "").to_string();
         let status = if args.flag_started {
@@ -449,7 +486,8 @@ impl ThecaProfile {
         if !args.arg_title.is_empty() {
             // change title
             self.notes[item_pos].title = args.arg_title.replace("\n", "").to_string();
-        } else if args.flag_started || args.flag_urgent || args.flag_none {
+        } 
+        if args.flag_started || args.flag_urgent || args.flag_none {
             // change status
             if args.flag_started {
                 self.notes[item_pos].status = STARTED.to_string();
@@ -458,7 +496,8 @@ impl ThecaProfile {
             } else if args.flag_none {
                 self.notes[item_pos].status = NOSTATUS.to_string();
             }
-        } else if !args.flag_b.is_empty() || args.flag_editor || args.cmd__ {
+        }
+        if !args.flag_b.is_empty() || args.flag_editor || args.cmd__ {
             // change body
             if !args.flag_b.is_empty() {
                 self.notes[item_pos].body = args.flag_b.to_string();
@@ -630,7 +669,6 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
     let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
     let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
     let color = termsize() > 0;
-    if color {try!(t.attr(Bold));}
     let status = match line_format.status_width == 0 {
         true => "".to_string(),
         false => format_field(
@@ -639,6 +677,7 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
             false
         )+&*column_seperator
     };
+    if color {try!(t.attr(Bold));}
     try!(write!(
                 t, 
                 "{1}{0}{2}{0}{3}{4}\n{5}\n",
@@ -727,38 +766,7 @@ fn theca() -> Result<(), ThecaError> {
     // this could def be better
     // what root command was used
     if args.cmd_transfer {
-        if args.flag_p == args.arg_name {
-            specific_fail!(format!(
-                "cannot transfer a note from a profile to itself ({} -> {})",
-                args.flag_p,
-                args.arg_name
-            ));
-        }
-
-        let mut trans_args = args.clone();
-        trans_args.flag_p = args.arg_name.clone();
-        let mut trans_profile = try!(ThecaProfile::new(&trans_args));
-
-        match profile.notes.iter().find(|n| n.id == args.arg_id[0])
-                           .map(|n| trans_profile.import_note(n.clone())).is_some() {
-            true =>  {
-                match profile.notes.iter().position(|n| n.id == args.arg_id[0])
-                                   .map(|e| profile.notes.remove(e)).is_some() {
-                    true => try!(trans_profile.save_to_file(&trans_args)),
-                    false => specific_fail!(format!(
-                        "couldn't remove note {} in {}, aborting nothing will be saved",
-                        args.arg_id[0],
-                        args.flag_p
-                    ))
-                };
-            },
-            false => specific_fail!(format!(
-                "could not transfer note {} from {} -> {}",
-                args.arg_id[0],
-                args.flag_p,
-                args.arg_name
-            ))
-        };
+        try!(profile.transfer_note(&args))
     } else if args.cmd_add {
         // add a item
         try!(profile.add_item(&args));
@@ -769,7 +777,7 @@ fn theca() -> Result<(), ThecaError> {
         // delete a item
         profile.delete_item(&args.arg_id[0]);
     } else if args.cmd_clear {
-        println!("Are you sure you want to delete all notes in this profile?");
+        println!("are you sure you want to delete all the notes in this profile?");
         if !args.flag_y && !try!(get_yn_input()) {specific_fail!("ok, bye".to_string());}
         profile.notes.truncate(0);
     } else if args.flag_v {
@@ -783,7 +791,7 @@ fn theca() -> Result<(), ThecaError> {
         try!(profile.view_item(&args));
     } else if args.cmd_info {
         try!(profile.stats());
-    } else if !args.cmd_new_profile && !args.cmd_transfer {
+    } else if !args.cmd_new_profile {
         // this should be the default for nothing
         try!(profile.list_items(&args));
     }
