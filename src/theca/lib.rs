@@ -12,22 +12,22 @@ extern crate crypto;
 extern crate term;
 
 // std lib imports
-use std::os::{getenv, homedir};
+use std::os::{getenv};
 use std::io::fs::{PathExtensions, mkdir};
 use std::io::{File, Truncate, Write, Read, Open,
               stdin, USER_RWX};
 use std::iter::{repeat};
-use std::cmp::{Ordering};
 
 // random things
 use regex::{Regex};
 use rustc_serialize::{Encodable, Encoder, json};
-use time::{now, strftime, strptime, at};
-use term::attr::Attr::{Bold};
+use time::{now, strftime};
 
 // crypto imports
-use utils::{termsize, drop_to_editor, get_password, pretty_line, format_field,
-            get_yn_input};
+use lineformat::{LineFormat};
+use utils::{termsize, drop_to_editor, pretty_line, format_field,
+            get_yn_input, sorted_print, localize_last_touched_string, parse_last_touched,
+            find_profile_folder, get_password};
 use errors::{ThecaError, GenericError};
 use crypt::{encrypt, decrypt, password_to_key};
 
@@ -38,6 +38,7 @@ pub use self::libc::{
 };
 
 #[macro_use] pub mod errors;
+pub mod lineformat;
 pub mod utils;
 pub mod crypt;
 
@@ -84,106 +85,6 @@ static URGENT: &'static str = "Urgent";
 
 static DATEFMT: &'static str = "%F %T %z";
 static DATEFMT_SHORT: &'static str = "%F %T";
-
-#[derive(Copy)]
-pub struct LineFormat {
-    colsep: usize,
-    id_width: usize,
-    title_width: usize,
-    status_width: usize,
-    touched_width: usize
-}
-
-impl LineFormat {
-    fn new(items: &Vec<ThecaItem>, args: &Args) -> Result<LineFormat, ThecaError> {
-        // get termsize :>
-        let console_width = termsize();
-
-        // set colsep
-        let colsep = match args.flag_c {
-            true => 1,
-            false => 2
-        };
-
-        let mut line_format = LineFormat {colsep: colsep, id_width:0, title_width:0,
-                                          status_width:0, touched_width:0};
-
-        // get length of longest id string
-        line_format.id_width = match items.iter().max_by(|n| n.id.to_string().len()) {
-            Some(w) => w.id.to_string().len(),
-            None => 0
-        };
-        // if longest id is 1 char and we are using extended printing
-        // then set id_width to 2 so "id" isn't truncated
-        if line_format.id_width < 2 && !args.flag_c {line_format.id_width = 2;}
-
-        // get length of longest title string
-        line_format.title_width = match items.iter().max_by(|n| n.title.len()) {
-            Some(w) => {
-                if items.iter().any(|n| n.body.len() > 0) {
-                    w.title.len()+4
-                } else {
-                    w.title.len()
-                }
-            },
-            None => 0
-        };
-        // if using extended and longest title is less than 5 chars
-        // set title_width to 5 so "title" won't be truncated
-        if line_format.title_width < 5 && !args.flag_c {line_format.title_width = 5;}
-
-        // status length stuff
-        line_format.status_width = match items.iter().any(|n| n.status.len() > 0) {
-            true => {
-                match args.flag_c {
-                    // expanded print, get longest status (7 or 6 / started or urgent)
-                    false => {
-                        match items.iter().max_by(|n| n.status.len()) {
-                            Some(w) => w.status.len(),
-                            None => {
-                                0
-                            }
-                        }
-                    },
-                    // only display first char of status (e.g. S or U) for condensed print
-                    true => 1
-                }
-            },
-            // no items have statuses so truncate column
-            false => {
-                0
-            }
-        };
-
-        // last_touched has fixed string length so no need for silly iter stuff
-        line_format.touched_width = match args.flag_c {
-            true => 10, // condensed
-            false => 19 // expanded
-        };
-
-        // check to make sure our new line format isn't bigger than the console
-        let line_width = line_format.line_width();
-        if console_width > 0 && line_width > console_width &&
-           (line_format.title_width-(line_width-console_width)) > 0 {
-            // if it is trim text from the title width since it is always the biggest...
-            // if there isn't any statuses, also give the title the colsep char space
-            line_format.title_width -= match line_format.status_width == 0 {
-                true => (line_width - console_width) + 2,
-                false => line_width - console_width
-            };
-        }
-
-        Ok(line_format)
-    }
-
-    fn line_width(&self) -> usize {
-        let columns = match self.status_width == 0 {
-            true => 2*self.colsep,
-            false => 3*self.colsep
-        };
-        self.id_width+self.title_width+self.status_width+self.touched_width+columns
-    }
-}
 
 #[derive(RustcDecodable, RustcEncodable, Clone)]
 pub struct ThecaItem {
@@ -509,11 +410,17 @@ impl ThecaProfile {
         let started_s = self.notes.iter().filter(|n| n.status == "Started").count();
         let urgent_s = self.notes.iter().filter(|n| n.status == "Urgent").count();
         let color = termsize() > 0;
-        let min = match self.notes.iter().min_by(|n| at(strptime(&*n.last_touched, DATEFMT).unwrap().to_timespec())) { // FIXME
+        let min = match self.notes.iter().min_by(|n| match parse_last_touched(&*n.last_touched) {
+            Ok(o) => o,
+            Err(_) => now() // FIXME
+        }) {
             Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
             None => specific_fail!("bad".to_string())
         };
-        let max = match self.notes.iter().max_by(|n| at(strptime(&*n.last_touched, DATEFMT).unwrap().to_timespec())) { // FIXME
+        let max = match self.notes.iter().max_by(|n| match parse_last_touched(&*n.last_touched) {
+            Ok(o) => o,
+            Err(_) => now() // FIXME
+        }) {
             Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
             None => specific_fail!("bad".to_string())
         };
@@ -649,76 +556,6 @@ impl ThecaProfile {
     }
 }
 
-fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
-    let mut t = match term::stdout() {
-        Some(t) => t,
-        None => specific_fail!("could not retrieve standard output.".to_string())
-    };
-    let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
-    let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
-    let color = termsize() > 0;
-    let status = match line_format.status_width == 0 {
-        true => "".to_string(),
-        false => format_field(
-            &"status".to_string(),
-            line_format.status_width,
-            false
-        )+&*column_seperator
-    };
-    if color {try!(t.attr(Bold));}
-    try!(write!(
-                t, 
-                "{1}{0}{2}{0}{3}{4}\n{5}\n",
-                column_seperator,
-                format_field(&"id".to_string(), line_format.id_width, false),
-                format_field(&"title".to_string(), line_format.title_width, false),
-                status,
-                format_field(&"last touched".to_string(), line_format.touched_width, false),
-                header_seperator
-            ));
-    if color {try!(t.reset());}
-    Ok(())
-}
-
-fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaError> {
-    let line_format = try!(LineFormat::new(notes, args));
-    let limit = match args.flag_l != 0 && notes.len() >= args.flag_l {
-        true => args.flag_l,
-        false => notes.len()
-    };
-    if !args.flag_c {
-        try!(print_header(&line_format));
-    }
-    // im not really sure why this... works?
-    if args.flag_datesort {
-        notes.sort_by(|a, b| match cmp_last_touched(&*a.last_touched, &*b.last_touched) {
-            Ok(o) => o,
-            Err(_) => a.last_touched.cmp(&b.last_touched) // FIXME(?)
-            // Err(_) => Ordering::Equal                  // FIXME(?)
-        });
-    }
-    match args.flag_reverse {
-        false => for n in notes[0..limit].iter() {
-            try!(n.print(&line_format, args.flag_body));
-        },
-        true => for n in notes[notes.len()-limit..notes.len()].iter().rev() {
-            try!(n.print(&line_format, args.flag_body));
-        }
-    };
-    Ok(())
-}
-
-fn find_profile_folder(args: &Args) -> Result<Path, ThecaError> {
-    if !args.flag_profile_folder.is_empty() {
-        Ok(Path::new(args.flag_profile_folder.to_string()))
-    } else {
-        match homedir() {
-            Some(ref p) => Ok(p.join(".theca")),
-            None => specific_fail!("failed to find your home directory".to_string())
-        }
-    }
-}
-
 pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
     match getenv("THECA_DEFAULT_PROFILE") {
         Some(val) => {
@@ -753,19 +590,4 @@ pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
     }
 
     Ok(())
-}
-
-fn parse_last_touched(lt: &str) -> Result<time::Tm, ThecaError> {
-    Ok(at(try!(strptime(lt, DATEFMT)).to_timespec()))
-}
-
-fn localize_last_touched_string(lt: &str) -> Result<String, ThecaError> {
-    let t = try!(parse_last_touched(lt));
-    Ok(try!(strftime(DATEFMT_SHORT, &t)))
-}
-
-fn cmp_last_touched(a: &str, b: &str) -> Result<Ordering, ThecaError> {
-    let a_tm = try!(parse_last_touched(a));
-    let b_tm = try!(parse_last_touched(b));
-    Ok(a_tm.cmp(&b_tm))
 }

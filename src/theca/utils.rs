@@ -1,15 +1,20 @@
-// use std;
 use std::io::stdio::{stdin};
 use std::io::{File, Open, ReadWrite,
               TempDir, Command, SeekSet};
 use time::{get_time};
-use std::os::{getenv};
-use errors::{ThecaError, GenericError};
+use std::os::{getenv, homedir};
 use std::io::process::{InheritFd};
 use term::{stdout};
 use term::attr::Attr::{Bold};
 use std::io::{IoError};
 use std::os::errno;
+use std::cmp::{Ordering};
+use time::{strftime, strptime, at, Tm};
+use std::iter::{repeat};
+
+use ::{DATEFMT, DATEFMT_SHORT, Args, ThecaItem};
+use errors::{ThecaError, GenericError};
+use lineformat::{LineFormat};
 
 pub use libc::{
     STDIN_FILENO,
@@ -196,3 +201,87 @@ pub fn format_field(value: &String, width: usize, truncate: bool) -> String {
     }
 }
 
+fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
+    let mut t = match stdout() {
+        Some(t) => t,
+        None => specific_fail!("could not retrieve standard output.".to_string())
+    };
+    let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
+    let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
+    let color = termsize() > 0;
+    let status = match line_format.status_width == 0 {
+        true => "".to_string(),
+        false => format_field(
+            &"status".to_string(),
+            line_format.status_width,
+            false
+        )+&*column_seperator
+    };
+    if color {try!(t.attr(Bold));}
+    try!(write!(
+                t, 
+                "{1}{0}{2}{0}{3}{4}\n{5}\n",
+                column_seperator,
+                format_field(&"id".to_string(), line_format.id_width, false),
+                format_field(&"title".to_string(), line_format.title_width, false),
+                status,
+                format_field(&"last touched".to_string(), line_format.touched_width, false),
+                header_seperator
+            ));
+    if color {try!(t.reset());}
+    Ok(())
+}
+
+pub fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaError> {
+    let line_format = try!(LineFormat::new(notes, args));
+    let limit = match args.flag_l != 0 && notes.len() >= args.flag_l {
+        true => args.flag_l,
+        false => notes.len()
+    };
+    if !args.flag_c {
+        try!(print_header(&line_format));
+    }
+    // im not really sure why this... works?
+    if args.flag_datesort {
+        notes.sort_by(|a, b| match cmp_last_touched(&*a.last_touched, &*b.last_touched) {
+            Ok(o) => o,
+            Err(_) => a.last_touched.cmp(&b.last_touched) // FIXME(?)
+            // Err(_) => Ordering::Equal                  // FIXME(?)
+        });
+    }
+    match args.flag_reverse {
+        false => for n in notes[0..limit].iter() {
+            try!(n.print(&line_format, args.flag_body));
+        },
+        true => for n in notes[notes.len()-limit..notes.len()].iter().rev() {
+            try!(n.print(&line_format, args.flag_body));
+        }
+    };
+    Ok(())
+}
+
+pub fn find_profile_folder(args: &Args) -> Result<Path, ThecaError> {
+    if !args.flag_profile_folder.is_empty() {
+        Ok(Path::new(args.flag_profile_folder.to_string()))
+    } else {
+        match homedir() {
+            Some(ref p) => Ok(p.join(".theca")),
+            None => specific_fail!("failed to find your home directory".to_string())
+        }
+    }
+}
+
+pub fn parse_last_touched(lt: &str) -> Result<Tm, ThecaError> {
+    Ok(at(try!(strptime(lt, DATEFMT)).to_timespec()))
+}
+
+pub fn localize_last_touched_string(lt: &str) -> Result<String, ThecaError> {
+    let t = try!(parse_last_touched(lt));
+    Ok(try!(strftime(DATEFMT_SHORT, &t)))
+}
+
+fn cmp_last_touched(a: &str, b: &str) -> Result<Ordering, ThecaError> {
+    let a_tm = try!(parse_last_touched(a));
+    let b_tm = try!(parse_last_touched(b));
+    Ok(a_tm.cmp(&b_tm))
+}
