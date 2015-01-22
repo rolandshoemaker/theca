@@ -1,12 +1,15 @@
-use std;
+// use std;
+use std::io::stdio::{stdin};
 use std::io::{File, Open, ReadWrite,
               TempDir, Command, SeekSet};
 use time::{get_time};
 use std::os::{getenv};
 use errors::{ThecaError, GenericError};
 use std::io::process::{InheritFd};
-use term;
+use term::{stdout};
 use term::attr::Attr::{Bold};
+use std::io::{IoError};
+use std::os::errno;
 
 pub use libc::{
     STDIN_FILENO,
@@ -135,7 +138,7 @@ pub fn get_password() -> Result<String, ThecaError> {
     // should really turn off terminal echo...
     print!("Key: ");
     try!(set_term_echo(false));
-    let mut stdin = std::io::stdio::stdin();
+    let mut stdin = stdin();
     // since this only reads one line of stdin it could still feasibly
     // be used with `-` to set note body?
     let key = try!(stdin.read_line());
@@ -145,7 +148,7 @@ pub fn get_password() -> Result<String, ThecaError> {
 }
 
 pub fn get_yn_input() -> Result<bool, ThecaError> {
-    let mut stdin = std::io::stdio::stdin();
+    let mut stdin = stdin();
     let mut answer;
     let yes = vec!["y", "Y", "yes", "YES", "Yes"];
     let no = vec!["n", "N", "no", "NO", "No"];
@@ -174,7 +177,7 @@ pub fn get_yn_input() -> Result<bool, ThecaError> {
 }
 
 pub fn pretty_line(bold: &str, plain: &String, color: bool) -> Result<(), ThecaError> {
-    let mut t = match term::stdout() {
+    let mut t = match stdout() {
         Some(t) => t,
         None => specific_fail!("could not retrieve standard output.".to_string())
     };

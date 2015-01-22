@@ -11,14 +11,13 @@ extern crate regex;
 extern crate crypto;
 extern crate term;
 
-// std lib imports...
+// std lib imports
 use std::os::{getenv, homedir};
-use std::io::fs;
-use std::io::fs::PathExtensions;
+use std::io::fs::{PathExtensions, mkdir};
 use std::io::{File, Truncate, Write, Read, Open,
               stdin, USER_RWX};
 use std::iter::{repeat};
-use std::cmp::Ordering;
+use std::cmp::{Ordering};
 
 // random things
 use regex::{Regex};
@@ -240,7 +239,7 @@ impl ThecaProfile {
                     );
                     if !try!(get_yn_input()) {specific_fail!("ok bye".to_string());}
                 }
-                try!(fs::mkdir(&profile_path, USER_RWX));
+                try!(mkdir(&profile_path, USER_RWX));
             }
             Ok(ThecaProfile {
                 encrypted: args.flag_encrypted,

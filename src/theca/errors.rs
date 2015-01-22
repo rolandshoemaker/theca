@@ -1,7 +1,7 @@
-use core;
+use core::fmt;
 use docopt;
-use time;
-use std::error;
+use time::{ParseError};
+use std::error::{FromError};
 use crypto::symmetriccipher::SymmetricCipherError;
 use std::io::{IoError};
 use std::string::FromUtf8Error;
@@ -38,8 +38,6 @@ macro_rules! specific_fail {
 macro_rules! try_errno {
     ($e:expr) => {
         {
-            use std::io::{IoError};
-            use std::os::errno;
             let err = $e;
             if err != 0 {
                 return Err(::std::error::FromError::from_error(IoError::from_errno(errno() as usize, true)));
@@ -48,7 +46,7 @@ macro_rules! try_errno {
     }
 }
 
-impl error::FromError<IoError> for ThecaError {
+impl FromError<IoError> for ThecaError {
     fn from_error(err: IoError) -> ThecaError {
         ThecaError {
             kind: GenericError,
@@ -58,14 +56,14 @@ impl error::FromError<IoError> for ThecaError {
     }
 }
 
-impl error::FromError<(ErrorKind, &'static str)> for ThecaError {
+impl FromError<(ErrorKind, &'static str)> for ThecaError {
     fn from_error((kind, desc): (ErrorKind, &'static str)) -> ThecaError {
         ThecaError { kind: kind, desc: desc.to_string(), detail: None }
     }
 }
 
-impl error::FromError<time::ParseError> for ThecaError {
-    fn from_error(err: time::ParseError) -> ThecaError {
+impl FromError<ParseError> for ThecaError {
+    fn from_error(err: ParseError) -> ThecaError {
         ThecaError {
             kind: GenericError,
             desc: format!("\ntime parsing error: {}", err),
@@ -74,7 +72,7 @@ impl error::FromError<time::ParseError> for ThecaError {
     }
 }
 
-impl error::FromError<FromUtf8Error> for ThecaError {
+impl FromError<FromUtf8Error> for ThecaError {
     fn from_error(err: FromUtf8Error) -> ThecaError {
         ThecaError {
             kind: GenericError,
@@ -84,7 +82,7 @@ impl error::FromError<FromUtf8Error> for ThecaError {
     }
 }
 
-impl error::FromError<SymmetricCipherError> for ThecaError {
+impl FromError<SymmetricCipherError> for ThecaError {
     fn from_error(_: SymmetricCipherError) -> ThecaError {
         ThecaError {
             kind: GenericError,
@@ -94,14 +92,14 @@ impl error::FromError<SymmetricCipherError> for ThecaError {
     }
 }
 
-impl error::FromError<docopt::Error> for ThecaError {
+impl FromError<docopt::Error> for ThecaError {
     fn from_error(err: docopt::Error) -> ThecaError {
         ThecaError { kind: GenericError, desc: err.to_string(), detail: None }
     }
 }
 
-impl error::FromError<core::fmt::Error> for ThecaError {
-    fn from_error(_: core::fmt::Error) -> ThecaError {
+impl FromError<fmt::Error> for ThecaError {
+    fn from_error(_: fmt::Error) -> ThecaError {
         ThecaError {
             kind: GenericError,
             desc: "\nformatting error".to_string(),
