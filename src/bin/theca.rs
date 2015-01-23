@@ -19,8 +19,8 @@ Usage:
     theca [options] [-c] <id>
     theca [options] [-c] search [--regex, --search-body] <pattern>
     theca [options] transfer <id> to <name>
-    theca [options] add <title> [-s|-u] [-b BODY|--editor|-]
-    theca [options] edit <id>  [<title>|-a TEXT|-p TEXT] [-s|-u|-n] [-b BODY|--editor|-]
+    theca [options] add <title> [-s|-u] [-b BODY|-t|-]
+    theca [options] edit <id>  [<title>|-a TEXT|-p TEXT] [-s|-u|-n] [-b BODY|-t|-]
     theca [options] del <id>
 
 Profiles:
@@ -57,7 +57,7 @@ Profiles:
 
     Body:
     -b BODY, --body BODY                Set body of the item from BODY.
-    --editor                            Drop to $EDITOR to set/edit item body.
+    -t, --editor                        Drop to $EDITOR to set/edit item body.
     -                                   Set body of the item from STDIN.
 
     Encryption:

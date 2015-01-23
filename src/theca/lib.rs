@@ -327,15 +327,20 @@ impl ThecaProfile {
         } else {
             NOSTATUS.to_string()
         };
-        let body = if !args.flag_body.is_empty() {
-            args.flag_body.to_string()
-        } else if args.flag_editor {
-            try!(drop_to_editor(&"".to_string()))
-        } else if args.cmd__ {
-            try!(stdin().lock().read_to_string())
-        } else {
-            "".to_string()
+
+        let body = match args.cmd__ {
+            false => match args.flag_editor {
+                false => args.flag_body.clone(),
+                true => {
+                    match istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
+                        true => try!(drop_to_editor(&"".to_string())),
+                        false => "".to_string()
+                    }
+                }
+            },
+            true => try!(stdin().lock().read_to_string())
         };
+
         let new_id = match self.notes.last() {
             Some(n) => n.id,
             None => 0
@@ -367,6 +372,8 @@ impl ThecaProfile {
     }
 
     pub fn edit_item(&mut self, args: &Args) -> Result<(), ThecaError> {
+        // println!("{} {}", args.flag_body, args.arg_body);
+
         let id = args.arg_id[0];
         let item_pos: usize = match self.notes.iter().position(|n| n.id == id) {
             Some(i) => i,
@@ -393,31 +400,29 @@ impl ThecaProfile {
                 self.notes[item_pos].status = NOSTATUS.to_string();
             }
         }
+
         if !args.flag_body.is_empty() || args.flag_editor || args.cmd__ {
             // change body
-            if !args.flag_body.is_empty() {
-                self.notes[item_pos].body = args.flag_body.to_string();
-            } else if args.flag_editor {
-                if args.flag_encrypted && !args.flag_yes {
-                    // leak to disk warning
-                    println!(
-                        "{}\n{}\n{}\n{}\n{}",
-                        "*******************************************************************",
-                        "* Warning: this will write the decrypted note to disk temporarily *",
-                        "* for editing, it will be deleted when you are done, but this     *",
-                        "* increases the chance that it may be recovered at a later date.  *",
-                        "*******************************************************************");
-                    println!("do you want to continue?");
-                    if !try!(get_yn_input()) {specific_fail!("ok, bye".to_string());}
+            self.notes[item_pos].body = match args.cmd__ {
+                true => try!(stdin().lock().read_to_string()),
+                false => match args.flag_editor {
+                    true => {
+                        match istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
+                            true => {
+                                let new_body = try!(drop_to_editor(&self.notes[item_pos].body));
+                                match self.notes[item_pos].body != new_body {
+                                    true => new_body,
+                                    false => self.notes[item_pos].body.clone()
+                                }     
+                            },
+                            false => self.notes[item_pos].body.clone()
+                        }
+                    },
+                    false => args.flag_body.clone()
                 }
-                let new_body = try!(drop_to_editor(&self.notes[item_pos].body));
-                if self.notes[item_pos].body != new_body {
-                    self.notes[item_pos].body = new_body;
-                }
-            } else if args.cmd__ {
-                try!(stdin().lock().read_to_string());
-            }
+            };
         }
+
         // update last_touched
         self.notes[item_pos].last_touched = try!(strftime(DATEFMT, &now()));
         println!("edited");
