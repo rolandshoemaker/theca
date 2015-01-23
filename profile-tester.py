@@ -20,6 +20,8 @@ def validate_profile(profile):
       strptime(n['last_touched'], DATEFMT)
     except ValueError:
       raise AssertionError("object #"+str(i)+" last_touched doesn't match time format %Y-%m-%d %H:%M:%S %z")
+    profile_ids = [n['id'] for n in profile['notes']]
+    if len(profile_ids) != len(set(profile_ids)): raise AssertionError("there are duplicate IDs in 'notes'")
 
 s = read_json_file("schema.json")
 b = read_json_file("/home/roland/.theca/default.json")

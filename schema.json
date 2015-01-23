@@ -1,0 +1,54 @@
+{
+  "$schema": "https://github.com/rolandshoemaker/theca/blob/master/design.md",
+  "id": "/",
+  "type": "object",
+  "properties": {
+    "encrypted": {
+      "id": "encrypted",
+      "type": "boolean"
+    },
+    "notes": {
+      "id": "notes",
+      "type": "array",
+      "items": {
+        "id": "0",
+        "type": "object",
+        "properties": {
+          "id": {
+            "id": "id",
+            "type": "integer"
+          },
+          "title": {
+            "id": "title",
+            "type": "string"
+          },
+          "status": {
+            "id": "status",
+            "type": "string"
+          },
+          "body": {
+            "id": "body",
+            "type": "string"
+          },
+          "last_touched": {
+            "id": "last_touched",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "body",
+          "last_touched"
+        ]
+      },
+      "additionalItems": false
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "encrypted",
+    "notes"
+  ]
+}

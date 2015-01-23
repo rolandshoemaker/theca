@@ -56,7 +56,7 @@ pub struct Args {
     pub arg_id: Vec<usize>,
     pub flag_version: bool,
     cmd__: bool,
-    arg_name: String,
+    arg_name: Vec<String>,
     arg_pattern: String,
     arg_title: String,
     flag_profile_folder: String,
@@ -128,8 +128,11 @@ pub struct ThecaProfile {
 }
 
 impl ThecaProfile {
-    pub fn new(args: &Args) -> Result<(ThecaProfile, u64), ThecaError> {
+    pub fn new(args: &mut Args) -> Result<(ThecaProfile, u64), ThecaError> {
         if args.cmd_new_profile {
+            if args.cmd_new_profile && args.arg_name.is_empty() {
+                args.arg_name.push("default".to_string())
+            }
             let profile_path = try!(find_profile_folder(args));
             // if the folder doesn't exist, make it yo!
             if !profile_path.exists() {
@@ -211,7 +214,7 @@ impl ThecaProfile {
 
         // set file name
         match args.cmd_new_profile {
-            true => profile_path.push(args.arg_name.to_string() + ".json"),
+            true => profile_path.push(args.arg_name[0].to_string() + ".json"),
             false => profile_path.push(args.flag_profile.to_string() + ".json")
         };
 
@@ -271,17 +274,17 @@ impl ThecaProfile {
     }
 
     pub fn transfer_note(&mut self, args: &Args) -> Result<(), ThecaError> {
-        if args.flag_profile == args.arg_name {
+        if args.flag_profile == args.arg_name[0] {
             specific_fail!(format!(
                 "cannot transfer a note from a profile to itself ({} -> {})",
                 args.flag_profile,
-                args.arg_name
+                args.arg_name[0]
             ));
         }
 
         let mut trans_args = args.clone();
-        trans_args.flag_profile = args.arg_name.clone();
-        let (mut trans_profile, trans_fingerprint) = try!(ThecaProfile::new(&trans_args));
+        trans_args.flag_profile = args.arg_name[0].clone();
+        let (mut trans_profile, trans_fingerprint) = try!(ThecaProfile::new(&mut trans_args));
 
         match self.notes.iter().find(|n| n.id == args.arg_id[0])
                         .map(|n| trans_profile.import_note(n.clone())).is_some() {
@@ -300,7 +303,7 @@ impl ThecaProfile {
                 "could not transfer note {} from {} -> {}",
                 args.arg_id[0],
                 args.flag_profile,
-                args.arg_name
+                args.arg_name[0]
             ))
         };
         Ok(())

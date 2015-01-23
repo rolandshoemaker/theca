@@ -12,7 +12,7 @@ static USAGE: &'static str = "
 theca - cli note taking tool
 
 Usage:
-    theca [options] new-profile <name>
+    theca [options] new-profile [<name>]
     theca [options] info
     theca [options] clear
     theca [options] [-c] [-l LIMIT] [-r]
@@ -24,56 +24,55 @@ Usage:
     theca [options] del <id>
 
 Profiles:
-    -pf PROFILEPATH                     Path to folder containing profile.json
+    -f PATH, --profile-folder PATH      Path to folder containing profile.json
                                         files [default can be set with env var 
                                         THECA_PROFILE_FOLDER].
-    --profile-folder PROFILEPATH
     -p PROFILE, --profile PROFILE       Specify non-default profile [default
                                         can be set with env var 
                                         THECA_DEFAULT_PROFILE].
 
-Printing format:
+    Printing format:
     -c, --condensed                     Use the condensed printing format.
 
-Note list formatting:
+    Note list formatting:
     -l LIMIT, --limit LIMIT             Limit listing to LIMIT items
                                         [default: 0].
     -r, --reverse                       Reverse list.
     -d, --datesort                      Sort items by date, can be used with
                                         --reverse.
 
-Input:
+    Input:
     -y, --yes                           Silently agree to any y/n prompts.
     -m, --merge                         Silently agree to any merge profile
                                         changes prompt.
 
-Title:
+    Title:
     -a TEXT, --append TEXT              Append TEXT to the note title.
-    -p TEXT, --prepend TEXT             Prepend TEXT to the note title.
+    --prepend TEXT             Prepend TEXT to the note title.
 
-Statuses:
+    Statuses:
     -n, --none                          No status. (default)
     -s, --started                       Started status.
     -u, --urgent                        Urgent status.
 
-Body:
+    Body:
     -b BODY, --body BODY                Set body of the item from BODY.
     --editor                            Drop to $EDITOR to set/edit item body.
     -                                   Set body of the item from STDIN.
 
-Encryption:
+    Encryption:
     -e, --encrypted                     Specifies using an encrypted profile.
     -k KEY, --key KEY                   Encryption key to use for
                                         encryption/decryption, a prompt will be
                                         displayed if no key is provided.
 
-Search:
+    Search:
     --search-body                       Search the body of notes instead of
                                         the title.
     --regex                             Set search pattern to regex (default
                                         is plaintext).
 
-Miscellaneous:
+    Miscellaneous:
     -h, --help                          Display this help and exit.
     -v, --version                       Display the version of theca and exit.
 ";
@@ -116,7 +115,7 @@ fn theca_main() -> Result<(), ThecaError> {
 
     try!(setup_args(&mut args));
 
-    let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(&args));
+    let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(&mut args));
 
     try!(parse_cmds(&mut profile, &args));
 
