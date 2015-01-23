@@ -242,11 +242,11 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
 
 pub fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaError> {
     let line_format = try!(LineFormat::new(notes, args));
-    let limit = match args.flag_l != 0 && notes.len() >= args.flag_l {
-        true => args.flag_l,
+    let limit = match args.flag_limit != 0 && notes.len() >= args.flag_limit {
+        true => args.flag_limit,
         false => notes.len()
     };
-    if !args.flag_c {
+    if !args.flag_condensed {
         try!(print_header(&line_format));
     }
     // im not really sure why this... works?

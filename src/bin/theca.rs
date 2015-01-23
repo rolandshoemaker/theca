@@ -36,7 +36,7 @@ Printing format:
     -c, --condensed                     Use the condensed printing format.
 
 Note list formatting:
-    -l LIMIT                            Limit listing to LIMIT items
+    -l LIMIT, --limit LIMIT             Limit listing to LIMIT items
                                         [default: 0].
     -r, --reverse                       Reverse list.
     -d, --datesort                      Sort items by date, can be used with
@@ -57,7 +57,7 @@ Statuses:
     -u, --urgent                        Urgent status.
 
 Body:
-    -b BODY                             Set body of the item from BODY.
+    -b BODY, --body BODY                Set body of the item from BODY.
     --editor                            Drop to $EDITOR to set/edit item body.
     -                                   Set body of the item from STDIN.
 
@@ -80,7 +80,7 @@ Miscellaneous:
 
 fn parse_cmds(profile: &mut ThecaProfile, args: &Args) -> Result<(), ThecaError> {
     // misc
-    if args.flag_v { println!("theca v{}", VERSION); return Ok(()) }
+    if args.flag_version { println!("theca v{}", VERSION); return Ok(()) }
 
     // add/edit/del
     if args.cmd_add || args.cmd_edit || args.cmd_del {

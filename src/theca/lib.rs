@@ -54,28 +54,27 @@ pub struct Args {
     pub cmd_info: bool,
     pub cmd_transfer: bool,
     pub arg_id: Vec<usize>,
-    pub flag_v: bool,
+    pub flag_version: bool,
     cmd__: bool,
     arg_name: String,
     arg_pattern: String,
     arg_title: String,
     flag_profile_folder: String,
-    flag_p: String,
+    flag_profile: String,
     flag_regex: bool,
     flag_search_body: bool,
     flag_reverse: bool,
     flag_encrypted: bool,
     flag_key: String,
-    flag_c: bool,
-    flag_l: usize,
+    flag_condensed: bool,
+    flag_limit: usize,
     flag_datesort: bool,
     flag_started: bool,
     flag_urgent: bool,
     flag_none: bool,
-    flag_b: String,
+    flag_body: String,
     flag_editor: bool,
-    flag_h: bool,
-    flag_y: bool,
+    flag_yes: bool,
     flag_append: String,
     flag_prepend: String
 }
@@ -134,7 +133,7 @@ impl ThecaProfile {
             let profile_path = try!(find_profile_folder(args));
             // if the folder doesn't exist, make it yo!
             if !profile_path.exists() {
-                if !args.flag_y {
+                if !args.flag_yes {
                     println!(
                         "{} doesn't exist, would you like to create it?",
                         profile_path.display()
@@ -152,7 +151,7 @@ impl ThecaProfile {
             let mut profile_path = try!(find_profile_folder(args));
 
             // set profile name
-            profile_path.push(args.flag_p.to_string() + ".json");
+            profile_path.push(args.flag_profile.to_string() + ".json");
             
             // attempt to read profile
             match profile_path.is_file() {
@@ -198,7 +197,7 @@ impl ThecaProfile {
     }
 
     pub fn clear(&mut self, args: &Args) -> Result<(), ThecaError> {
-        if !args.flag_y {
+        if !args.flag_yes {
             println!("are you sure you want to delete all the notes in this profile?");
             if !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
         }
@@ -213,18 +212,18 @@ impl ThecaProfile {
         // set file name
         match args.cmd_new_profile {
             true => profile_path.push(args.arg_name.to_string() + ".json"),
-            false => profile_path.push(args.flag_p.to_string() + ".json")
+            false => profile_path.push(args.flag_profile.to_string() + ".json")
         };
 
-        if args.cmd_new_profile && profile_path.exists() && !args.flag_y {
+        if args.cmd_new_profile && profile_path.exists() && !args.flag_yes {
             println!("profile {} already exists would you like to overwrite it?", profile_path.display());
             if !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
         }
 
         if fingerprint > &0u64 {
             let new_fingerprint = try!(profile_path.stat()).modified;
-            if &new_fingerprint != fingerprint && !args.flag_y {
-                println!("changes have been made to the profile '{}' on disk since it was loaded, would you like to attempt to merge them?", args.flag_p);
+            if &new_fingerprint != fingerprint && !args.flag_yes {
+                println!("changes have been made to the profile '{}' on disk since it was loaded, would you like to attempt to merge them?", args.flag_profile);
                 if !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
             }
             // FIXME
@@ -272,16 +271,16 @@ impl ThecaProfile {
     }
 
     pub fn transfer_note(&mut self, args: &Args) -> Result<(), ThecaError> {
-        if args.flag_p == args.arg_name {
+        if args.flag_profile == args.arg_name {
             specific_fail!(format!(
                 "cannot transfer a note from a profile to itself ({} -> {})",
-                args.flag_p,
+                args.flag_profile,
                 args.arg_name
             ));
         }
 
         let mut trans_args = args.clone();
-        trans_args.flag_p = args.arg_name.clone();
+        trans_args.flag_profile = args.arg_name.clone();
         let (mut trans_profile, trans_fingerprint) = try!(ThecaProfile::new(&trans_args));
 
         match self.notes.iter().find(|n| n.id == args.arg_id[0])
@@ -293,14 +292,14 @@ impl ThecaProfile {
                     false => specific_fail!(format!(
                         "couldn't remove note {} in {}, aborting nothing will be saved",
                         args.arg_id[0],
-                        args.flag_p
+                        args.flag_profile
                     ))
                 };
             },
             false => specific_fail!(format!(
                 "could not transfer note {} from {} -> {}",
                 args.arg_id[0],
-                args.flag_p,
+                args.flag_profile,
                 args.arg_name
             ))
         };
@@ -316,8 +315,8 @@ impl ThecaProfile {
         } else {
             NOSTATUS.to_string()
         };
-        let body = if !args.flag_b.is_empty() {
-            args.flag_b.to_string()
+        let body = if !args.flag_body.is_empty() {
+            args.flag_body.to_string()
         } else if args.flag_editor {
             try!(drop_to_editor(&"".to_string()))
         } else if args.cmd__ {
@@ -382,12 +381,12 @@ impl ThecaProfile {
                 self.notes[item_pos].status = NOSTATUS.to_string();
             }
         }
-        if !args.flag_b.is_empty() || args.flag_editor || args.cmd__ {
+        if !args.flag_body.is_empty() || args.flag_editor || args.cmd__ {
             // change body
-            if !args.flag_b.is_empty() {
-                self.notes[item_pos].body = args.flag_b.to_string();
+            if !args.flag_body.is_empty() {
+                self.notes[item_pos].body = args.flag_body.to_string();
             } else if args.flag_editor {
-                if args.flag_encrypted && !args.flag_y {
+                if args.flag_encrypted && !args.flag_yes {
                     // leak to disk warning
                     println!(
                         "{}\n{}\n{}\n{}\n{}",
@@ -432,7 +431,7 @@ impl ThecaProfile {
             Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
             None => specific_fail!("last_touched is not properly formated".to_string())
         };
-        try!(pretty_line("name: ", &format!("{}\n", args.flag_p), tty));
+        try!(pretty_line("name: ", &format!("{}\n", args.flag_profile), tty));
         try!(pretty_line("encrypted: ", &format!("{}\n", self.encrypted), tty));
         try!(pretty_line("notes: ", &format!("{}\n", self.notes.len()), tty));
         try!(pretty_line("statuses: ", &format!(
@@ -453,7 +452,7 @@ impl ThecaProfile {
         };
         let tty = istty(STDOUT_FILENO);
 
-        match args.flag_c {
+        match args.flag_condensed {
             true => {
                 try!(pretty_line("id: ", &format!(
                     "{}\n",
@@ -506,7 +505,7 @@ impl ThecaProfile {
 
         // body
         if !self.notes[note_pos].body.is_empty() {
-            match args.flag_c {
+            match args.flag_condensed {
                 true => {
                     try!(pretty_line("body: ", &format!(
                         "{}\n",
@@ -567,8 +566,8 @@ impl ThecaProfile {
 pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
     match getenv("THECA_DEFAULT_PROFILE") {
         Some(val) => {
-            if args.flag_p.is_empty() {
-                args.flag_p = val;
+            if args.flag_profile.is_empty() {
+                args.flag_profile = val;
             }
         },
         None => ()
@@ -593,8 +592,8 @@ pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
         args.flag_key = try!(get_password());
     }
 
-    if args.flag_p.is_empty() {
-        args.flag_p = "default".to_string();
+    if args.flag_profile.is_empty() {
+        args.flag_profile = "default".to_string();
     }
 
     Ok(())
