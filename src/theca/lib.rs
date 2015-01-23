@@ -187,11 +187,10 @@ impl ThecaProfile {
                     let contents = match args.flag_encrypted {
                         false => try!(String::from_utf8(contents_buf)),
                         true => {
-                            let (key, iv) = password_to_key(&*args.flag_key);
+                            let key = password_to_key(&*args.flag_key);
                                 try!(String::from_utf8(try!(decrypt(
                                     &*contents_buf,
-                                    &*key,
-                                    &*iv
+                                    &*key
                                 ))))
                         }
                     };
@@ -253,11 +252,10 @@ impl ThecaProfile {
 
         // encrypt json if its an encrypted profile
         if self.encrypted {
-            let (key, iv) = password_to_key(&*args.flag_key);
+            let key = password_to_key(&*args.flag_key);
             buffer = try!(encrypt(
                 &*buffer,
-                &*key,
-                &*iv
+                &*key
             ));
         }
 

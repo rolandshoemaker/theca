@@ -15,9 +15,9 @@ Usage:
     theca [options] new-profile [<name>]
     theca [options] info
     theca [options] clear
-    theca [options] [-c] [-l LIMIT] [-r]
-    theca [options] [-c] <id>
-    theca [options] [-c] search [--regex, --search-body] <pattern>
+    theca [options]
+    theca [options] <id>
+    theca [options] search [--regex, --search-body] <pattern>
     theca [options] transfer <id> to <name>
     theca [options] add <title> [-s|-u] [-b BODY|-t|-]
     theca [options] edit <id>  [<title>|-a TEXT|--prepend TEXT] [-s|-u|-n] [-b BODY|-t|-]
