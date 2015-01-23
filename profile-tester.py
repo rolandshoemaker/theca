@@ -28,4 +28,3 @@ b = read_json_file("/home/roland/.theca/default.json")
 
 validate_schema(b, s) # heuheuheuheuh
 validate_profile(b)
-

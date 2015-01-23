@@ -54,13 +54,13 @@ pub struct Args {
     pub cmd_info: bool,
     pub cmd_transfer: bool,
     pub arg_id: Vec<usize>,
+    pub flag_profile: String,
     pub flag_version: bool,
     cmd__: bool,
     arg_name: Vec<String>,
     arg_pattern: String,
     arg_title: String,
     flag_profile_folder: String,
-    flag_profile: String,
     flag_regex: bool,
     flag_search_body: bool,
     flag_reverse: bool,
@@ -100,11 +100,20 @@ impl ThecaItem {
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         print!("{}", format_field(&self.id.to_string(), line_format.id_width, false));
         print!("{}", column_seperator);
-        let mut title_str = self.title.to_string();
-        if !self.body.is_empty() && !search_body {
-            title_str = "(+) ".to_string()+&*title_str;
+        // let mut title_str = self.title.to_string();
+        // if !self.body.is_empty() && !search_body {
+        //     title_str = "(+) ".to_string()+&*title_str;
+        // }
+        // print!("{}", format_field(&title_str, line_format.title_width, true));
+        match !self.body.is_empty() && !search_body {
+            true => {
+                print!("{}", format_field(&self.title, line_format.title_width-4, true));
+                print!("{}", format_field(&" (+)".to_string(), 4, false));
+            },
+            false => {
+                print!("{}", format_field(&self.title, line_format.title_width, true));
+            }
         }
-        print!("{}", format_field(&title_str, line_format.title_width, true));
         print!("{}", column_seperator);
         if line_format.status_width != 0 {
             print!("{}", format_field(&self.status, line_format.status_width, false));
@@ -415,7 +424,7 @@ impl ThecaProfile {
         Ok(())
     }
 
-    pub fn stats(&mut self, args: &Args) -> Result<(), ThecaError> {
+    pub fn stats(&mut self, name: &String) -> Result<(), ThecaError> {
         let no_s = self.notes.iter().filter(|n| n.status == "").count();
         let started_s = self.notes.iter().filter(|n| n.status == "Started").count();
         let urgent_s = self.notes.iter().filter(|n| n.status == "Urgent").count();
@@ -434,7 +443,7 @@ impl ThecaProfile {
             Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
             None => specific_fail!("last_touched is not properly formated".to_string())
         };
-        try!(pretty_line("name: ", &format!("{}\n", args.flag_profile), tty));
+        try!(pretty_line("name: ", &format!("{}\n", name), tty));
         try!(pretty_line("encrypted: ", &format!("{}\n", self.encrypted), tty));
         try!(pretty_line("notes: ", &format!("{}\n", self.notes.len()), tty));
         try!(pretty_line("statuses: ", &format!(

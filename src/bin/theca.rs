@@ -6,7 +6,7 @@ use docopt::Docopt;
 use theca::{Args, ThecaProfile, setup_args};
 use theca::errors::{ThecaError};
 
-pub static VERSION:  &'static str = "0.6.0-dev";
+pub static VERSION:  &'static str = "0.7.0-dev";
 
 static USAGE: &'static str = "
 theca - cli note taking tool
@@ -81,12 +81,14 @@ fn parse_cmds(profile: &mut ThecaProfile, args: &Args) -> Result<(), ThecaError>
     // misc
     if args.flag_version { println!("theca v{}", VERSION); return Ok(()) }
 
-    // add/edit/del
-    if args.cmd_add || args.cmd_edit || args.cmd_del {
-        if args.cmd_add { try!(profile.add_item(args)); return Ok(()) }
-        if args.cmd_edit { try!(profile.edit_item(args)); return Ok(()) }
-        if args.cmd_del { profile.delete_item(&args.arg_id[0]); return Ok(()) }
-    }
+    // add
+    if args.cmd_add { try!(profile.add_item(args)); return Ok(()) }
+
+    // edit    
+    if args.cmd_edit { try!(profile.edit_item(args)); return Ok(()) }
+    
+    // delete    
+    if args.cmd_del { profile.delete_item(&args.arg_id[0]); return Ok(()) }
 
     // transfer
     if args.cmd_transfer { try!(profile.transfer_note(args)); return Ok(()) }
@@ -101,11 +103,13 @@ fn parse_cmds(profile: &mut ThecaProfile, args: &Args) -> Result<(), ThecaError>
     if !args.arg_id.is_empty() { try!(profile.view_item(args)); return Ok(()) }
 
     // stats
-    if args.cmd_info { try!(profile.stats(args)); return Ok(()) }
+    if args.cmd_info { try!(profile.stats(&args.flag_profile)); return Ok(()) }
+
+    // new-profile
+    if args.cmd_new_profile { return Ok(()) }
 
     // list
-    if !args.cmd_new_profile { try!(profile.list_items(args)); return Ok(()) }
-
+    try!(profile.list_items(args));
     Ok(())
 }
 
