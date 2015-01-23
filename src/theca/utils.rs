@@ -259,10 +259,10 @@ pub fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), Theca
     }
     match args.flag_reverse {
         false => for n in notes[0..limit].iter() {
-            try!(n.print(&line_format, args.flag_body));
+            try!(n.print(&line_format, args.flag_search_body));
         },
         true => for n in notes[notes.len()-limit..notes.len()].iter().rev() {
-            try!(n.print(&line_format, args.flag_body));
+            try!(n.print(&line_format, args.flag_search_body));
         }
     };
     Ok(())

@@ -35,13 +35,13 @@ impl LineFormat {
         if line_format.id_width < 2 && !args.flag_c {line_format.id_width = 2;}
 
         // get length of longest title string
-        line_format.title_width = match items.iter().max_by(|n| n.title.len()) {
-            Some(w) => {
-                if items.iter().any(|n| n.body.len() > 0) {
-                    w.title.len()+4
-                } else {
-                    w.title.len()
-                }
+        line_format.title_width = match items.iter().max_by(|n| match n.body.len() > 0 {
+            true => n.title.len()+4,
+            false => n.title.len()
+        }) {
+            Some(n) => match n.body.is_empty() {
+                true => n.title.len(),
+                false => n.title.len()+4
             },
             None => 0
         };
@@ -84,10 +84,7 @@ impl LineFormat {
            (line_format.title_width-(line_width-console_width)) > 0 {
             // if it is trim text from the title width since it is always the biggest...
             // if there isn't any statuses, also give the title the colsep char space
-            line_format.title_width -= match line_format.status_width == 0 {
-                true => (line_width-console_width)+2,
-                false => line_width-console_width
-            };
+            line_format.title_width -= line_width-console_width;
         }
 
         Ok(line_format)

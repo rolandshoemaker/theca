@@ -62,7 +62,7 @@ pub struct Args {
     flag_profile_folder: String,
     flag_p: String,
     flag_regex: bool,
-    flag_body: bool,
+    flag_search_body: bool,
     flag_reverse: bool,
     flag_encrypted: bool,
     flag_key: String,
@@ -97,12 +97,12 @@ pub struct ThecaItem {
 }
 
 impl ThecaItem {
-    fn print(&self, line_format: &LineFormat, body_search: bool) -> Result<(), ThecaError> {
+    fn print(&self, line_format: &LineFormat, search_body: bool) -> Result<(), ThecaError> {
         let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
         print!("{}", format_field(&self.id.to_string(), line_format.id_width, false));
         print!("{}", column_seperator);
         let mut title_str = self.title.to_string();
-        if !self.body.is_empty() && !body_search {
+        if !self.body.is_empty() && !search_body {
             title_str = "(+) ".to_string()+&*title_str;
         }
         print!("{}", format_field(&title_str, line_format.title_width, true));
@@ -113,7 +113,7 @@ impl ThecaItem {
         }
         print!("{}", format_field(&try!(localize_last_touched_string(&*self.last_touched)), line_format.touched_width, false));
         print!("\n");
-        if body_search {
+        if search_body {
             for l in self.body.lines() {
                 println!("\t{}", l);
             }
@@ -187,7 +187,7 @@ impl ThecaProfile {
                     let decoded: ThecaProfile = match json::decode(&*contents) {
                         Ok(s) => s,
                         Err(_) => specific_fail!(format!(
-                            "Invalid JSON in {}",
+                            "invalid JSON in {}",
                             profile_path.display()
                         ))
                     };
@@ -198,8 +198,10 @@ impl ThecaProfile {
     }
 
     pub fn clear(&mut self, args: &Args) -> Result<(), ThecaError> {
-        println!("are you sure you want to delete all the notes in this profile?");
-        if !args.flag_y && !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
+        if !args.flag_y {
+            println!("are you sure you want to delete all the notes in this profile?");
+            if !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
+        }
         self.notes.truncate(0);
         Ok(())
     }
@@ -212,16 +214,20 @@ impl ThecaProfile {
         match args.cmd_new_profile {
             true => profile_path.push(args.arg_name.to_string() + ".json"),
             false => profile_path.push(args.flag_p.to_string() + ".json")
+        };
+
+        if args.cmd_new_profile && profile_path.exists() && !args.flag_y {
+            println!("profile {} already exists would you like to overwrite it?", profile_path.display());
+            if !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
         }
 
-        println!("{}", fingerprint);
         if fingerprint > &0u64 {
             let new_fingerprint = try!(profile_path.stat()).modified;
-            if &new_fingerprint != fingerprint {
+            if &new_fingerprint != fingerprint && !args.flag_y {
                 println!("changes have been made to the profile '{}' on disk since it was loaded, would you like to attempt to merge them?", args.flag_p);
-                if !args.flag_y && !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
-                // FIXME
+                if !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
             }
+            // FIXME
         }
 
         // open file
@@ -351,11 +357,10 @@ impl ThecaProfile {
 
     pub fn edit_item(&mut self, args: &Args) -> Result<(), ThecaError> {
         let id = args.arg_id[0];
-        let item_pos: usize = match self.notes.iter()
-                                              .position(|n| n.id == id) {
-                Some(i) => i,
-                None => specific_fail!(format!("note {} doesn't exist", id))
-            };
+        let item_pos: usize = match self.notes.iter().position(|n| n.id == id) {
+            Some(i) => i,
+            None => specific_fail!(format!("note {} doesn't exist", id))
+        };
         if !args.arg_title.is_empty() {
             // change title
             self.notes[item_pos].title = args.arg_title.replace("\n", "").to_string();
@@ -391,7 +396,7 @@ impl ThecaProfile {
                         "* for editing, it will be deleted when you are done, but this     *",
                         "* increases the chance that it may be recovered at a later date.  *",
                         "*******************************************************************");
-                    println!("Do you want to continue?");
+                    println!("do you want to continue?");
                     if !try!(get_yn_input()) {specific_fail!("ok, bye".to_string());}
                 }
                 let new_body = try!(drop_to_editor(&self.notes[item_pos].body));
@@ -538,13 +543,13 @@ impl ThecaProfile {
                     Ok(r) => r,
                     Err(e) => specific_fail!(format!("regex error: {}.", e.msg))
                 };
-                self.notes.iter().filter(|n| match args.flag_body {
+                self.notes.iter().filter(|n| match args.flag_search_body {
                     true => re.is_match(&*n.body),
                     false => re.is_match(&*n.title)
                 }).map(|n| n.clone()).collect()
             },
             false => {
-                self.notes.iter().filter(|n| match args.flag_body {
+                self.notes.iter().filter(|n| match args.flag_search_body {
                     true => n.body.contains(pattern),
                     false => n.title.contains(pattern)
                 }).map(|n| n.clone()).collect()
@@ -584,7 +589,7 @@ pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
     }
 
     // if profile is encrypted try to set the key
-    if args.flag_encrypted && args.flag_key.is_empty() && !args.flag_y {
+    if args.flag_encrypted && args.flag_key.is_empty() {
         args.flag_key = try!(get_password());
     }
 
