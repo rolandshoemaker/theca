@@ -4,7 +4,7 @@ rust:
 before_install:
     - sudo apt-get update
 install:
-    - sudo apt-get install -y python2 python-crypto
+    - sudo apt-get install -y python python-crypto
     - sudo pip install passlib
     - sudo pip install jsonschema
 script:
