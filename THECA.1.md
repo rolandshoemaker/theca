@@ -32,8 +32,9 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-`theca` is a minimal command line note taking tool written
-in `rust`.
+`theca` is a minimal command line profile based note taking tool
+written in `rust` that stores profiles using a `JSON` based file
+format.
 
 PROFILE OPTIONS
 ---------------
