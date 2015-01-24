@@ -6,7 +6,7 @@ before_install:
 install:
     - sudo apt-get install -y python3 python3-crypto python3-setuptools
     - sudo easy_install3 pip
-    - sudo pip install jsonschema
+    - sudo pip3 install jsonschema
 script:
     - cargo build --verbose
     - python3 test_harness.py
