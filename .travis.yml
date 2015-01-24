@@ -2,9 +2,9 @@ language: rust
 rust:
     - nightly
 before_install:
-	- sudo apt-get update
+    - sudo apt-get update
 install:
-	- sudo apt-get install -y python3 python3-jsonschema python3-crypto
+    - sudo apt-get install -y python3 python3-jsonschema python3-crypto
 script:
     - cargo build --verbose
     - python3 test_harness.py
