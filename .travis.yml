@@ -4,7 +4,7 @@ rust:
 before_install:
     - sudo apt-get update
 install:
-    - sudo apt-get install -y python3.4 python3-crypto python3-pip
+    - sudo apt-get install -y python3 python3-crypto python3-setuptools
     - sudo easy_install3 jsonschema
 script:
     - cargo build --verbose

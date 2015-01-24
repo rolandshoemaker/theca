@@ -9,6 +9,7 @@ import os.path
 from shutil import rmtree
 import subprocess
 import os
+import time
 
 def decrypt_profile(ciphertext, passphrase):
   key = pbkdf2(bytes(passphrase.encode("utf-8")), sha256(b"DEBUG").hexdigest().encode("utf-8"), 2056, 32, "hmac-sha256")
@@ -68,6 +69,7 @@ def test_harness(tests):
   failed = 0
 
   print("# running {} tests.".format(len(tests)))
+  start = time.clock()
   for t in tests:
     try:
       print("test: "+t['name'])
@@ -105,13 +107,13 @@ def test_harness(tests):
 
   rmtree(TMPDIR)
   devnull.close()
-
-  print("tests passed: {}, failed {}.".format(len(tests)-failed, failed))
+  elapsed = time.clock()-start
+  print("tests passed: {}, failed {}, took: {:.2}s.".format(len(tests)-failed, failed, elapsed))
   if failed > 0:
     exit(1)
 
 
-TESTS = [
+GOOD_TESTS = [
   {
     "name": "new profile",
     "profile": "",
@@ -155,16 +157,6 @@ THECA_CMD = "target/theca"
 
 STATUSES = ["", "Started", "Urgent"]
 DATEFMT = "%Y-%m-%d %H:%M:%S %z"
-PASSPHRASE = "DEBUG"
 SCHEMA = read_json_file("schema.json")
 
-test_harness(TESTS)
-
-# b = read_json_file("/home/roland/.theca/default.json")
-# c = read_enc_json_file("/home/roland/.theca/enc4.json", PASSPHRASE)
-
-# validate_profile_schema(b) # heuheuheuheuh
-# validate_profile_contents(b)
-
-# validate_profile_schema(c)
-# validate_profile_contents(c)
+test_harness(GOOD_TESTS)
