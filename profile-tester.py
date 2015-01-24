@@ -1,13 +1,38 @@
 from jsonschema import validate as validate_schema
 import json
 from time import strptime
+from hashlib import sha256
+from passlib.utils.pbkdf2 import pbkdf2
+from Crypto.Cipher import AES
 
 STATUSES = ["", "Started", "Urgent"]
 DATEFMT = "%Y-%m-%d %H:%M:%S %z"
+PASSPHRASE = "DEBUG"
+
+def decrypt_profile(ciphertext, passphrase):
+  key = pbkdf2(bytes(passphrase.encode("utf-8")), sha256(b"DEBUG").hexdigest().encode("utf-8"), 2056, 32, "hmac-sha256")
+  iv = ciphertext[0:16]
+  decryptor = AES.new(key, AES.MODE_CBC, iv)
+  plaintext = decryptor.decrypt(ciphertext[16:])
+  try:
+    return plaintext[:-plaintext[-1]].decode("utf-8")
+  except UnicodeDecodeError:
+    raise AssertionError("profile could not be decrypted")
+
+def read_enc_json_file(path, pp):
+  with open(path, "rb") as f:
+    data = f.read()
+  try:
+    return json.loads(decrypt_profile(data, pp))
+  except ValueError:
+    raise AssertionError("profile contains invalid json")
 
 def read_json_file(path):
   a = open(path)
-  return json.load(a)
+  try:
+    return json.load(a)
+  except ValueError:
+    raise AssertionError("profile contains invalid json")
 
 def validate_profile(profile):
   for i, n in enumerate(profile['notes']):
@@ -25,6 +50,10 @@ def validate_profile(profile):
 
 s = read_json_file("schema.json")
 b = read_json_file("/home/roland/.theca/default.json")
+c = read_enc_json_file("/home/roland/.theca/enc4.json", PASSPHRASE)
 
 validate_schema(b, s) # heuheuheuheuh
 validate_profile(b)
+
+validate_schema(c, s)
+validate_profile(c)

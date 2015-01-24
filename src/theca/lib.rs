@@ -47,38 +47,38 @@ static VERSION:  &'static str = "0.7.0-dev";
 
 #[derive(RustcDecodable, Show, Clone)]
 pub struct Args {
+    pub cmd_add: bool,
+    pub cmd_clear: bool,
+    pub cmd_del: bool,
+    pub cmd_edit: bool,
+    pub cmd_info: bool,
     pub cmd_new_profile: bool,
     pub cmd_search: bool,
-    pub cmd_add: bool,
-    pub cmd_edit: bool,
-    pub cmd_del: bool,
-    pub cmd_clear: bool,
-    pub cmd_info: bool,
     pub cmd_transfer: bool,
+    pub cmd__: bool,
     pub arg_id: Vec<usize>,
+    pub arg_name: Vec<String>,
+    pub arg_pattern: String,
+    pub arg_title: String,
+    pub flag_append: String,
+    pub flag_body: String,
+    pub flag_condensed: bool,
+    pub flag_datesort: bool,
+    pub flag_editor: bool,
+    pub flag_encrypted: bool,
+    pub flag_key: String,
+    pub flag_limit: usize,
+    pub flag_none: bool,
+    pub flag_prepend: String,
     pub flag_profile: String,
+    pub flag_profile_folder: String,
+    pub flag_regex: bool,
+    pub flag_reverse: bool,
+    pub flag_search_body: bool,
+    pub flag_started: bool,
+    pub flag_urgent: bool,
     pub flag_version: bool,
-    cmd__: bool,
-    arg_name: Vec<String>,
-    arg_pattern: String,
-    arg_title: String,
-    flag_profile_folder: String,
-    flag_regex: bool,
-    flag_search_body: bool,
-    flag_reverse: bool,
-    flag_encrypted: bool,
-    flag_key: String,
-    flag_condensed: bool,
-    flag_limit: usize,
-    flag_datesort: bool,
-    flag_started: bool,
-    flag_urgent: bool,
-    flag_none: bool,
-    flag_body: String,
-    flag_editor: bool,
-    flag_yes: bool,
-    flag_append: String,
-    flag_prepend: String
+    pub flag_yes: bool
 }
 
 static NOSTATUS: &'static str = "";
@@ -90,11 +90,11 @@ static DATEFMT_SHORT: &'static str = "%F %T";
 
 #[derive(RustcDecodable, RustcEncodable, Clone)]
 pub struct ThecaItem {
-    id: usize,
-    title: String,
-    status: String,
-    body: String,
-    last_touched: String
+    pub id: usize,
+    pub title: String,
+    pub status: String,
+    pub body: String,
+    pub last_touched: String
 }
 
 impl ThecaItem {
@@ -134,7 +134,7 @@ impl ThecaItem {
 
 #[derive(RustcDecodable, RustcEncodable, Clone)]
 pub struct ThecaProfile {
-    encrypted: bool,
+    pub encrypted: bool,
     pub notes: Vec<ThecaItem>
 }
 
