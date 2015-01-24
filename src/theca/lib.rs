@@ -623,38 +623,46 @@ pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
 }
 
 pub fn parse_cmds(profile: &mut ThecaProfile, args: &Args, profile_fingerprint: &u64) -> Result<(), ThecaError> {
-    // misc
-    if args.flag_version { println!("theca v{}", VERSION); return Ok(()) }
-
-    // add
-    if args.cmd_add { try!(profile.add_item(args)); try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
-
-    // edit    
-    if args.cmd_edit { try!(profile.edit_item(args)); try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
-    
-    // delete    
-    if args.cmd_del { profile.delete_item(&args.arg_id[0]); try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
-
-    // transfer
-    if args.cmd_transfer { try!(profile.transfer_note(args)); try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
-
-    // clear
-    if args.cmd_clear { try!(profile.clear(args)); try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+    // view
+    if !args.arg_id.is_empty() && !args.cmd_del && !args.cmd_edit { try!(profile.view_item(args)); return Ok(()) }
 
     // search
     if args.cmd_search { try!(profile.search_items(args)); return Ok(()) }
 
-    // view
-    if !args.arg_id.is_empty() { try!(profile.view_item(args)); return Ok(()) }
-
     // stats
     if args.cmd_info { try!(profile.stats(&args.flag_profile)); return Ok(()) }
 
-    // new-profile
-    if args.cmd_new_profile { try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+    // misc
+    if args.flag_version { println!("theca v{}", VERSION); return Ok(()) }
+
+    // add
+    if args.cmd_add { try!(profile.add_item(args)); } // try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+
+    // edit    
+    if args.cmd_edit { try!(profile.edit_item(args)); } // try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+    
+    // delete    
+    if args.cmd_del { profile.delete_item(&args.arg_id[0]); } // try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+
+    // transfer
+    if args.cmd_transfer { try!(profile.transfer_note(args)); } // try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+
+    // clear
+    if args.cmd_clear { try!(profile.clear(args)); } // try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
 
     // list
-    try!(profile.list_items(args));
+    if args.arg_id.is_empty() && !args.cmd_add && !args.cmd_edit && !args.cmd_del &&
+       !args.cmd_transfer && !args.cmd_clear && !args.cmd_new_profile {
+        try!(profile.list_items(args));
+        return Ok(())
+    }
+
+    // new-profile, add, edit, del, transfer, clear
+    try!(profile.save_to_file(args, profile_fingerprint));
+
+    if args.cmd_new_profile {
+        println!("created profile '{}'", args.flag_profile);
+    }
 
     Ok(())
 }

@@ -72,13 +72,10 @@ Miscellaneous:
 fn theca_main() -> Result<(), ThecaError> {
     let mut args: Args = try!(Docopt::new(USAGE)
                             .and_then(|d| d.decode()));
-
     try!(setup_args(&mut args));
 
     let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(&mut args));
-
     try!(parse_cmds(&mut profile, &args, &profile_fingerprint));
-
     Ok(())
 }
 
