@@ -60,8 +60,7 @@ pub struct Args {
     pub arg_name: Vec<String>,
     pub arg_pattern: String,
     pub arg_title: String,
-    pub flag_append: String,
-    pub flag_body: String,
+    pub flag_body: Vec<String>,
     pub flag_condensed: bool,
     pub flag_datesort: bool,
     pub flag_editor: bool,
@@ -69,7 +68,6 @@ pub struct Args {
     pub flag_key: String,
     pub flag_limit: usize,
     pub flag_none: bool,
-    pub flag_prepend: String,
     pub flag_profile: String,
     pub flag_profile_folder: String,
     pub flag_regex: bool,
@@ -241,7 +239,7 @@ impl ThecaProfile {
                 let mut new_args = args.clone();
                 if args.flag_editor { 
                     new_args.flag_editor = false;
-                    new_args.flag_body = match self.notes.last() {
+                    new_args.flag_body[0] = match self.notes.last() {
                         Some(n) => n.body.clone(),
                         None => "".to_string()
                     };
@@ -342,7 +340,10 @@ impl ThecaProfile {
 
         let body = match args.cmd__ {
             false => match args.flag_editor {
-                false => args.flag_body.clone(),
+                false => match args.flag_body.is_empty() {
+                    true => "".to_string(),
+                    false => args.flag_body[0].clone(),
+                },
                 true => {
                     match istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
                         true => try!(drop_to_editor(&"".to_string())),
@@ -394,13 +395,6 @@ impl ThecaProfile {
         if !args.arg_title.is_empty() {
             // change title
             self.notes[item_pos].title = args.arg_title.replace("\n", "").to_string();
-        } else if !args.flag_prepend.is_empty() || !args.flag_append.is_empty() {
-            self.notes[item_pos].title = format!(
-                "{}{}{}",
-                args.flag_prepend,
-                self.notes[item_pos].title,
-                args.flag_append
-            );
         }
         if args.flag_started || args.flag_urgent || args.flag_none {
             // change status
@@ -430,7 +424,7 @@ impl ThecaProfile {
                             false => self.notes[item_pos].body.clone()
                         }
                     },
-                    false => args.flag_body.clone()
+                    false => args.flag_body[0].clone()
                 }
             };
         }
@@ -657,7 +651,7 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &Args, profile_fingerprint: 
     if args.cmd_info { try!(profile.stats(&args.flag_profile)); return Ok(()) }
 
     // new-profile
-    if args.cmd_new_profile { return Ok(()) }
+    if args.cmd_new_profile { try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
 
     // list
     try!(profile.list_items(args));

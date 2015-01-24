@@ -18,7 +18,7 @@ Usage:
     theca [options] search [--regex, --search-body] <pattern>
     theca [options] transfer <id> to <name>
     theca [options] add <title> [-s|-u] [-b BODY|-t|-]
-    theca [options] edit <id>  [<title>|-a TEXT|--prepend TEXT] [-s|-u|-n] [-b BODY|-t|-]
+    theca [options] edit <id> [<title>] [-s|-u|-n] [-b BODY|-t|-]
     theca [options] del <id>
 
 Profiles:
@@ -39,38 +39,32 @@ Profiles:
     -d, --datesort                      Sort items by date, can be used with
                                         --reverse.
 
-    Input:
-    -y, --yes                           Silently agree to any y/n prompts.
-    -m, --merge                         Silently agree to any merge profile
-                                        changes prompt.
+Input:
+    -y, --yes                           Silently agree to any [y/n] prompts.
 
-    Title:
-    -a TEXT, --append TEXT              Append TEXT to the note title.
-    --prepend TEXT             Prepend TEXT to the note title.
-
-    Statuses:
-    -n, --none                          No status. (default)
+Statuses:
+    -n, --none                          No status. (note default)
     -s, --started                       Started status.
     -u, --urgent                        Urgent status.
 
-    Body:
-    -b BODY, --body BODY                Set body of the item from BODY.
+Body:
+    -b BODY, --body BODY                Set body of the item to BODY.
     -t, --editor                        Drop to $EDITOR to set/edit item body.
     -                                   Set body of the item from STDIN.
 
-    Encryption:
+Encryption:
     -e, --encrypted                     Specifies using an encrypted profile.
     -k KEY, --key KEY                   Encryption key to use for
                                         encryption/decryption, a prompt will be
                                         displayed if no key is provided.
 
-    Search:
+Search:
     --search-body                       Search the body of notes instead of
                                         the title.
     --regex                             Set search pattern to regex (default
                                         is plaintext).
 
-    Miscellaneous:
+Miscellaneous:
     -h, --help                          Display this help and exit.
     -v, --version                       Display the version of theca and exit.
 ";
