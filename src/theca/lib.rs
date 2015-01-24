@@ -43,6 +43,8 @@ pub mod lineformat;
 pub mod utils;
 pub mod crypt;
 
+static VERSION:  &'static str = "0.7.0-dev";
+
 #[derive(RustcDecodable, Show, Clone)]
 pub struct Args {
     pub cmd_new_profile: bool,
@@ -130,7 +132,7 @@ impl ThecaItem {
     }
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(RustcDecodable, RustcEncodable, Clone)]
 pub struct ThecaProfile {
     encrypted: bool,
     pub notes: Vec<ThecaItem>
@@ -236,6 +238,18 @@ impl ThecaProfile {
             if &new_fingerprint != fingerprint && !args.flag_yes {
                 println!("changes have been made to the profile '{}' on disk since it was loaded, would you like to attempt to merge them?", args.flag_profile);
                 if !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
+                let mut new_args = args.clone();
+                if args.flag_editor { 
+                    new_args.flag_editor = false;
+                    new_args.flag_body = match self.notes.last() {
+                        Some(n) => n.body.clone(),
+                        None => "".to_string()
+                    };
+                }
+                let (mut changed_profile, changed_fingerprint) = try!(ThecaProfile::new(&mut new_args));
+                try!(parse_cmds(&mut changed_profile, &new_args, &changed_fingerprint));
+                try!(changed_profile.save_to_file(&new_args, &0u64));
+                return Ok(())
             }
             // FIXME
         }
@@ -350,7 +364,7 @@ impl ThecaProfile {
             body: body,
             last_touched: try!(strftime(DATEFMT, &now()))
         });
-        println!("note added");
+        println!("note {} added", new_id+1);
         Ok(())
     }
 
@@ -423,7 +437,7 @@ impl ThecaProfile {
 
         // update last_touched
         self.notes[item_pos].last_touched = try!(strftime(DATEFMT, &now()));
-        println!("edited");
+        println!("edited note {}", self.notes[item_pos].id);
         Ok(())
     }
 
@@ -610,6 +624,43 @@ pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
     if args.flag_profile.is_empty() {
         args.flag_profile = "default".to_string();
     }
+
+    Ok(())
+}
+
+pub fn parse_cmds(profile: &mut ThecaProfile, args: &Args, profile_fingerprint: &u64) -> Result<(), ThecaError> {
+    // misc
+    if args.flag_version { println!("theca v{}", VERSION); return Ok(()) }
+
+    // add
+    if args.cmd_add { try!(profile.add_item(args)); try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+
+    // edit    
+    if args.cmd_edit { try!(profile.edit_item(args)); try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+    
+    // delete    
+    if args.cmd_del { profile.delete_item(&args.arg_id[0]); try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+
+    // transfer
+    if args.cmd_transfer { try!(profile.transfer_note(args)); try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+
+    // clear
+    if args.cmd_clear { try!(profile.clear(args)); try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+
+    // search
+    if args.cmd_search { try!(profile.search_items(args)); return Ok(()) }
+
+    // view
+    if !args.arg_id.is_empty() { try!(profile.view_item(args)); return Ok(()) }
+
+    // stats
+    if args.cmd_info { try!(profile.stats(&args.flag_profile)); return Ok(()) }
+
+    // new-profile
+    if args.cmd_new_profile { return Ok(()) }
+
+    // list
+    try!(profile.list_items(args));
 
     Ok(())
 }

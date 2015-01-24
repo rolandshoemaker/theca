@@ -3,10 +3,8 @@ extern crate theca;
 extern crate docopt;
 
 use docopt::Docopt;
-use theca::{Args, ThecaProfile, setup_args};
+use theca::{Args, ThecaProfile, setup_args, parse_cmds};
 use theca::errors::{ThecaError};
-
-pub static VERSION:  &'static str = "0.7.0-dev";
 
 static USAGE: &'static str = "
 theca - cli note taking tool
@@ -77,42 +75,6 @@ Profiles:
     -v, --version                       Display the version of theca and exit.
 ";
 
-fn parse_cmds(profile: &mut ThecaProfile, args: &Args) -> Result<(), ThecaError> {
-    // misc
-    if args.flag_version { println!("theca v{}", VERSION); return Ok(()) }
-
-    // add
-    if args.cmd_add { try!(profile.add_item(args)); return Ok(()) }
-
-    // edit    
-    if args.cmd_edit { try!(profile.edit_item(args)); return Ok(()) }
-    
-    // delete    
-    if args.cmd_del { profile.delete_item(&args.arg_id[0]); return Ok(()) }
-
-    // transfer
-    if args.cmd_transfer { try!(profile.transfer_note(args)); return Ok(()) }
-
-    // clear
-    if args.cmd_clear { try!(profile.clear(args)); return Ok(()) }
-
-    // search
-    if args.cmd_search { try!(profile.search_items(args)); return Ok(()) }
-
-    // view
-    if !args.arg_id.is_empty() { try!(profile.view_item(args)); return Ok(()) }
-
-    // stats
-    if args.cmd_info { try!(profile.stats(&args.flag_profile)); return Ok(()) }
-
-    // new-profile
-    if args.cmd_new_profile { return Ok(()) }
-
-    // list
-    try!(profile.list_items(args));
-    Ok(())
-}
-
 fn theca_main() -> Result<(), ThecaError> {
     let mut args: Args = try!(Docopt::new(USAGE)
                             .and_then(|d| d.decode()));
@@ -121,15 +83,8 @@ fn theca_main() -> Result<(), ThecaError> {
 
     let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(&mut args));
 
-    try!(parse_cmds(&mut profile, &args));
+    try!(parse_cmds(&mut profile, &args, &profile_fingerprint));
 
-    // save altered profile back to disk
-    // this should only be triggered by commands that make
-    // alterations to the profile
-    if args.cmd_add || args.cmd_edit || args.cmd_del || args.cmd_new_profile ||
-       args.cmd_clear || args.cmd_transfer {
-        try!(profile.save_to_file(&args, &profile_fingerprint));
-    }
     Ok(())
 }
 

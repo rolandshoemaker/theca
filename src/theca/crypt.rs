@@ -11,7 +11,6 @@ use std::rand::{SeedableRng, Rng};
 // ALL the encryption functions thx rust-crypto ^_^
 pub fn encrypt(data: &[u8], key: &[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
     let mut iv = [0u8; 16];
-
     let mut f: Fortuna = SeedableRng::from_seed(data);
     f.fill_bytes(&mut iv);
 

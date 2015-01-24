@@ -1,10 +1,12 @@
 use core::fmt;
+use core::error::Error;
 use docopt;
 use time::{ParseError};
 use std::error::{FromError};
 use crypto::symmetriccipher::SymmetricCipherError;
 use std::io::{IoError};
 use std::string::FromUtf8Error;
+use rustc_serialize::json::EncoderError;
 
 pub use self::ErrorKind::{
     InternalIoError,
@@ -46,12 +48,22 @@ macro_rules! try_errno {
     }
 }
 
+impl FromError<EncoderError> for ThecaError {
+    fn from_error(err: EncoderError) -> ThecaError {
+        ThecaError {
+            kind: GenericError,
+            desc: err.description().to_string(),
+            detail: None
+        }
+    }
+}
+
 impl FromError<IoError> for ThecaError {
     fn from_error(err: IoError) -> ThecaError {
         ThecaError {
             kind: GenericError,
             desc: err.desc.to_string(),
-            detail: None
+            detail: err.detail
         }
     }
 }
