@@ -5,10 +5,10 @@ before_install:
     - sudo add-apt-repository ppa:fkrull/deadsnakes -y
     - sudo apt-get update -q
 install:
-    - sudo apt-get install -y python3.4 python3-crypto python3-setuptools
-    - sudo easy_install3 pip
+    - sudo apt-get install -y python3.4
     - sudo pip install passlib
     - sudo pip install jsonschema
+    - sudo pip install pycrypto
 script:
     - cargo build --verbose
     - python test_harness.py
