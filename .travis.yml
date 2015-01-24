@@ -2,9 +2,11 @@ language: rust
 rust:
     - nightly
 before_install:
-    - sudo apt-get update
+    - sudo add-apt-repository ppa:fkrull/deadsnakes -y
+    - sudo apt-get update -q
 install:
-    - sudo apt-get install -y python python-crypto
+    - sudo apt-get install -y python3.4 python3-crypto python3-setuptools
+    - sudo easy_install3 pip
     - sudo pip install passlib
     - sudo pip install jsonschema
 script:

@@ -49,7 +49,8 @@ def validate_profile_contents(profile):
     try:
       strptime(n['last_touched'], DATEFMT)
     except ValueError:
-      raise AssertionError("object #"+str(i)+" last_touched doesn't match time format %Y-%m-%d %H:%M:%S %z")
+      print(n)
+      raise AssertionError("object #"+str(i)+" last_touched doesn't match time format "+DATEFMT)
     profile_ids = [n['id'] for n in profile['notes']]
     if len(profile_ids) != len(set(profile_ids)): raise AssertionError("there are duplicate IDs in 'notes'")
 
@@ -68,9 +69,10 @@ def test_harness(tests):
   devnull = open(os.devnull, "w")
   failed = 0
 
+  print("# {}\n#    {}".format(tests['title'], tests['desc']))
   print("# running {} tests.".format(len(tests)))
   start = time.clock()
-  for t in tests:
+  for t in tests['tests']:
     try:
       print("test: "+t['name'])
       cmd = [THECA_CMD]
@@ -100,8 +102,9 @@ def test_harness(tests):
       validate_profile_schema(json_result)
       validate_profile_contents(json_result)
       compare_profile(t["result"], json_result)
-    except AssertionError:
+    except AssertionError as e:
       failed += 1
+      print(e.args)
 
     os.remove(result_path)
 
@@ -113,45 +116,49 @@ def test_harness(tests):
     exit(1)
 
 
-GOOD_TESTS = [
-  {
-    "name": "new profile",
-    "profile": "",
-    "profile_folder": "",
-    "cmds": [
-      ["new-profile"]
-    ],
-    "stdin": [],
-    "result_path": "default.json",
-    "result_passphrase": "",
-    "result": {
-      "encrypted": False,
-      "notes": []
+GOOD_TESTS = {
+  "title": "GOOD TESTS",
+  "desc": "testing correct input.",
+  "tests": [
+    {
+      "name": "new profile",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": []
+      }
+    },{
+      "name": "add note",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
     }
-  },{
-    "name": "add note",
-    "profile": "",
-    "profile_folder": "",
-    "cmds": [
-      ["new-profile"],
-      ["add", "this is the title"]
-    ],
-    "stdin": [],
-    "result_path": "default.json",
-    "result_passphrase": "",
-    "result": {
-      "encrypted": False,
-      "notes": [
-        {
-          "id": 1,
-          "title": "this is the title",
-          "status": "",
-          "body": ""
-        }
-      ]
-    }
-  }
-]
+  ]
+}
 
 THECA_CMD = "target/theca"
 
