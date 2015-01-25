@@ -393,8 +393,11 @@ impl ThecaProfile {
             None => specific_fail!(format!("note {} doesn't exist", id))
         };
         if !args.arg_title.is_empty() {
+            match args.arg_title.replace("\n", "") == "-" {
+                true => {if !args.cmd__ {self.notes[item_pos].body = try!(stdin().lock().read_to_string())}},
+                false => self.notes[item_pos].title = args.arg_title.replace("\n", "").to_string()
+            }
             // change title
-            self.notes[item_pos].title = args.arg_title.replace("\n", "").to_string();
         }
         if args.flag_started || args.flag_urgent || args.flag_none {
             // change status

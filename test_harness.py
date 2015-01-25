@@ -70,7 +70,7 @@ def test_harness(tests):
   failed = 0
 
   print("# {}\n#    {}".format(tests['title'], tests['desc']))
-  print("# running {} tests.".format(len(tests)))
+  print("#\n# running {} tests.\n".format(len(tests)))
   start = time.clock()
   for t in tests['tests']:
     try:
@@ -112,7 +112,7 @@ def test_harness(tests):
   rmtree(TMPDIR)
   devnull.close()
   elapsed = time.clock()-start
-  print("[passed: {}, failed {}, took: {:.2}s]\n".format(len(tests['tests'])-failed, failed, elapsed))
+  print("\n[passed: {}, failed {}, took: {:.2}s]\n".format(len(tests['tests'])-failed, failed, elapsed))
   if failed > 0:
     exit(1)
 
@@ -258,6 +258,136 @@ GOOD_TESTS = {
             "title": "new title",
             "status": "",
             "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "edit statuses",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "started"],
+        ["add", "urgent"],
+        ["edit", "1", "-s"],
+        ["edit", "2", "-u"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "started",
+            "status": "Started",
+            "body": ""
+          },{
+            "id": 2,
+            "title": "urgent",
+            "status": "Urgent",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "edit body (from arg)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"],
+        ["edit", "1", "-b", "a body yo"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": "a body yo"
+          }
+        ]
+      }
+    },{
+      "name": "edit body (from stdin)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"],
+        ["edit", "1", "-"]
+      ],
+      "stdin": [
+        None,
+        None,
+        "a body yo"
+      ],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": "a body yo"
+          }
+        ]
+      }
+    },{
+      "name": "edit everything (from args)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"],
+        ["edit", "1", "new title yo", "-b", "a body", "-s"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "new title yo",
+            "status": "Started",
+            "body": "a body"
+          }
+        ]
+      }
+    },{
+      "name": "edit everything (from stdin)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"],
+        ["edit", "1", "new title yo", "-", "-s"]
+      ],
+      "stdin": [
+        None,
+        None,
+        "a body yo"
+      ],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "new title yo",
+            "status": "Started",
+            "body": "a body yo"
           }
         ]
       }
