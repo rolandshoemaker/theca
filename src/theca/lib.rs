@@ -325,6 +325,16 @@ impl ThecaProfile {
                 args.arg_name[0]
             ))
         };
+        println!(
+            "{}: note {} -> {}: note {}",
+            args.flag_profile,
+            args.arg_id[0],
+            args.arg_name[0],
+            match trans_profile.notes.last() {
+                Some(n) => n.id,
+                None => 0
+            }
+        );
         Ok(())
     }
 
@@ -627,7 +637,7 @@ pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
 
 pub fn parse_cmds(profile: &mut ThecaProfile, args: &Args, profile_fingerprint: &u64) -> Result<(), ThecaError> {
     // view
-    if !args.arg_id.is_empty() && !args.cmd_del && !args.cmd_edit { try!(profile.view_item(args)); return Ok(()) }
+    if !args.arg_id.is_empty() && !args.cmd_del && !args.cmd_edit && !args.cmd_transfer { try!(profile.view_item(args)); return Ok(()) }
 
     // search
     if args.cmd_search { try!(profile.search_items(args)); return Ok(()) }
@@ -664,7 +674,7 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &Args, profile_fingerprint: 
     try!(profile.save_to_file(args, profile_fingerprint));
 
     if args.cmd_new_profile {
-        println!("created profile '{}'", args.flag_profile);
+        println!("created profile '{}'", args.arg_name[0]);
     }
 
     Ok(())

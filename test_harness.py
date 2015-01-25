@@ -70,7 +70,7 @@ def test_harness(tests):
   failed = 0
 
   print("# {}\n#    {}".format(tests['title'], tests['desc']))
-  print("#\n# running {} tests.\n".format(len(tests)))
+  print("#\n# running {} tests.\n".format(len(tests['tests'])))
   start = time.clock()
   for t in tests['tests']:
     try:
@@ -113,11 +113,10 @@ def test_harness(tests):
   devnull.close()
   elapsed = time.clock()-start
   print("\n[passed: {}, failed {}, took: {:.2}s]\n".format(len(tests['tests'])-failed, failed, elapsed))
-  if failed > 0:
-    exit(1)
+  return failed
 
 
-GOOD_TESTS = {
+GOOD_DEFAULT_TESTS = {
   "title": "GOOD TESTS",
   "desc": "testing correct input.",
   "tests": [
@@ -205,7 +204,7 @@ GOOD_TESTS = {
         ]
       }
     },{
-      "name": "check all statuses",
+      "name": "add statuses",
       "profile": "",
       "profile_folder": "",
       "cmds": [
@@ -267,10 +266,12 @@ GOOD_TESTS = {
       "profile_folder": "",
       "cmds": [
         ["new-profile"],
+        ["add", "finished", "-u"],
         ["add", "started"],
         ["add", "urgent"],
-        ["edit", "1", "-s"],
-        ["edit", "2", "-u"]
+        ["edit", "1", "-n"],
+        ["edit", "2", "-s"],
+        ["edit", "3", "-u"]
       ],
       "stdin": [],
       "result_path": "default.json",
@@ -280,11 +281,16 @@ GOOD_TESTS = {
         "notes": [
           {
             "id": 1,
+            "title": "finished",
+            "status": "",
+            "body": ""
+          },{
+            "id": 2,
             "title": "started",
             "status": "Started",
             "body": ""
           },{
-            "id": 2,
+            "id": 3,
             "title": "urgent",
             "status": "Urgent",
             "body": ""
@@ -365,6 +371,29 @@ GOOD_TESTS = {
         ]
       }
     },{
+      "name": "edit nothing",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"],
+        ["edit", "1"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
+    },{
       "name": "edit everything (from stdin)",
       "profile": "",
       "profile_folder": "",
@@ -407,9 +436,429 @@ GOOD_TESTS = {
         "encrypted": False,
         "notes": []
       }
+    },{
+      "name": "clear notes (yes from arg)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"],
+        ["add", "this is another title"],
+        ["clear", "-y"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": []
+      }
+    },{
+      "name": "clear notes (yes from stdin)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"],
+        ["add", "this is another title"],
+        ["clear"]
+      ],
+      "stdin": [
+        None,
+        None,
+        None,
+        "y"
+      ],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": []
+      }
+    },{
+      "name": "transfer note (only title)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["new-profile", "second"],
+        ["add", "this is the title"],
+        ["transfer", "1", "to", "second"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "new profile 'second'",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": []
+      }
+    },{
+      "name": "second profile, add note",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "this is the title"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "second profile, add full note (body from arg)",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "this is the title", "-s", "-b", "test body"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "Started",
+            "body": "test body"
+          }
+        ]
+      }
+    },{
+      "name": "second profile, add full note (body from stdin)",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "this is the title", "-s", "-"]
+      ],
+      "stdin": [
+        None,
+        "test body"
+      ],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "Started",
+            "body": "test body"
+          }
+        ]
+      }
+    },{
+      "name": "second profile, add statuses",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "a"],
+        ["add", "b", "-s"],
+        ["add", "c", "-u"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "a",
+            "status": "",
+            "body": ""
+          },{
+            "id": 2,
+            "title": "b",
+            "status": "Started",
+            "body": ""
+          },{
+            "id": 3,
+            "title": "c",
+            "status": "Urgent",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "second profile, edit title",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "this is the title"],
+        ["edit", "1", "new title"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "new title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "second profile, edit statuses",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "finished", "-u"],
+        ["add", "started"],
+        ["add", "urgent"],
+        ["edit", "1", "-n"],
+        ["edit", "2", "-s"],
+        ["edit", "3", "-u"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "finished",
+            "status": "",
+            "body": ""
+          },{
+            "id": 2,
+            "title": "started",
+            "status": "Started",
+            "body": ""
+          },{
+            "id": 3,
+            "title": "urgent",
+            "status": "Urgent",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "second profile, edit body (from arg)",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "this is the title"],
+        ["edit", "1", "-b", "a body yo"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": "a body yo"
+          }
+        ]
+      }
+    },{
+      "name": "second profile, edit body (from stdin)",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "this is the title"],
+        ["edit", "1", "-"]
+      ],
+      "stdin": [
+        None,
+        None,
+        "a body yo"
+      ],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": "a body yo"
+          }
+        ]
+      }
+    },{
+      "name": "second profile, edit everything (from args)",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "this is the title"],
+        ["edit", "1", "new title yo", "-b", "a body", "-s"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "new title yo",
+            "status": "Started",
+            "body": "a body"
+          }
+        ]
+      }
+    },{
+      "name": "second profile, edit nothing",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "this is the title"],
+        ["edit", "1"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "second profile, edit everything (from stdin)",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "this is the title"],
+        ["edit", "1", "new title yo", "-", "-s"]
+      ],
+      "stdin": [
+        None,
+        None,
+        "a body yo"
+      ],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "new title yo",
+            "status": "Started",
+            "body": "a body yo"
+          }
+        ]
+      }
+    },{
+      "name": "second profile, delete note",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "this is the title"],
+        ["del", "1"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": []
+      }
+    },{
+      "name": "second profile, clear notes (yes from arg)",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "this is the title"],
+        ["add", "this is another title"],
+        ["clear", "-y"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": []
+      }
+    },{
+      "name": "second profile, clear notes (yes from stdin)",
+      "profile": "second",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "second"],
+        ["add", "this is the title"],
+        ["add", "this is another title"],
+        ["clear"]
+      ],
+      "stdin": [
+        None,
+        None,
+        None,
+        "y"
+      ],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": []
+      }
     }
   ]
 }
+
+ALL_TESTS = [GOOD_DEFAULT_TESTS]
 
 THECA_CMD = "target/theca"
 
@@ -417,4 +866,13 @@ STATUSES = ["", "Started", "Urgent"]
 DATEFMT = "%Y-%m-%d %H:%M:%S %z"
 SCHEMA = read_json_file("schema.json")
 
-test_harness(GOOD_TESTS)
+failed = 0
+
+for t_set in ALL_TESTS:
+  failed += test_harness(t_set)
+
+test_sum = sum([len(T['tests']) for T in ALL_TESTS])
+print("ran {} tests overall: {} passed, {} failed.\n".format(test_sum, test_sum-failed, failed))
+
+if failed > 0:
+  exit(1)
