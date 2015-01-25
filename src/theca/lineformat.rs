@@ -1,3 +1,16 @@
+//  _   _                    
+// | |_| |__   ___  ___ __ _ 
+// | __| '_ \ / _ \/ __/ _` |
+// | |_| | | |  __/ (_| (_| |
+//  \__|_| |_|\___|\___\__,_|
+//
+// license under the MIT license <http://opensource.org/licenses/MIT>
+//
+// lineformat.rs
+//   definition of LineFormat, it looks at all the notes provided and
+//   tries to construct a line format that won't overflow the console
+//   width.
+
 use errors::{ThecaError};
 use ::{ThecaItem, Args};
 use utils::{termsize};

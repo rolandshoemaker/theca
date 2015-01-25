@@ -1,3 +1,14 @@
+//  _   _                    
+// | |_| |__   ___  ___ __ _ 
+// | __| '_ \ / _ \/ __/ _` |
+// | |_| | | |  __/ (_| (_| |
+//  \__|_| |_|\___|\___\__,_|
+//
+// license under the MIT license <http://opensource.org/licenses/MIT>
+//
+// lib.rs
+//   main theca struct defintions and command parsing functions.
+
 #![crate_name="theca"]
 #![crate_type="lib"]
 #![allow(unstable)]

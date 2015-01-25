@@ -1,3 +1,16 @@
+//  _   _                    
+// | |_| |__   ___  ___ __ _ 
+// | __| '_ \ / _ \/ __/ _` |
+// | |_| | | |  __/ (_| (_| |
+//  \__|_| |_|\___|\___\__,_|
+//
+// license under the MIT license <http://opensource.org/licenses/MIT>
+//
+// theca.rs
+//   the theca binary, we finish error unwinding in here and set the exit status
+//   if there was an error.
+
+
 #![allow(unstable)]
 extern crate theca;
 extern crate docopt;

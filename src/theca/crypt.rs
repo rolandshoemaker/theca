@@ -1,3 +1,15 @@
+//  _   _                    
+// | |_| |__   ___  ___ __ _ 
+// | __| '_ \ / _ \/ __/ _` |
+// | |_| | | |  __/ (_| (_| |
+//  \__|_| |_|\___|\___\__,_|
+//
+// license under the MIT license <http://opensource.org/licenses/MIT>
+//
+// crypt.rs
+//   defintions of the AES encryption, decryption, and key derivation
+//   function required to read encrypted profiles.
+
 use std::iter::{repeat};
 use crypto::{symmetriccipher, buffer, aes, blockmodes};
 use crypto::buffer::{ReadBuffer, WriteBuffer, BufferResult};

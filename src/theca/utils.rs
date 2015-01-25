@@ -1,3 +1,14 @@
+//  _   _                    
+// | |_| |__   ___  ___ __ _ 
+// | __| '_ \ / _ \/ __/ _` |
+// | |_| | | |  __/ (_| (_| |
+//  \__|_| |_|\___|\___\__,_|
+//
+// license under the MIT license <http://opensource.org/licenses/MIT>
+//
+// util.rs
+//   various utility functions for doings things we need to do.
+
 use std::io::stdio::{stdin};
 use std::io::{File, Open, ReadWrite,
               TempDir, Command, SeekSet};

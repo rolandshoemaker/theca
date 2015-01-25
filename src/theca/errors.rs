@@ -1,3 +1,15 @@
+//  _   _                    
+// | |_| |__   ___  ___ __ _ 
+// | __| '_ \ / _ \/ __/ _` |
+// | |_| | | |  __/ (_| (_| |
+//  \__|_| |_|\___|\___\__,_|
+//
+// license under the MIT license <http://opensource.org/licenses/MIT>
+//
+// errors.rs
+//   definitions for ThecaError, a catch-all for converting various 
+//   lib errors.
+
 use core::fmt;
 use core::error::Error;
 use docopt;
