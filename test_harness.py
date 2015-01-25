@@ -74,7 +74,7 @@ def test_harness(tests):
   start = time.clock()
   for t in tests['tests']:
     try:
-      print("test: "+t['name'])
+      print("test: "+t['name'], end="")
       cmd = [THECA_CMD]
       if not t["profile"] == "":
         cmd += ["-p", t["profile"]]
@@ -102,9 +102,10 @@ def test_harness(tests):
       validate_profile_schema(json_result)
       validate_profile_contents(json_result)
       compare_profile(t["result"], json_result)
+      print(" [passed]")
     except AssertionError as e:
       failed += 1
-      print(e.args)
+      print(" [failed]")
 
     os.remove(result_path)
 
