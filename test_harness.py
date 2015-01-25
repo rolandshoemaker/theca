@@ -103,11 +103,17 @@ def test_harness(tests):
       validate_profile_contents(json_result)
       compare_profile(t["result"], json_result)
       print(" [passed]")
-    except AssertionError as e:
+    except (AssertionError, FileNotFoundError) as e:
       failed += 1
       print(" [failed]")
 
-    os.remove(result_path)
+    # os.remove(result_path)
+    for f_o in os.listdir(TMPDIR):
+      f_o_p = os.path.join(TMPDIR, f_o)
+      if os.path.isfile(f_o_p):
+        os.unlink(f_o_p)
+      else:
+        shutil.rmtree(f_o_p)
 
   rmtree(TMPDIR)
   devnull.close()
@@ -116,7 +122,7 @@ def test_harness(tests):
   return failed
 
 
-GOOD_DEFAULT_TESTS = {
+GOOD_TESTS = {
   "title": "GOOD TESTS",
   "desc": "testing correct input.",
   "tests": [
@@ -499,6 +505,138 @@ GOOD_DEFAULT_TESTS = {
           }
         ]
       }
+    },
+    {
+      "name": "transfer note (title+body) (from arg)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["new-profile", "second"],
+        ["add", "this is the title", "-b", "boody yo"],
+        ["transfer", "1", "to", "second"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": "boody yo"
+          }
+        ]
+      }
+    },
+    {
+      "name": "transfer note (title+body) (from stdin)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["new-profile", "second"],
+        ["add", "this is the title", "-"],
+        ["transfer", "1", "to", "second"]
+      ],
+      "stdin": [
+        None,
+        None,
+        "boody",
+        None
+      ],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": "boody"
+          }
+        ]
+      }
+    },{
+      "name": "transfer note (title+status)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["new-profile", "second"],
+        ["add", "this is the title", "-s"],
+        ["transfer", "1", "to", "second"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "Started",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "transfer note (title+status+body) (from arg)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["new-profile", "second"],
+        ["add", "this is the title", "-s", "-b", "boody"],
+        ["transfer", "1", "to", "second"]
+      ],
+      "stdin": [],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "Started",
+            "body": "boody"
+          }
+        ]
+      }
+    },{
+      "name": "transfer note (title+status+body) (from stdin)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["new-profile", "second"],
+        ["add", "this is the title", "-s", "-"],
+        ["transfer", "1", "to", "second"]
+      ],
+      "stdin": [
+        None,
+        None,
+        "boody",
+        None
+      ],
+      "result_path": "second.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "Started",
+            "body": "boody"
+          }
+        ]
+      }
     },{
       "name": "new profile 'second'",
       "profile": "second",
@@ -854,11 +992,232 @@ GOOD_DEFAULT_TESTS = {
         "encrypted": False,
         "notes": []
       }
+    },{
+      "name": "new encrypted profile (key from args)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "enc", "-e", "-k", "DEBUG"],
+      ],
+      "stdin": [],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": True,
+        "notes": []
+      }
+    },{
+      "name": "new encrypted profile (key from stdin)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "enc", "-e"],
+      ],
+      "stdin": [
+        "DEBUG"
+      ],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": True,
+        "notes": []
+      }
+    },{
+      "name": "add note to encrypted profile (title only) (key from args)",
+      "profile": "enc",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "enc", "-e", "-k", "DEBUG"],
+        ["add", "encrypted title", "-k", "DEBUG"]
+      ],
+      "stdin": [],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": True,
+        "notes": [
+          {
+            "id": 1,
+            "title": "encrypted title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "add note to encrypted profile (title only) (key from stdin)",
+      "profile": "enc",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "enc", "-e"],
+        ["add", "encrypted title", "-e"]
+      ],
+      "stdin": [
+        "DEBUG",
+        "DEBUG"
+      ],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": True,
+        "notes": [
+          {
+            "id": 1,
+            "title": "encrypted title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "add note to encrypted profile (title+body from args) (key from args)",
+      "profile": "enc",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "enc", "-e", "-k", "DEBUG"],
+        ["add", "encrypted title", "-b", "super secret", "-k", "DEBUG"]
+      ],
+      "stdin": [],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": True,
+        "notes": [
+          {
+            "id": 1,
+            "title": "encrypted title",
+            "status": "",
+            "body": "super secret"
+          }
+        ]
+      }
+    },{
+      "name": "add note to encrypted profile (title+body from stdin) (key from stdin)",
+      "profile": "enc",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "enc", "-e"],
+        ["add", "encrypted title", "-", "-e"]
+      ],
+      "stdin": [
+        "DEBUG",
+        "DEBUG\nsuper secret"
+      ],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": True,
+        "notes": [
+          {
+            "id": 1,
+            "title": "encrypted title",
+            "status": "",
+            "body": "super secret"
+          }
+        ]
+      }
     }
   ]
 }
 
-ALL_TESTS = [GOOD_DEFAULT_TESTS]
+BAD_TESTS = {
+  "title": "BAD TESTS",
+  "desc": "testing incorrect input.",
+  "tests": [
+    {
+      "name": "add note with no title",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": []
+      }
+    },{
+      "name": "add note with no title and a status",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "-s"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": []
+      }
+    },{
+      "name": "add note with no title and a status and a body (from arg)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "-s", "-b", "haha bad"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": []
+      }
+    },{
+      "name": "transfer note to profile that doesn't exist",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"],
+        ["transfer", "1", "to", "fakey"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
+    }
+    # "-" resolves to <title> here (i think because cmd_add and cmd__
+    # interact werid? idk)
+    # {
+    #   "name": "add note with no title and a status and a body (from stdin)",
+    #   "profile": "",
+    #   "profile_folder": "",
+    #   "cmds": [
+    #     ["new-profile"],
+    #     ["add", "-s", "-"]
+    #   ],
+    #   "stdin": [
+    #     None,
+    #     "hahah bad"
+    #   ],
+    #   "result_path": "default.json",
+    #   "result_passphrase": "",
+    #   "result": {
+    #     "encrypted": False,
+    #     "notes": []
+    #   }
+    # }
+  ]
+}
+
+ALL_TESTS = [GOOD_TESTS, BAD_TESTS]
 
 THECA_CMD = "target/theca"
 
