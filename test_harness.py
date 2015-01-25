@@ -74,7 +74,7 @@ def test_harness(tests):
   start = time.clock()
   for t in tests['tests']:
     try:
-      print("test: "+t['name'], end="")
+      print("\ttest: "+t['name'], end="")
       cmd = [THECA_CMD]
       if not t["profile"] == "":
         cmd += ["-p", t["profile"]]
@@ -86,8 +86,8 @@ def test_harness(tests):
       if len(t["stdin"]) > 0:
         for c, s in zip(t["cmds"], t["stdin"]):
           if not s == None:
-            p = subprocess.Popen(c, stdin=subprocess.PIPE, stdout=devnull)
-            p.communicate(input=bytes(s))
+            p = subprocess.Popen(cmd+c, stdin=subprocess.PIPE, stdout=devnull)
+            p.communicate(input=bytes(s.encode('utf-8')))
           else:
             subprocess.call(cmd+c, stdout=devnull)
       else:
@@ -112,7 +112,7 @@ def test_harness(tests):
   rmtree(TMPDIR)
   devnull.close()
   elapsed = time.clock()-start
-  print("tests passed: {}, failed {}, took: {:.2}s.".format(len(tests)-failed, failed, elapsed))
+  print("[passed: {}, failed {}, took: {:.2}s]\n".format(len(tests['tests'])-failed, failed, elapsed))
   if failed > 0:
     exit(1)
 
@@ -156,6 +156,126 @@ GOOD_TESTS = {
             "body": ""
           }
         ]
+      }
+    },{
+      "name": "add full note (body from arg)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title", "-s", "-b", "test body"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "Started",
+            "body": "test body"
+          }
+        ]
+      }
+    },{
+      "name": "add full note (body from stdin)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title", "-s", "-"]
+      ],
+      "stdin": [
+        None,
+        "test body"
+      ],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "Started",
+            "body": "test body"
+          }
+        ]
+      }
+    },{
+      "name": "check all statuses",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "a"],
+        ["add", "b", "-s"],
+        ["add", "c", "-u"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "a",
+            "status": "",
+            "body": ""
+          },{
+            "id": 2,
+            "title": "b",
+            "status": "Started",
+            "body": ""
+          },{
+            "id": 3,
+            "title": "c",
+            "status": "Urgent",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "edit title",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"],
+        ["edit", "1", "new title"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": [
+          {
+            "id": 1,
+            "title": "new title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "delete note",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"],
+        ["del", "1"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": False,
+        "notes": []
       }
     }
   ]
