@@ -6,9 +6,10 @@ before_install:
     - sudo apt-get update -q
 install:
     - sudo apt-get install -y python3.4
-    - sudo pip3.4 install passlib
-    - sudo pip3.4 install jsonschema
-    - sudo pip3.4 install pycrypto
+    - sudo python3.4 -m ensurepip --upgrade
+    - sudo python3.4 -m pip install passlib
+    - sudo python3.4 -m pip install jsonschema
+    - sudo python3.4 -m pip install pycrypto
 script:
     - cargo build --verbose
     - python3 test_harness.py
