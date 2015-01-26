@@ -31,15 +31,16 @@ use std::iter::{repeat};
 
 // random things
 use regex::{Regex};
-use rustc_serialize::{Encodable, Encoder, json};
+use rustc_serialize::{Encodable, Encoder};
+use rustc_serialize::json::{decode, as_pretty_json, PrettyEncoder};
 use time::{now, strftime};
 
 // crypto imports
 use lineformat::{LineFormat};
 use utils::c::{istty};
 use utils::{drop_to_editor, pretty_line, format_field,
-            get_yn_input, sorted_print, localize_last_touched_string, parse_last_touched,
-            find_profile_folder, get_password};
+            get_yn_input, sorted_print, localize_last_touched_string,
+            parse_last_touched, find_profile_folder, get_password};
 use errors::{ThecaError, GenericError};
 use crypt::{encrypt, decrypt, password_to_key};
 
@@ -206,7 +207,7 @@ impl ThecaProfile {
                                 ))))
                         }
                     };
-                    let decoded: ThecaProfile = match json::decode(&*contents) {
+                    let decoded: ThecaProfile = match decode(&*contents) {
                         Ok(s) => s,
                         Err(_) => specific_fail!(format!(
                             "invalid JSON in {}",
@@ -270,7 +271,7 @@ impl ThecaProfile {
         // encode to buffer
         let mut buffer: Vec<u8> = Vec::new();
         {
-            let mut encoder = json::PrettyEncoder::new(&mut buffer);
+            let mut encoder = PrettyEncoder::new(&mut buffer);
             try!(self.encode(&mut encoder));
         }
 
@@ -498,77 +499,82 @@ impl ThecaProfile {
             Some(i) => i,
             None => specific_fail!(format!("note {} doesn't exist", id))
         };
-        let tty = istty(STDOUT_FILENO);
-
-        match args.flag_condensed {
-            true => {
-                try!(pretty_line("id: ", &format!(
-                    "{}\n",
-                    self.notes[note_pos].id),
-                    tty
-                ));
-                try!(pretty_line("title: ", &format!(
-                    "{}\n",
-                    self.notes[note_pos].title),
-                    tty
-                ));
-                if !self.notes[note_pos].status.is_empty() {
-                    try!(pretty_line("status: ", &format!(
-                        "{}\n",
-                        self.notes[note_pos].status),
-                        tty
-                    ));
-                }
-                try!(pretty_line(
-                    "last touched: ",
-                    &format!("{}\n", try!(localize_last_touched_string(&*self.notes[note_pos].last_touched))),
-                    tty
-                ));
-            },
+        match args.flag_json {
             false => {
-                try!(pretty_line("id\n--\n", &format!(
-                    "{}\n\n",
-                    self.notes[note_pos].id),
-                    tty
-                ));
-                try!(pretty_line("title\n-----\n", &format!(
-                    "{}\n\n",
-                    self.notes[note_pos].title),
-                    tty
-                ));
-                if !self.notes[note_pos].status.is_empty() {
-                    try!(pretty_line(
-                        "status\n------\n",
-                        &format!("{}\n\n", self.notes[note_pos].status),
-                        tty
-                    ));
+                let tty = istty(STDOUT_FILENO);
+        
+                match args.flag_condensed {
+                    true => {
+                        try!(pretty_line("id: ", &format!(
+                            "{}\n",
+                            self.notes[note_pos].id),
+                            tty
+                        ));
+                        try!(pretty_line("title: ", &format!(
+                            "{}\n",
+                            self.notes[note_pos].title),
+                            tty
+                        ));
+                        if !self.notes[note_pos].status.is_empty() {
+                            try!(pretty_line("status: ", &format!(
+                                "{}\n",
+                                self.notes[note_pos].status),
+                                tty
+                            ));
+                        }
+                        try!(pretty_line(
+                            "last touched: ",
+                            &format!("{}\n", try!(localize_last_touched_string(&*self.notes[note_pos].last_touched))),
+                            tty
+                        ));
+                    },
+                    false => {
+                        try!(pretty_line("id\n--\n", &format!(
+                            "{}\n\n",
+                            self.notes[note_pos].id),
+                            tty
+                        ));
+                        try!(pretty_line("title\n-----\n", &format!(
+                            "{}\n\n",
+                            self.notes[note_pos].title),
+                            tty
+                        ));
+                        if !self.notes[note_pos].status.is_empty() {
+                            try!(pretty_line(
+                                "status\n------\n",
+                                &format!("{}\n\n", self.notes[note_pos].status),
+                                tty
+                            ));
+                        }
+                        try!(pretty_line(
+                            "last touched\n------------\n",
+                            &format!("{}\n\n", try!(localize_last_touched_string(&*self.notes[note_pos].last_touched))),
+                            tty
+                        ));
+                    }
+                };
+        
+                // body
+                if !self.notes[note_pos].body.is_empty() {
+                    match args.flag_condensed {
+                        true => {
+                            try!(pretty_line("body: ", &format!(
+                                "{}\n",
+                                self.notes[note_pos].body),
+                                tty
+                            ));
+                        },
+                        false => {
+                            try!(pretty_line("body\n----\n", &format!(
+                                "{}\n\n",
+                                self.notes[note_pos].body),
+                                tty
+                            ));
+                        }
+                    };
                 }
-                try!(pretty_line(
-                    "last touched\n------------\n",
-                    &format!("{}\n\n", try!(localize_last_touched_string(&*self.notes[note_pos].last_touched))),
-                    tty
-                ));
-            }
-        };
-
-        // body
-        if !self.notes[note_pos].body.is_empty() {
-            match args.flag_condensed {
-                true => {
-                    try!(pretty_line("body: ", &format!(
-                        "{}\n",
-                        self.notes[note_pos].body),
-                        tty
-                    ));
-                },
-                false => {
-                    try!(pretty_line("body\n----\n", &format!(
-                        "{}\n\n",
-                        self.notes[note_pos].body),
-                        tty
-                    ));
-                }
-            };
+            },
+            true => println!("{}", as_pretty_json(&self.notes[note_pos].clone()))
         }
         Ok(())
     }

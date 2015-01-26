@@ -53,6 +53,9 @@ PRINTING OPTIONS
 `-c`, `--condensed`
    Use the condensed printing format.
 
+`-j`, `--json`
+   Print list output as a JSON object.
+
 LIST OPTIONS
 ------------
 

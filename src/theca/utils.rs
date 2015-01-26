@@ -22,7 +22,7 @@ use std::os::errno;
 use std::cmp::{Ordering};
 use time::{strftime, strptime, at, Tm};
 use std::iter::{repeat};
-use rustc_serialize::json;
+use rustc_serialize::json::{as_pretty_json};
 
 use ::{DATEFMT, DATEFMT_SHORT, Args, ThecaItem};
 use errors::{ThecaError, GenericError};
@@ -277,10 +277,10 @@ pub fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), Theca
             }
         },
         true => match args.flag_reverse {
-            false => println!("{}", json::as_pretty_json(notes)),
+            false => println!("{}", as_pretty_json(notes)),
             true => {
                 notes.reverse();
-                println!("{}", json::as_pretty_json(notes))
+                println!("{}", as_pretty_json(notes))
             }
         }
     };
