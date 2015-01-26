@@ -209,6 +209,11 @@ AUTHOR
 
 Roland Bracewell Shoemaker <rolandshoemaker@gmail.com>
 
+LICENSE
+-------
+
+theca is licensed under the MIT license <http://opensource.org/licenses/MIT>.
+
 SEE ALSO
 --------
 
