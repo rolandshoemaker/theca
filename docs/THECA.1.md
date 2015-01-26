@@ -59,11 +59,11 @@ LIST OPTIONS
 `-l` *LIMIT*, `--limit` *LIMIT*
    Limit listing to LIMIT items [default: 0].
 
+`-d`, `--datesort`
+   Sort items by date.
+
 `-r`, `--reverse`
    Reverse list.
-
-`-d`, `--datesort`
-   Sort items by date, can be used with --reverse.
 
 INPUT OPTIONS
 -------------
@@ -75,7 +75,7 @@ STATUS OPTIONS
 --------------
 
 `-n`, `--none`
-   No status. (note default)
+   No status [default].
 
 `-s`, `--started`
    Started status.

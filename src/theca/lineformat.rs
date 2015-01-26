@@ -4,7 +4,7 @@
 // | |_| | | |  __/ (_| (_| |
 //  \__|_| |_|\___|\___\__,_|
 //
-// license under the MIT license <http://opensource.org/licenses/MIT>
+// licensed under the MIT license <http://opensource.org/licenses/MIT>
 //
 // lineformat.rs
 //   definition of LineFormat, it looks at all the notes provided and

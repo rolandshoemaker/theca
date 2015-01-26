@@ -4,7 +4,7 @@
 // | |_| | | |  __/ (_| (_| |
 //  \__|_| |_|\___|\___\__,_|
 //
-// license under the MIT license <http://opensource.org/licenses/MIT>
+// licensed under the MIT license <http://opensource.org/licenses/MIT>
 //
 // theca.rs
 //   the theca binary, we finish error unwinding in here and set the exit status
@@ -47,11 +47,10 @@ Printing format:
     -j, --json                          Print list output as a JSON object.
 
 Note list formatting:
-    -l LIMIT, --limit LIMIT             Limit listing to LIMIT items
+    -l LIMIT, --limit LIMIT             Limit output to LIMIT items
                                         [default: 0].
+    -d, --datesort                      Sort items by date.
     -r, --reverse                       Reverse list.
-    -d, --datesort                      Sort items by date, can be used with
-                                        --reverse.
 
 Input:
     -y, --yes                           Silently agree to any [y/n] prompts.

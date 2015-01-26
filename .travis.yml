@@ -1,15 +1,19 @@
 language: rust
+
 rust:
     - nightly
+
 before_install:
     - sudo add-apt-repository ppa:fkrull/deadsnakes -y
     - sudo apt-get update -q
+
 install:
     - sudo apt-get install -y python3.4 python3.4-dev
     - sudo python3.4 -m ensurepip --upgrade
     - sudo python3.4 -m pip install passlib
     - sudo python3.4 -m pip install jsonschema
     - sudo python3.4 -m pip install pycrypto
+
 script:
     - ./build.sh build --verbose
     - sudo ./build.sh install

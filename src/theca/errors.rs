@@ -4,7 +4,7 @@
 // | |_| | | |  __/ (_| (_| |
 //  \__|_| |_|\___|\___\__,_|
 //
-// license under the MIT license <http://opensource.org/licenses/MIT>
+// licensed under the MIT license <http://opensource.org/licenses/MIT>
 //
 // errors.rs
 //   definitions for ThecaError, a catch-all for converting various 

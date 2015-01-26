@@ -4,7 +4,7 @@
 # | |_| | | |  __/ (_| (_| |
 #  \__|_| |_|\___|\___\__,_|
 #
-# license under the MIT license <http://opensource.org/licenses/MIT>
+# licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
 # theca_test_harness.py
 #   external python testing harness for testing the theca cli binary.

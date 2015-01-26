@@ -5,13 +5,13 @@
 # | |_| | | |  __/ (_| (_| |
 #  \__|_| |_|\___|\___\__,_|
 #
-# license under the MIT license <http://opensource.org/licenses/MIT>
+# licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
 # build.sh
 #   a (linux) tool to build/install the theca binary and man page etc
 
 # globals
-INSTALL_DIR="/usr/bin/"
+INSTALL_DIR="/usr/bin"
 MAN_DIR="/usr/local/share/man/man1"
 
 case "$1" in

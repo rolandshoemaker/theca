@@ -4,7 +4,7 @@
 // | |_| | | |  __/ (_| (_| |
 //  \__|_| |_|\___|\___\__,_|
 //
-// license under the MIT license <http://opensource.org/licenses/MIT>
+// licensed under the MIT license <http://opensource.org/licenses/MIT>
 //
 // util.rs
 //   various utility functions for doings things we need to do.

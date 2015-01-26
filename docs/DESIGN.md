@@ -1,6 +1,7 @@
 # Design document
 
-rust memo/note taking tool with a json note profile file format
+initial design document for *theca*, may not be completely up to date with the
+current version.
 
 ## json note profile file
 
@@ -18,7 +19,7 @@ rust memo/note taking tool with a json note profile file format
             },
             {
                 "id": 3,
-                "title": "(THECA) add profile merging",
+                "title": "(THECA) add super secret stuff",
                 "status": "",
                 "body": "",
                 "last_touched": "2015-01-22 15:21:01 -0800"
@@ -86,9 +87,9 @@ rust memo/note taking tool with a json note profile file format
 ## search note commands
 
     # theca search keyword                        # search titles for keyword
-    # theca search -r /\d+\/                      # search titles using regex pattern
+    # theca search --regex /\d+\/                      # search titles using regex pattern
     # theca search --search-body keyword          # search bodies using keyword
-    # theca search -r --search-body /\d+\/        # search bodies using regex pattern
+    # theca search --regex --search-body /\d+\/        # search bodies using regex pattern
 
 ## encryption options
 	
