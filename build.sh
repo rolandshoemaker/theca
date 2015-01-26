@@ -80,7 +80,7 @@ case "$1" in
 		;;
 
 	*)
-		echo $"Usage: $0 {build|build-docs|install|clean}"
+		echo $"Usage: $0 {build|build-man|install|clean}"
 		exit 1
 
 esac
