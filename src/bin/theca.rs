@@ -42,10 +42,11 @@ Profiles:
                                         can be set with env var 
                                         THECA_DEFAULT_PROFILE].
 
-    Printing format:
+Printing format:
     -c, --condensed                     Use the condensed printing format.
+    -j, --json                          Print list output as a JSON object.
 
-    Note list formatting:
+Note list formatting:
     -l LIMIT, --limit LIMIT             Limit listing to LIMIT items
                                         [default: 0].
     -r, --reverse                       Reverse list.

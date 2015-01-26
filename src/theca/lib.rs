@@ -76,6 +76,7 @@ pub struct Args {
     pub flag_datesort: bool,
     pub flag_editor: bool,
     pub flag_encrypted: bool,
+    pub flag_json: bool,
     pub flag_key: String,
     pub flag_limit: usize,
     pub flag_none: bool,
@@ -576,7 +577,10 @@ impl ThecaProfile {
         if self.notes.len() > 0 {
             try!(sorted_print(&mut self.notes.clone(), args));
         } else {
-            println!("this profile is empty");
+            match args.flag_json {
+                true => println!("[]"),
+                false => println!("this profile is empty")
+            }
         }
         Ok(())
     }
@@ -604,7 +608,10 @@ impl ThecaProfile {
         if notes.len() > 0 {
             try!(sorted_print(&mut notes.clone(), args));
         } else {
-            println!("nothing found");
+            match args.flag_json {
+                true => println!("[]"),
+                false => println!("nothing found")
+            }
         }
         Ok(())
     }

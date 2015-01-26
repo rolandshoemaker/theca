@@ -22,6 +22,7 @@ use std::os::errno;
 use std::cmp::{Ordering};
 use time::{strftime, strptime, at, Tm};
 use std::iter::{repeat};
+use rustc_serialize::json;
 
 use ::{DATEFMT, DATEFMT_SHORT, Args, ThecaItem};
 use errors::{ThecaError, GenericError};
@@ -257,7 +258,7 @@ pub fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), Theca
         true => args.flag_limit,
         false => notes.len()
     };
-    if !args.flag_condensed {
+    if !args.flag_condensed && !args.flag_json {
         try!(print_header(&line_format));
     }
     // im not really sure why this... works?
@@ -268,16 +269,29 @@ pub fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), Theca
             // Err(_) => Ordering::Equal                  // FIXME(?)
         });
     }
-    match args.flag_reverse {
-        false => for n in notes[0..limit].iter() {
-            try!(n.print(&line_format, args.flag_search_body));
+    match args.flag_json {
+        false => {
+            if args.flag_reverse {notes.reverse();}
+            for n in notes[0..limit].iter() {
+                try!(n.print(&line_format, args.flag_search_body));
+            }
         },
-        true => for n in notes[notes.len()-limit..notes.len()].iter().rev() {
-            try!(n.print(&line_format, args.flag_search_body));
+        true => match args.flag_reverse {
+            false => println!("{}", json::as_pretty_json(notes)),
+            true => {
+                notes.reverse();
+                println!("{}", json::as_pretty_json(notes))
+            }
         }
     };
+    
     Ok(())
 }
+// let mut buffer: Vec<u8> = Vec::new();
+// {
+//     let mut encoder = json::PrettyEncoder::new(&mut buffer);
+//     try!(self.encode(&mut encoder));
+// }
 
 pub fn find_profile_folder(args: &Args) -> Result<Path, ThecaError> {
     if !args.flag_profile_folder.is_empty() {
