@@ -25,8 +25,9 @@ theca \- minimal cli note taking tool
 \fB\fCtheca\fR [\fB\fCoptions\fR] transfer <\fB\fCid\fR> to <\fB\fCname\fR>
 .SH DESCRIPTION
 .PP
-\fB\fCtheca\fR is a minimal command line note taking tool written
-in \fB\fCrust\fR\&.
+\fB\fCtheca\fR is a minimal command line profile based note taking tool
+written in \fB\fCrust\fR that stores profiles using a \fB\fCJSON\fR based file
+format.
 .SH PROFILE OPTIONS
 .PP
 \fB\fC\-f\fR \fIPATH\fP, \fB\fC\-\-profile\-folder\fR \fIPATH\fP
@@ -101,14 +102,74 @@ in \fB\fCrust\fR\&.
 *~/.theca/default.json~
    The default profile file that \fB\fCtheca\fR attempts to read.
 .SH ENVIRONMENT
-.TP
+.PP
 \fB\fCTHECA_DEFAULT_PROFILE\fR
-If non\-null the default profile for \fB\fCtheca\fR to read. Overridden by
-the \fB\fC\-p\fR option.
-.TP
+   If non\-null the default profile for \fB\fCtheca\fR to read. Overridden by
+   the \fB\fC\-p\fR option.
+.PP
 \fB\fCTHECA_PROFILE_FOLDER\fR
-If non\-null the full path for for the theca profile \fB\fCfolder\fR\&.
-Overridden by the \fB\fC\-f\fR option.
+   If non\-null the full path for for the theca profile \fB\fCfolder\fR\&.
+   Overridden by the \fB\fC\-f\fR option.
+.SH FILE FORMAT
+.PP
+\fB\fCtheca\fR uses a \fB\fCJSON\fR based file format that adheres to the following
+schema.
+.PP
+   {
+    "$schema": "
+\[la]https://github.com/rolandshoemaker/theca/blob/master/docs/DESIGN.md\[ra]",
+    "id": "/",
+    "type": "object",
+    "properties": {
+      "encrypted": {
+        "id": "encrypted",
+        "type": "boolean"
+      },
+      "notes": {
+        "id": "notes",
+        "type": "array",
+        "items": {
+          "id": "0",
+          "type": "object",
+          "properties": {
+            "id": {
+              "id": "id",
+              "type": "integer"
+            },
+            "title": {
+              "id": "title",
+              "type": "string"
+            },
+            "status": {
+              "id": "status",
+              "type": "string"
+            },
+            "body": {
+              "id": "body",
+              "type": "string"
+            },
+            "last_touched": {
+              "id": "last_touched",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "body",
+            "last_touched"
+          ]
+        },
+        "additionalItems": false
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "encrypted",
+      "notes"
+    ]
+   }
 .SH AUTHOR
 .PP
 Roland Bracewell Shoemaker 

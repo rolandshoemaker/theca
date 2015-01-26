@@ -15,7 +15,8 @@ doc = false
 
 [dependencies]
 time = "*"
+regex = "*"
+regex_macros = "*"
 rustc-serialize = "*"
 docopt = "*"
 rust-crypto = "*"
-regex_macros = "*"

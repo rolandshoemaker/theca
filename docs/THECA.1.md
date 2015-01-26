@@ -133,12 +133,73 @@ ENVIRONMENT
 -----------
 
 `THECA_DEFAULT_PROFILE`
-  If non-null the default profile for `theca` to read. Overridden by
-  the `-p` option.
+   If non-null the default profile for `theca` to read. Overridden by
+   the `-p` option.
 
 `THECA_PROFILE_FOLDER`
-  If non-null the full path for for the theca profile `folder`.
-  Overridden by the `-f` option.
+   If non-null the full path for for the theca profile `folder`.
+   Overridden by the `-f` option.
+
+FILE FORMAT
+-----------
+
+`theca` uses a `JSON` based file format that adheres to the following
+schema.
+
+   {
+    "$schema": "https://github.com/rolandshoemaker/theca/blob/master/docs/DESIGN.md",
+    "id": "/",
+    "type": "object",
+    "properties": {
+      "encrypted": {
+        "id": "encrypted",
+        "type": "boolean"
+      },
+      "notes": {
+        "id": "notes",
+        "type": "array",
+        "items": {
+          "id": "0",
+          "type": "object",
+          "properties": {
+            "id": {
+              "id": "id",
+              "type": "integer"
+            },
+            "title": {
+              "id": "title",
+              "type": "string"
+            },
+            "status": {
+              "id": "status",
+              "type": "string"
+            },
+            "body": {
+              "id": "body",
+              "type": "string"
+            },
+            "last\_touched": {
+              "id": "last\_touched",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "body",
+            "last_touched"
+          ]
+        },
+        "additionalItems": false
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "encrypted",
+      "notes"
+    ]
+   }
 
 AUTHOR
 ------

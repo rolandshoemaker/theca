@@ -3,6 +3,7 @@ name = "theca"
 version = "0.7.0"
 dependencies = [
  "docopt 0.6.31 (registry+https://github.com/rust-lang/crates.io-index)",
+ "regex 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex_macros 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust-crypto 0.2.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.2.9 (registry+https://github.com/rust-lang/crates.io-index)",

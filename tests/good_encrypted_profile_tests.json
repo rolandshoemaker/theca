@@ -1,0 +1,131 @@
+{
+  "title": "GOOD ENCRYPTED PROFILE TESTS",
+  "desc": "testing correct input for a encrypted profile.",
+  "tests": [
+    {
+      "name": "new encrypted profile (key from args)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "enc", "-e", "-k", "DEBUG"]
+      ],
+      "stdin": [],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": true,
+        "notes": []
+      }
+    },{
+      "name": "new encrypted profile (key from stdin)",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "enc", "-e"]
+      ],
+      "stdin": [
+        "DEBUG"
+      ],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": true,
+        "notes": []
+      }
+    },{
+      "name": "add note to encrypted profile (title only) (key from args)",
+      "profile": "enc",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "enc", "-e", "-k", "DEBUG"],
+        ["add", "encrypted title", "-k", "DEBUG"]
+      ],
+      "stdin": [],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": true,
+        "notes": [
+          {
+            "id": 1,
+            "title": "encrypted title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "add note to encrypted profile (title only) (key from stdin)",
+      "profile": "enc",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "enc", "-e"],
+        ["add", "encrypted title", "-e"]
+      ],
+      "stdin": [
+        "DEBUG",
+        "DEBUG"
+      ],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": true,
+        "notes": [
+          {
+            "id": 1,
+            "title": "encrypted title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
+    },{
+      "name": "add note to encrypted profile (title+body from args) (key from args)",
+      "profile": "enc",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "enc", "-e", "-k", "DEBUG"],
+        ["add", "encrypted title", "-b", "super secret", "-k", "DEBUG"]
+      ],
+      "stdin": [],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": true,
+        "notes": [
+          {
+            "id": 1,
+            "title": "encrypted title",
+            "status": "",
+            "body": "super secret"
+          }
+        ]
+      }
+    },{
+      "name": "add note to encrypted profile (title+body from stdin) (key from stdin)",
+      "profile": "enc",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile", "enc", "-e"],
+        ["add", "encrypted title", "-", "-e"]
+      ],
+      "stdin": [
+        "DEBUG",
+        "DEBUG\nsuper secret"
+      ],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": true,
+        "notes": [
+          {
+            "id": 1,
+            "title": "encrypted title",
+            "status": "",
+            "body": "super secret"
+          }
+        ]
+      }
+    }
+  ]
+}
