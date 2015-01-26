@@ -38,6 +38,7 @@ case "$1" in
 			fi
 		else
 			echo "cargo could not be found"
+			exit 1
 			# there is probably a hardway to do this with
 			# just rustc... but w/e for now
 		fi
@@ -49,16 +50,17 @@ case "$1" in
 			echo $"built THECA.1 man page"
 		else
 			echo $"md2man-roff could not be found"
+			exit 1
 		fi
 		;;
 
 	install)
-		if [ -d "theca" ]; then
+		if [ -e "theca" ]; then
 			echo $"copying ./theca -> $INSTALL_DIR/theca"
 			cp theca $INSTALL_DIR/
 		fi
 		if [[ $@ =~  "--man" ]]; then
-			if [ -d "docs/THECA.1" ]; then
+			if [ -e "docs/THECA.1" ]; then
 				echo $"copying docs/THECA.1 -> $MAN_DIR/THECA.1"
 				cp docs/THECA.1 $MAN_DIR/
 			fi
@@ -69,10 +71,10 @@ case "$1" in
 		if [ -d "target" ]; then
 			rm -r target
 		fi
-		if [ -d "theca" ]; then
+		if [ -e "theca" ]; then
 			rm theca
 		fi
-		if [ -d "docs/THECA.1" ]; then
+		if [ -e "docs/THECA.1" ]; then
 			rm docs/THECA.1
 		fi
 		;;
