@@ -140,7 +140,7 @@ ALL_TESTS = [
   "tests/bad_tests.json"
 ]
 
-THECA_CMD = "target/theca"
+THECA_CMD = "theca"
 
 STATUSES = ["", "Started", "Urgent"]
 DATEFMT = "%Y-%m-%d %H:%M:%S %z"

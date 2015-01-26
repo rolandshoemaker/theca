@@ -11,5 +11,9 @@ install:
     - sudo python3.4 -m pip install jsonschema
     - sudo python3.4 -m pip install pycrypto
 script:
-    - cargo build --verbose
+    - ./build.sh build --verbose
+    - ./build.sh install
+    - python3.4 tests/theca_test_harness.py
+    - ./build.sh build --release --verbose
+    - ./build.sh install
     - python3.4 tests/theca_test_harness.py
