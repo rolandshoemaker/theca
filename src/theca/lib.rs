@@ -333,7 +333,7 @@ impl ThecaProfile {
         match self.notes.iter().find(|n| n.id == args.arg_id[0])
                         .map(|n| {
                             let (started, urgent) = (n.status == STARTED, n.status == URGENT);
-                            trans_profile.add_item(
+                            trans_profile.add_note(
                                 &n.title,
                                 &vec![n.body.clone()],
                                 started,
@@ -341,8 +341,7 @@ impl ThecaProfile {
                                 false,
                                 false
                             )
-                        }
-                        ).is_some() {
+                        }).is_some() {
             true =>  {
                 match self.notes.iter().position(|n| n.id == args.arg_id[0])
                                    .map(|e| self.notes.remove(e)).is_some() {
@@ -375,7 +374,7 @@ impl ThecaProfile {
     }
 
     /// add a item to the profile
-    pub fn add_item(
+    pub fn add_note(
         &mut self,
         title: &String,
         body: &Vec<String>,
@@ -425,7 +424,7 @@ impl ThecaProfile {
     }
 
     /// delete an item from the profile
-    pub fn delete_item(&mut self, id: &Vec<usize>) {
+    pub fn delete_note(&mut self, id: &Vec<usize>) {
         for nid in id.iter() {
             let remove = self.notes.iter()
                 .position(|n| &n.id == nid)
@@ -443,7 +442,7 @@ impl ThecaProfile {
     }
 
     /// edit an item in the profile
-    pub fn edit_item(
+    pub fn edit_note(
         &mut self,
         id: usize,
         title: &String,
@@ -452,7 +451,9 @@ impl ThecaProfile {
         urgent: bool,
         no_status: bool,
         use_stdin: bool,
-        use_editor: bool
+        use_editor: bool,
+        encrypted: bool,
+        yes: bool
     ) -> Result<(), ThecaError> {
         // let id = args.arg_id[0];
         let item_pos: usize = match self.notes.iter().position(|n| n.id == id) {
@@ -488,6 +489,16 @@ impl ThecaProfile {
                     true => {
                         match istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
                             true => {
+                                if encrypted && !yes {
+                                    println!(
+                                        "{0}\n\n{1}\n{2}\n\n{3}\n",
+                                        "## [WARNING] ##",
+                                        "this will write the body of the decrypted note to file,",
+                                        "increasing the possibilty it could be recovered later.",
+                                        "are you sure you want to continue?"
+                                    );
+                                    if !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
+                                }
                                 let new_body = try!(drop_to_editor(&self.notes[item_pos].body));
                                 match self.notes[item_pos].body != new_body {
                                     true => new_body,
@@ -542,7 +553,7 @@ impl ThecaProfile {
     }
 
     /// print a full item
-    pub fn view_item(
+    pub fn view_note(
         &mut self,
         id: usize,
         json: bool,
@@ -634,7 +645,7 @@ impl ThecaProfile {
     }
 
     /// print all items in the profile
-    pub fn list_items(
+    pub fn list_notes(
         &mut self,
         limit: usize,
         condensed: bool,
@@ -663,7 +674,7 @@ impl ThecaProfile {
     }
 
     /// print items search for in the profile
-    pub fn search_items(
+    pub fn search_notes(
         &mut self,
         pattern: &String,
         regex: bool,
@@ -715,7 +726,7 @@ impl ThecaProfile {
 pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
     match getenv("THECA_DEFAULT_PROFILE") {
         Some(val) => {
-            if args.flag_profile.is_empty() {
+            if args.flag_profile.is_empty() && !val.is_empty() {
                 args.flag_profile = val;
             }
         },
@@ -724,7 +735,7 @@ pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
 
     match getenv("THECA_PROFILE_FOLDER") {
         Some(val) => {
-            if args.flag_profile_folder.is_empty() {
+            if args.flag_profile_folder.is_empty() && !val.is_empty() {
                 args.flag_profile_folder = val;
             }
         },
@@ -752,7 +763,7 @@ pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
 pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerprint: &u64) -> Result<(), ThecaError> {
     // view
     if !args.arg_id.is_empty() && !args.cmd_del && !args.cmd_edit && !args.cmd_transfer {
-        try!(profile.view_item(
+        try!(profile.view_note(
             args.arg_id[0],
             args.flag_json,
             args.flag_condensed
@@ -762,7 +773,7 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
 
     // search
     if args.cmd_search {
-        try!(profile.search_items(
+        try!(profile.search_notes(
             &args.arg_pattern,
             args.flag_regex,
             args.flag_limit,
@@ -776,14 +787,20 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
     }
 
     // stats
-    if args.cmd_info { try!(profile.stats(&args.flag_profile)); return Ok(()) }
+    if args.cmd_info {
+        try!(profile.stats(&args.flag_profile));
+        return Ok(())
+    }
 
     // misc
-    if args.flag_version { println!("theca v{}", VERSION); return Ok(()) }
+    if args.flag_version {
+        println!("theca v{}", VERSION);
+        return Ok(())
+    }
 
     // add
     if args.cmd_add {
-        try!(profile.add_item(
+        try!(profile.add_note(
             &args.arg_title,
             &args.flag_body,
             args.flag_started,
@@ -795,7 +812,7 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
 
     // edit    
     if args.cmd_edit {
-        try!(profile.edit_item(
+        try!(profile.edit_note(
             args.arg_id[0],
             &args.arg_title,
             &args.flag_body,
@@ -803,15 +820,19 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
             args.flag_urgent,
             args.flag_none,
             args.cmd__,
-            args.flag_editor
+            args.flag_editor,
+            args.flag_encrypted,
+            args.flag_yes
         ));
     }
     
     // delete    
-    if args.cmd_del { profile.delete_item(&args.arg_id); }
+    if args.cmd_del { profile.delete_note(&args.arg_id); }
 
     // transfer
-    if args.cmd_transfer { try!(profile.transfer_note(args)); }
+    if args.cmd_transfer {
+        try!(profile.transfer_note(args));
+    }
 
     // clear
     if args.cmd_clear { try!(profile.clear(args.flag_yes)); }
@@ -819,7 +840,7 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
     // list
     if args.arg_id.is_empty() && !args.cmd_add && !args.cmd_edit && !args.cmd_del &&
        !args.cmd_transfer && !args.cmd_clear && !args.cmd_new_profile {
-        try!(profile.list_items(
+        try!(profile.list_notes(
             args.flag_limit,
             args.flag_condensed,
             args.flag_json,
