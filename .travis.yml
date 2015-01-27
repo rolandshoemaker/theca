@@ -15,6 +15,7 @@ install:
     - sudo python3.4 -m pip install pycrypto
 
 script:
+    - cargo test --verbose
     - ./build.sh build --verbose
     - sudo ./build.sh install
     - python3.4 tests/theca_test_harness.py
