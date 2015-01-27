@@ -87,8 +87,16 @@ fn theca_main() -> Result<(), ThecaError> {
                             .and_then(|d| d.decode()));
     try!(setup_args(&mut args));
 
-    let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(&mut args));
-    try!(parse_cmds(&mut profile, &args, &profile_fingerprint));
+    // let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(&mut args));
+    let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(
+        &args.flag_profile,
+        &args.flag_profile_folder,
+        &args.flag_key,
+        args.cmd_new_profile,
+        args.flag_encrypted,
+        args.flag_yes
+    ));
+    try!(parse_cmds(&mut profile, &mut args, &profile_fingerprint));
     Ok(())
 }
 

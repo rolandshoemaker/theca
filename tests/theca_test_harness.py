@@ -112,9 +112,9 @@ def test_harness(tests):
             validate_profile_schema(json_result, SCHEMA)
             validate_profile_contents(json_result)
             compare_profile(t["result"], json_result)
-            print("\ttest: "+t['name']+" [PASSED]")
+            print("  test: "+t['name']+" [PASSED]")
         except (AssertionError, FileNotFoundError) as e:
-            print("\033[91m"+"\ttest: "+t['name']+" [FAILED]"+"\033[0m")
+            print("\033[91m"+"  test: "+t['name']+" [FAILED]"+"\033[0m")
             failed += 1
 
         # os.remove(result_path)

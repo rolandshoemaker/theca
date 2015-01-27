@@ -12,7 +12,7 @@
 //   width.
 
 use errors::{ThecaError};
-use ::{ThecaItem, Args};
+use ::{ThecaItem};
 use utils::{termsize};
 
 #[derive(Copy)]
@@ -25,12 +25,12 @@ pub struct LineFormat {
 }
 
 impl LineFormat {
-    pub fn new(items: &Vec<ThecaItem>, args: &Args) -> Result<LineFormat, ThecaError> {
+    pub fn new(items: &Vec<ThecaItem>, condensed: bool) -> Result<LineFormat, ThecaError> {
         // get termsize :>
         let console_width = termsize();
 
         // set colsep
-        let colsep = match args.flag_condensed {
+        let colsep = match condensed {
             true => 1,
             false => 2
         };
@@ -45,7 +45,7 @@ impl LineFormat {
         };
         // if longest id is 1 char and we are using extended printing
         // then set id_width to 2 so "id" isn't truncated
-        if line_format.id_width < 2 && !args.flag_condensed {line_format.id_width = 2;}
+        if line_format.id_width < 2 && !condensed {line_format.id_width = 2;}
 
         // get length of longest title string
         line_format.title_width = match items.iter().max_by(|n| match n.body.len() > 0 {
@@ -60,12 +60,12 @@ impl LineFormat {
         };
         // if using extended and longest title is less than 5 chars
         // set title_width to 5 so "title" won't be truncated
-        if line_format.title_width < 5 && !args.flag_condensed {line_format.title_width = 5;}
+        if line_format.title_width < 5 && !condensed {line_format.title_width = 5;}
 
         // status length stuff
         line_format.status_width = match items.iter().any(|n| n.status.len() > 0) {
             true => {
-                match args.flag_condensed {
+                match condensed {
                     // expanded print, get longest status (7 or 6 / started or urgent)
                     false => {
                         match items.iter().max_by(|n| n.status.len()) {
@@ -86,7 +86,7 @@ impl LineFormat {
         };
 
         // last_touched has fixed string length so no need for silly iter stuff
-        line_format.touched_width = match args.flag_condensed {
+        line_format.touched_width = match condensed {
             true => 10, // condensed
             false => 19 // expanded
         };

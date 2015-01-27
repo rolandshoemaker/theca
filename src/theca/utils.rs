@@ -24,7 +24,7 @@ use time::{strftime, strptime, at, Tm};
 use std::iter::{repeat};
 use rustc_serialize::json::{as_pretty_json};
 
-use ::{DATEFMT, DATEFMT_SHORT, Args, ThecaItem};
+use ::{DATEFMT, DATEFMT_SHORT, ThecaItem};
 use errors::{ThecaError, GenericError};
 use lineformat::{LineFormat};
 
@@ -252,31 +252,39 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
     Ok(())
 }
 
-pub fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), ThecaError> {
-    let line_format = try!(LineFormat::new(notes, args));
-    let limit = match args.flag_limit != 0 && notes.len() >= args.flag_limit {
-        true => args.flag_limit,
+pub fn sorted_print(
+    notes: &mut Vec<ThecaItem>,
+    limit: usize,
+    condensed: bool,
+    json: bool,
+    datesort: bool,
+    reverse: bool,
+    search_body: bool
+) -> Result<(), ThecaError> {
+    let line_format = try!(LineFormat::new(notes, condensed));
+    let limit = match limit != 0 && notes.len() >= limit {
+        true => limit,
         false => notes.len()
     };
-    if !args.flag_condensed && !args.flag_json {
+    if !condensed && !json {
         try!(print_header(&line_format));
     }
     // im not really sure why this... works?
-    if args.flag_datesort {
+    if datesort {
         notes.sort_by(|a, b| match cmp_last_touched(&*a.last_touched, &*b.last_touched) {
             Ok(o) => o,
             Err(_) => a.last_touched.cmp(&b.last_touched) // FIXME(?)
             // Err(_) => Ordering::Equal                  // FIXME(?)
         });
     }
-    match args.flag_json {
+    match json {
         false => {
-            if args.flag_reverse {notes.reverse();}
+            if reverse {notes.reverse();}
             for n in notes[0..limit].iter() {
-                try!(n.print(&line_format, args.flag_search_body));
+                try!(n.print(&line_format, search_body));
             }
         },
-        true => match args.flag_reverse {
+        true => match reverse {
             false => println!("{}", as_pretty_json(notes)),
             true => {
                 notes.reverse();
@@ -287,15 +295,10 @@ pub fn sorted_print(notes: &mut Vec<ThecaItem>, args: &Args) -> Result<(), Theca
     
     Ok(())
 }
-// let mut buffer: Vec<u8> = Vec::new();
-// {
-//     let mut encoder = json::PrettyEncoder::new(&mut buffer);
-//     try!(self.encode(&mut encoder));
-// }
 
-pub fn find_profile_folder(args: &Args) -> Result<Path, ThecaError> {
-    if !args.flag_profile_folder.is_empty() {
-        Ok(Path::new(args.flag_profile_folder.to_string()))
+pub fn find_profile_folder(profile_folder: &String) -> Result<Path, ThecaError> {
+    if !profile_folder.is_empty() {
+        Ok(Path::new(profile_folder.to_string()))
     } else {
         match homedir() {
             Some(ref p) => Ok(p.join(".theca")),
