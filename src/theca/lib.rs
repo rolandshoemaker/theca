@@ -269,7 +269,6 @@ impl ThecaProfile {
                         None => "".to_string()
                     };
                 }
-                // let (mut changed_profile, changed_fingerprint) = try!(ThecaProfile::new(&mut new_args));
                 let (mut changed_profile, changed_fingerprint) = try!(ThecaProfile::new(
                     &new_args.flag_profile,
                     &new_args.flag_profile_folder,
@@ -309,22 +308,6 @@ impl ThecaProfile {
         Ok(())
     }
 
-    /// import a note into the profile
-    pub fn import_note(&mut self, note: ThecaItem) -> Result<(), ThecaError> {
-        let new_id = match self.notes.last() {
-            Some(n) => n.id,
-            None => 0
-        };
-        self.notes.push(ThecaItem {
-            id: new_id + 1,
-            title: note.title.clone(),
-            status: note.status.clone(),
-            body: note.body.clone(),
-            last_touched: try!(strftime(DATEFMT, &now()))
-        });
-        Ok(())
-    }
-
     /// transfer a note from the profile to another profile
     pub fn transfer_note(&mut self, args: &Args) -> Result<(), ThecaError> {
         if args.flag_profile == args.arg_name[0] {
@@ -348,7 +331,18 @@ impl ThecaProfile {
         ));
 
         match self.notes.iter().find(|n| n.id == args.arg_id[0])
-                        .map(|n| trans_profile.import_note(n.clone())).is_some() {
+                        .map(|n| {
+                            let (started, urgent) = (n.status == STARTED, n.status == URGENT);
+                            trans_profile.add_item(
+                                &n.title,
+                                &vec![n.body.clone()],
+                                started,
+                                urgent,
+                                false,
+                                false
+                            )
+                        }
+                        ).is_some() {
             true =>  {
                 match self.notes.iter().position(|n| n.id == args.arg_id[0])
                                    .map(|e| self.notes.remove(e)).is_some() {
@@ -431,17 +425,19 @@ impl ThecaProfile {
     }
 
     /// delete an item from the profile
-    pub fn delete_item(&mut self, id: &usize) {
-        let remove = self.notes.iter()
-            .position(|n| n.id == *id)
-            .map(|e| self.notes.remove(e))
-            .is_some();
-        match remove {
-            true => {
-                println!("note {} removed", id);
-            }
-            false => {
-                println!("note {} doesn't exist", id);
+    pub fn delete_item(&mut self, id: &Vec<usize>) {
+        for nid in id.iter() {
+            let remove = self.notes.iter()
+                .position(|n| &n.id == nid)
+                .map(|e| self.notes.remove(e))
+                .is_some();
+            match remove {
+                true => {
+                    println!("deleted note {}", nid);
+                }
+                false => {
+                    println!("note {} doesn't exist", nid);
+                }
             }
         }
     }
@@ -812,13 +808,13 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
     }
     
     // delete    
-    if args.cmd_del { profile.delete_item(&args.arg_id[0]); } // try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+    if args.cmd_del { profile.delete_item(&args.arg_id); }
 
     // transfer
-    if args.cmd_transfer { try!(profile.transfer_note(args)); } // try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+    if args.cmd_transfer { try!(profile.transfer_note(args)); }
 
     // clear
-    if args.cmd_clear { try!(profile.clear(args.flag_yes)); } // try!(profile.save_to_file(args, profile_fingerprint)); return Ok(()) }
+    if args.cmd_clear { try!(profile.clear(args.flag_yes)); }
 
     // list
     if args.arg_id.is_empty() && !args.cmd_add && !args.cmd_edit && !args.cmd_del &&

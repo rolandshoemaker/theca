@@ -1,6 +1,6 @@
 # theca
 
-![example usage of theca](1.png)
+![example usage of theca](screenshots/1.png)
 
 a minimal command line note taking tool written in *rust*.
 

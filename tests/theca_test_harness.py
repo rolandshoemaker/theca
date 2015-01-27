@@ -130,9 +130,6 @@ def test_harness(tests):
     print("\n[passed: {}, failed {}]\n".format(len(tests['tests'])-failed, failed))
     return failed
 
-# GOOD_TESTS = read_json_file("tests/good_tests.json")
-# BAD_TESTS = read_json_file("tests/bad_tests.json")
-
 ALL_TESTS = [
     "tests/good_default_tests.json",
     "tests/good_second_profile_tests.json",

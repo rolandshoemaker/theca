@@ -319,6 +319,39 @@
         "notes": []
       }
     },{
+      "name": "delete multiple notes",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"],
+        ["add", "this is the second title"],
+        ["add", "this is the third title"],
+        ["add", "this is the title"],
+        ["add", "this is the title"],
+        ["del", "1", "4", "5"]
+      ],
+      "stdin": [],
+      "result_path": "default.json",
+      "result_passphrase": "",
+      "result": {
+        "encrypted": false,
+        "notes": [
+          {
+            "id": 2,
+            "title": "this is the second title",
+            "status": "",
+            "body": ""
+          },{
+            "id": 3,
+            "title": "this is the third title",
+            "status": "",
+            "body": ""
+          }
+        
+        ]
+      }
+    },{
       "name": "clear notes (yes from arg)",
       "profile": "",
       "profile_folder": "",

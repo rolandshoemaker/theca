@@ -32,7 +32,7 @@ Usage:
     theca [options] transfer <id> to <name>
     theca [options] add <title> [-s|-u] [-b BODY|-t|-]
     theca [options] edit <id> [<title>] [-s|-u|-n] [-b BODY|-t|-]
-    theca [options] del <id>
+    theca [options] del <id>...
 
 Profiles:
     -f PATH, --profile-folder PATH      Path to folder containing profile.json
