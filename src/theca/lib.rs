@@ -21,7 +21,7 @@ extern crate "rustc-serialize" as rustc_serialize;
 extern crate regex;
 extern crate crypto;
 extern crate term;
-extern crate test;
+// extern crate test;
 
 // std lib imports
 use std::os::{getenv};
@@ -641,7 +641,7 @@ impl ThecaProfile {
                     };
                 }
             },
-            true => print!("{}", as_pretty_json(&self.notes[note_pos].clone()))
+            true => println!("{}", as_pretty_json(&self.notes[note_pos].clone()))
         }
         Ok(())
     }
@@ -868,19 +868,19 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
 
 #[cfg(test)]
 mod tests {
-    use test::{Bencher};
+    // use test::{Bencher};
     use super::{ThecaProfile};
 
-    #[bench]
-    fn bench_add_note(b: &mut Bencher) {
-        let mut p = ThecaProfile {
-            encrypted: false,
-            notes: vec![]
-        };
-        b.iter(|| {
-            p.add_note(&"this is a title".to_string(), &vec![], false, false, false, false);
-        });
-    }
+    // #[bench]
+    // fn bench_add_note(b: &mut Bencher) {
+    //     let mut p = ThecaProfile {
+    //         encrypted: false,
+    //         notes: vec![]
+    //     };
+    //     b.iter(|| {
+    //         p.add_note(&"this is a title".to_string(), &vec![], false, false, false, false);
+    //     });
+    // }
 
     #[test]
     fn test_add_note() {

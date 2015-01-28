@@ -18,10 +18,7 @@ script:
     - cargo test --verbose
     - ./build.sh build --verbose
     - sudo ./build.sh install
-    - python3.4 tests/theca_test_harness.py -pt
+    - python3.4 tests/theca_test_harness.py
     - ./build.sh build --release --verbose
     - sudo ./build.sh install
-    - python3.4 tests/theca_test_harness.py -pt
-    - theca new-profile -y
-    - theca add "test yo"
-    - theca 1 -j
+    - python3.4 tests/theca_test_harness.py

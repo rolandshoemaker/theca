@@ -286,7 +286,7 @@ pub fn sorted_print(
         },
         true => {
             if reverse { notes.reverse(); }
-            print!("{}", as_pretty_json(notes))
+            println!("{}", as_pretty_json(notes))
         }
     };
     
