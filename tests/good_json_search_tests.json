@@ -46,7 +46,7 @@
         ]
       ]
     },{
-      "name": "search some for notes by title keyword",
+      "name": "search for some notes by title keyword",
       "profile": "",
       "profile_folder": "",
       "cmds": [
@@ -78,7 +78,34 @@
         ]
       ]
     },{
-      "name": "search some for notes by title keyword, reversed",
+      "name": "search some for notes by title keyword, limited",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "a title this is"],
+        ["add", "not here"],
+        ["add", "this has it"],
+        ["search", "this", "-j", "-l", "1"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 1,
+            "title": "a title this is",
+            "status": "",
+            "body": ""
+          }
+        ]
+      ]
+    },{
+      "name": "search for some notes by title keyword, reversed",
       "profile": "",
       "profile_folder": "",
       "cmds": [
@@ -106,6 +133,237 @@
             "title": "a title this is",
             "status": "",
             "body": ""
+          }
+        ]
+      ]
+    },{
+      "name": "search for some notes by title keyword, reversed and limited",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "a title this is"],
+        ["add", "not here"],
+        ["add", "this has it"],
+        ["search", "this", "-j", "-r", "-l", "1"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 3,
+            "title": "this has it",
+            "status": "",
+            "body": ""
+          }
+        ]
+      ]
+    },{
+      "name": "search for a note by body keyword",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "my journal", "-b", "I like this but not those things wizards do."],
+        ["add", "my journal", "-b", "I too dislike those with the pointy hats."],
+        ["add", "my journal", "-b", "i liek magic"],
+        ["search", "magic", "-j", "--search-body"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 3,
+            "title": "my journal",
+            "status": "",
+            "body": "i liek magic"
+          }
+        ]
+      ]
+    },{
+      "name": "search some notes by body keyword",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "my journal", "-b", "magic is fuuuuun"],
+        ["add", "my journal", "-b", "I too dislike those with the pointy hats."],
+        ["add", "my journal", "-b", "i liek magic"],
+        ["search", "magic", "-j", "--search-body"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 1,
+            "title": "my journal",
+            "status": "",
+            "body": "magic is fuuuuun"
+          },{
+            "id": 3,
+            "title": "my journal",
+            "status": "",
+            "body": "i liek magic"
+          }
+        ]
+      ]
+    },{
+      "name": "search for a note by body regex",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "my journal", "-b", "I like this but not those things wizards do."],
+        ["add", "my journal", "-b", "this is my email derrrr@test.com"],
+        ["add", "my journal", "-b", "i liek magic"],
+        ["search", "\\S+@\\S+", "-j", "--search-body", "--regex"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 2,
+            "title": "my journal",
+            "status": "",
+            "body": "this is my email derrrr@test.com"
+          }
+        ]
+      ]
+    },{
+      "name": "search some notes by body regex",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "my journal", "-b", "this that other persons email dewwww@test.com"],
+        ["add", "my journal", "-b", "I too dislike those with the pointy hats."],
+        ["add", "my journal", "-b", "this is my email derrrr@test.com"],
+        ["search", "\\S+@\\S+", "-j", "--search-body", "--regex"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 1,
+            "title": "my journal",
+            "status": "",
+            "body": "this that other persons email dewwww@test.com"
+          },{
+            "id": 3,
+            "title": "my journal",
+            "status": "",
+            "body": "this is my email derrrr@test.com"
+          }
+        ]
+      ]
+    },{
+      "name": "search some notes by body regex, reversed",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "my journal", "-b", "this that other persons email dewwww@test.com"],
+        ["add", "my journal", "-b", "I too dislike those with the pointy hats."],
+        ["add", "my journal", "-b", "this is my email derrrr@test.com"],
+        ["search", "\\S+@\\S+", "-j", "--search-body", "--regex", "-r"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 3,
+            "title": "my journal",
+            "status": "",
+            "body": "this is my email derrrr@test.com"
+          },{
+            "id": 1,
+            "title": "my journal",
+            "status": "",
+            "body": "this that other persons email dewwww@test.com"
+          }
+        ]
+      ]
+    },{
+      "name": "search some notes by body regex, limit",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "my journal", "-b", "this that other persons email dewwww@test.com"],
+        ["add", "my journal", "-b", "I too dislike those with the pointy hats."],
+        ["add", "my journal", "-b", "this is my email derrrr@test.com"],
+        ["search", "\\S+@\\S+", "-j", "--search-body", "--regex", "-l", "1"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 1,
+            "title": "my journal",
+            "status": "",
+            "body": "this that other persons email dewwww@test.com"
+          }
+        ]
+      ]
+    },{
+      "name": "search some notes by body regex, reversed and limited",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "my journal", "-b", "this that other persons email dewwww@test.com"],
+        ["add", "my journal", "-b", "I too dislike those with the pointy hats."],
+        ["add", "my journal", "-b", "this is my email derrrr@test.com"],
+        ["search", "\\S+@\\S+", "-j", "--search-body", "--regex", "-r", "-l", "1"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 3,
+            "title": "my journal",
+            "status": "",
+            "body": "this is my email derrrr@test.com"
           }
         ]
       ]
