@@ -19,8 +19,9 @@ import tempfile
 import os.path
 from shutil import rmtree
 import subprocess
-import os
+import os, sys
 import time
+import argparse
 
 PROFILE_TESTS = [
     "tests/good_default_tests.json",
@@ -30,13 +31,11 @@ PROFILE_TESTS = [
 ]
 
 JSON_OUTPUT_TESTS = [
-#    "tests/good_json_list_tests.json",
-#    "tests/good_json_search_tests.json"
+    "tests/good_json_list_tests.json",
+    "tests/good_json_search_tests.json"
 ]
 
 TEXT_OUTPUT_TESTS = []
-
-ALL_TESTS = PROFILE_TESTS+JSON_OUTPUT_TESTS+TEXT_OUTPUT_TESTS
 
 THECA_CMD = "theca"
 
@@ -151,6 +150,8 @@ def test_harness(tests):
     print("# {}\n#    {}".format(tests['title'], tests['desc']))
     print("#\n# running {} tests.\n".format(len(tests['tests'])))
     for t in tests['tests']:
+        print("  test: "+t['name'], end="")
+        sys.stdout.flush()
         try:
             if not t.get("result_type"):
                 run_cmds(t["cmds"], t["profile"], t["profile_folder"], TMPDIR, stdin=t["stdin"])
@@ -172,16 +173,13 @@ def test_harness(tests):
                             for c, d in zip(clean, dirty):
                                 if not c == None: compare_notes(c, d)
                         else:
-                            # print(clean)
-                            print(dirty)
                             if not clean == None: compare_notes(clean, json.loads(dirty))
                     elif t['result_type'] == "text":
                         if not clean == None and not clean == dirty: raise AssertionError("expect and resulting output don't match")
-            print("  test: "+t['name']+" [PASSED]")
+            print(" [PASSED]")
         except (AssertionError, FileNotFoundError) as e:
-            print("\033[91m"+"  test: "+t['name']+" [FAILED]"+"\033[0m")
+            print("\033[91m"+" [FAILED]"+"\033[0m")
             failed += 1
-        # os.remove(result_path)
         for f_o in os.listdir(TMPDIR):
             f_o_p = os.path.join(TMPDIR, f_o)
             if os.path.isfile(f_o_p):
@@ -194,6 +192,27 @@ def test_harness(tests):
     return failed
 
 if __name__ == "__main__":
+    arg_parser = argparse.ArgumentParser(description="test harness for the theca cli binary.")
+    arg_parser.add_argument("-tc", "--theca-command", help="where is the theca binary")
+    arg_parser.add_argument("-tf", "--test-file", help="specific test file to load.")
+    arg_parser.add_argument("-pt", "--profile-tests", action="store_true", help="only run the profile output tests")
+    arg_parser.add_argument("-jt", "--json-tests", action="store_true", help="only run the json output tests")
+    arg_parser.add_argument("-tt", "--text-tests", action="store_true", help="only run the text output tests")
+    args = arg_parser.parse_args()
+    if args.theca_command:
+        THECA_CMD = args.theca_command
+    ALL_TESTS = []
+    if args.profile_tests:
+        ALL_TESTS += PROFILE_TESTS
+    if args.json_tests:
+        ALL_TESTS += JSON_OUTPUT_TESTS
+    if args.text_tests:
+        ALL_TESTS += TEXT_OUTPUT_TESTS
+    if not args.text_tests and not args.json_tests and not args.profile_tests:
+        if args.test_file:
+            ALL_TESTS.append(args.test_file)
+        else:
+            ALL_TESTS += PROFILE_TESTS+JSON_OUTPUT_TESTS+TEXT_OUTPUT_TESTS
     test_sum = 0
     failed = 0
     start = time.time()
