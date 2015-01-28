@@ -169,7 +169,7 @@
         ]
       ]
     },{
-      "name": "datesort list (long)",
+      "name": "datesort list (takes a long time)",
       "profile": "",
       "profile_folder": "",
       "cmds": [
@@ -209,7 +209,7 @@
         ]
       ]
     },{
-      "name": "datesort reversed list (long)",
+      "name": "datesort reversed list (takes a long time)",
       "profile": "",
       "profile_folder": "",
       "cmds": [

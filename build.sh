@@ -60,6 +60,9 @@ case "$1" in
         if [ -e "theca" ]; then
             cp theca $INSTALL_DIR/
             echo $"# copied ./theca -> $INSTALL_DIR/theca"
+        else
+            echo $"# there is no theca binary in . did you forget to run build.sh build"
+            exit 1
         fi
         if [[ $@ =~  "--man" ]]; then
             if [ -e "docs/THECA.1" ]; then

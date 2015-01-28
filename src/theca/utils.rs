@@ -261,7 +261,7 @@ pub fn sorted_print(
     reverse: bool,
     search_body: bool
 ) -> Result<(), ThecaError> {
-    let line_format = try!(LineFormat::new(notes, condensed));
+    let line_format = try!(LineFormat::new(notes, condensed, search_body));
     let limit = match limit != 0 && notes.len() >= limit {
         true => limit,
         false => notes.len()

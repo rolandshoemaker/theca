@@ -25,7 +25,7 @@ pub struct LineFormat {
 }
 
 impl LineFormat {
-    pub fn new(items: &Vec<ThecaItem>, condensed: bool) -> Result<LineFormat, ThecaError> {
+    pub fn new(items: &Vec<ThecaItem>, condensed: bool, search: bool) -> Result<LineFormat, ThecaError> {
         // get termsize :>
         let console_width = termsize();
 
@@ -52,7 +52,7 @@ impl LineFormat {
             true => n.title.len()+4,
             false => n.title.len()
         }) {
-            Some(n) => match n.body.is_empty() {
+            Some(n) => match n.body.is_empty() || search {
                 true => n.title.len(),
                 false => n.title.len()+4
             },
