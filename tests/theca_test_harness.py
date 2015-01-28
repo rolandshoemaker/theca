@@ -173,7 +173,7 @@ def test_harness(tests):
                                 if not c == None: compare_notes(c, d)
                         else:
                             # print(clean)
-                            # print(dirty)
+                            print(dirty)
                             if not clean == None: compare_notes(clean, json.loads(dirty))
                     elif t['result_type'] == "text":
                         if not clean == None and not clean == dirty: raise AssertionError("expect and resulting output don't match")
