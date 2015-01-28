@@ -22,6 +22,28 @@ import subprocess
 import os
 import time
 
+PROFILE_TESTS = [
+    "tests/good_default_tests.json",
+    "tests/good_second_profile_tests.json",
+    "tests/good_encrypted_profile_tests.json",
+    "tests/bad_tests.json"
+]
+
+JSON_OUTPUT_TESTS = [
+    "tests/good_json_list_tests.json",
+    "tests/good_json_search_tests.json"
+]
+
+TEXT_OUTPUT_TESTS = []
+
+ALL_TESTS = PROFILE_TESTS+JSON_OUTPUT_TESTS+TEXT_OUTPUT_TESTS
+
+THECA_CMD = "theca"
+
+STATUSES = ["", "Started", "Urgent"]
+DATEFMT = "%Y-%m-%d %H:%M:%S %z"
+SCHEMA_PATH = "schema.json"
+
 def decrypt_profile(ciphertext, passphrase):
     key = pbkdf2(bytes(passphrase.encode("utf-8")), sha256(bytes(passphrase.encode("utf-8"))).hexdigest().encode("utf-8"), 2056, 32, "hmac-sha256")
     iv = ciphertext[0:16]
@@ -60,63 +82,105 @@ def validate_profile_contents(profile):
         try:
             strptime(n['last_touched'], DATEFMT)
         except ValueError:
-            print(n)
             raise AssertionError("object #"+str(i)+" last_touched doesn't match time format "+DATEFMT)
         profile_ids = [n['id'] for n in profile['notes']]
         if len(profile_ids) != len(set(profile_ids)): raise AssertionError("there are duplicate IDs in 'notes'")
+
+def compare_notes(clean, dirty):
+        if not clean['id'] == dirty['id']: raise AssertionError()
+        if not clean['title'] == dirty['title']: raise AssertionError()
+        if not clean['status'] == dirty['status']: raise AssertionError()
+        if not clean['body'] == dirty['body']: raise AssertionError()
+        # uh leaving last_touched for now...
 
 def compare_profile(clean, dirty):
     if not clean['encrypted'] == dirty['encrypted']: raise AssertionError()
     if not len(clean['notes']) == len(dirty['notes']): raise AssertionError()
     for c, d in zip(clean['notes'], dirty['notes']):
-        if not c['id'] == d['id']: raise AssertionError()
-        if not c['title'] == d['title']: raise AssertionError()
-        if not c['status'] == d['status']: raise AssertionError()
-        if not c['body'] == d['body']: raise AssertionError()
-        # uh leaving last_touched for now...
+        compare_notes(c, d)
+
+def run_cmds(cmds, profile, profile_folder, tmpdir, stdin=[],  get_output=False, wait=None):
+    # devnull = open(os.devnull, "w")
+    if get_output:
+        stdout = subprocess.PIPE
+    else:
+        stdout = open(os.devnull, "w")
+    cmd = [THECA_CMD]
+    if not profile == "":
+        cmd += ["-p", profile]
+    if not profile_folder == "":
+        cmd += ["-f", os.path.join(TMPDIR, profile_folder)]
+    else:
+        cmd += ["-f", tmpdir]
+
+    if get_output:
+        output = []
+    if len(stdin) > 0:
+        for c, s in zip(cmds, stdin):
+            if wait: time.sleep(wait)
+            if not s == None:
+                stdin = subprocess.PIPE
+                stdin_input = bytes(s.encode('utf-8'))
+            else:
+                stdin, stdin_input = None, None
+            p = subprocess.Popen(cmd+c, stdin=stdin, stdout=stdout)
+            if get_output:
+                output += [p.communicate(input=stdin_input)[0].decode('utf-8')]
+            else:
+                p.communicate(input=stdin_input)
+    else:
+        for c in cmds:
+            if get_output:
+                if wait: time.sleep(wait)
+                output += [subprocess.Popen(cmd+c, stdout=stdout).communicate()[0].decode('utf-8')]
+            else:
+                [subprocess.Popen(cmd+c, stdout=stdout).communicate()]
+    if not stdout == subprocess.PIPE:
+        stdout.close()
+    if get_output:
+        return output
+
+def bench_harness(benches):
+    pass
 
 def test_harness(tests):
     TMPDIR = tempfile.mkdtemp()
-    devnull = open(os.devnull, "w")
-    failed = 0
     SCHEMA = read_json_file(SCHEMA_PATH)
+    failed = 0
 
     print("# {}\n#    {}".format(tests['title'], tests['desc']))
     print("#\n# running {} tests.\n".format(len(tests['tests'])))
     for t in tests['tests']:
         try:
-            cmd = [THECA_CMD]
-            if not t["profile"] == "":
-                cmd += ["-p", t["profile"]]
-            if not t["profile_folder"] == "":
-                cmd += ["-f", os.path.join(TMPDIR, t["profile_folder"])]
-            else:
-                cmd += ["-f", TMPDIR]
-            
-            if len(t["stdin"]) > 0:
-                for c, s in zip(t["cmds"], t["stdin"]):
-                    if not s == None:
-                        p = subprocess.Popen(cmd+c, stdin=subprocess.PIPE, stdout=devnull)
-                        p.communicate(input=bytes(s.encode('utf-8')))
-                    else:
-                        subprocess.call(cmd+c, stdout=devnull)
-            else:
-                for c in t["cmds"]:
-                    subprocess.call(cmd+c, stdout=devnull)
+            if not t.get("result_type"):
+                run_cmds(t["cmds"], t["profile"], t["profile_folder"], TMPDIR, stdin=t["stdin"])
 
-            result_path = os.path.join(TMPDIR, t["result_path"])
-            if t["result"]["encrypted"]:
-                json_result = read_enc_json_file(result_path, t["result_passphrase"])
+                result_path = os.path.join(TMPDIR, t["result_path"])
+                if t["result"]["encrypted"]:
+                    json_result = read_enc_json_file(result_path, t["result_passphrase"])
+                else:
+                    json_result = read_json_file(result_path)
+                validate_profile_schema(json_result, SCHEMA)
+                validate_profile_contents(json_result)
+                compare_profile(t["result"], json_result)
             else:
-                json_result = read_json_file(result_path)
-            validate_profile_schema(json_result, SCHEMA)
-            validate_profile_contents(json_result)
-            compare_profile(t["result"], json_result)
+                results = run_cmds(t["cmds"], t["profile"], t["profile_folder"], TMPDIR, get_output=True, wait=t.get("cmd_interval", None))
+                for clean, dirty in zip(t["results"], results):
+                    if t['result_type'] == "json":
+                        if type(clean) == list:
+                            dirty = json.loads(dirty)
+                            for c, d in zip(clean, dirty):
+                                if not c == None: compare_notes(c, d)
+                        else:
+                            # print(clean)
+                            # print(dirty)
+                            if not clean == None: compare_notes(clean, json.loads(dirty))
+                    elif t['result_type'] == "text":
+                        if not clean == None and not clean == dirty: raise AssertionError("expect and resulting output don't match")
             print("  test: "+t['name']+" [PASSED]")
         except (AssertionError, FileNotFoundError) as e:
             print("\033[91m"+"  test: "+t['name']+" [FAILED]"+"\033[0m")
             failed += 1
-
         # os.remove(result_path)
         for f_o in os.listdir(TMPDIR):
             f_o_p = os.path.join(TMPDIR, f_o)
@@ -126,22 +190,8 @@ def test_harness(tests):
                 shutil.rmtree(f_o_p)
 
     rmtree(TMPDIR)
-    devnull.close()
     print("\n[passed: {}, failed {}]\n".format(len(tests['tests'])-failed, failed))
     return failed
-
-ALL_TESTS = [
-    "tests/good_default_tests.json",
-    "tests/good_second_profile_tests.json",
-    "tests/good_encrypted_profile_tests.json",
-    "tests/bad_tests.json"
-]
-
-THECA_CMD = "theca"
-
-STATUSES = ["", "Started", "Urgent"]
-DATEFMT = "%Y-%m-%d %H:%M:%S %z"
-SCHEMA_PATH = "schema.json"
 
 if __name__ == "__main__":
     test_sum = 0

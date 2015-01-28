@@ -284,12 +284,9 @@ pub fn sorted_print(
                 try!(n.print(&line_format, search_body));
             }
         },
-        true => match reverse {
-            false => println!("{}", as_pretty_json(notes)),
-            true => {
-                notes.reverse();
-                println!("{}", as_pretty_json(notes))
-            }
+        true => {
+            if reverse { notes.reverse(); }
+            print!("{}", as_pretty_json(notes))
         }
     };
     
