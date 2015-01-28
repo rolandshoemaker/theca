@@ -1,0 +1,114 @@
+{
+  "title": "GOOD JSON SEARCH TESTS",
+  "desc": "testing incorrect JSON output from lists and searches.",
+  "tests": [
+    {
+      "name": "empty search by title keyword",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "a title this is"],
+        ["add", "not in here"],
+        ["search", "muhahahaha", "-j"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        []
+      ]
+    },{
+      "name": "search notes by title keyword",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "a title this is"],
+        ["add", "not in here"],
+        ["search", "this", "-j"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 1,
+            "title": "a title this is",
+            "status": "",
+            "body": ""
+          }
+        ]
+      ]
+    },{
+      "name": "search some for notes by title keyword",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "a title this is"],
+        ["add", "not here"],
+        ["add", "this has it"],
+        ["search", "this", "-j"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 1,
+            "title": "a title this is",
+            "status": "",
+            "body": ""
+          },{
+            "id": 3,
+            "title": "this has it",
+            "status": "",
+            "body": ""
+          }
+        ]
+      ]
+    },{
+      "name": "search some for notes by title keyword, reversed",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "a title this is"],
+        ["add", "not here"],
+        ["add", "this has it"],
+        ["search", "this", "-j", "-r"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 3,
+            "title": "this has it",
+            "status": "",
+            "body": ""
+          },{
+            "id": 1,
+            "title": "a title this is",
+            "status": "",
+            "body": ""
+          }
+        ]
+      ]
+    }
+  ]
+}
