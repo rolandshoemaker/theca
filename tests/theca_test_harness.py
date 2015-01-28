@@ -30,8 +30,8 @@ PROFILE_TESTS = [
 ]
 
 JSON_OUTPUT_TESTS = [
-    "tests/good_json_list_tests.json",
-    "tests/good_json_search_tests.json"
+#    "tests/good_json_list_tests.json",
+#    "tests/good_json_search_tests.json"
 ]
 
 TEXT_OUTPUT_TESTS = []
