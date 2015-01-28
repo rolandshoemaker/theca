@@ -56,7 +56,7 @@ pub mod lineformat;
 pub mod utils;
 pub mod crypt;
 
-static VERSION:  &'static str = "0.7.0-dev";
+static VERSION:  &'static str = "1.0.0-dev";
 
 #[derive(RustcDecodable, Show, Clone)]
 pub struct Args {
