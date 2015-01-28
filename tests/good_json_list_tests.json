@@ -1,6 +1,6 @@
 {
   "title": "GOOD JSON LIST TESTS",
-  "desc": "testing incorrect JSON output from note lists.",
+  "desc": "testing correct JSON output from note lists.",
   "tests": [
     {
       "name": "view",
