@@ -25,15 +25,15 @@ extern crate term;
 
 // std lib imports
 use std::os::{getenv};
-use std::io::fs::{PathExtensions, mkdir};
-use std::io::{File, Truncate, Write, Read, Open,
+use std::old_io::fs::{PathExtensions, mkdir};
+use std::old_io::{File, Truncate, Write, Read, Open,
               stdin, USER_RWX};
 use std::iter::{repeat};
 
 // random things
 use regex::{Regex};
-use rustc_serialize::{Encodable, Encoder};
-use rustc_serialize::json::{decode, as_pretty_json, PrettyEncoder};
+use rustc_serialize::{Encodable};
+use rustc_serialize::json::{decode, as_pretty_json, Encoder};
 use time::{now, strftime};
 
 // crypto imports
@@ -290,7 +290,7 @@ impl ThecaProfile {
         // encode to buffer
         let mut buffer: Vec<u8> = Vec::new();
         {
-            let mut encoder = PrettyEncoder::new(&mut buffer);
+            let mut encoder = Encoder::new_pretty(&mut buffer);
             try!(self.encode(&mut encoder));
         }
 
@@ -304,7 +304,7 @@ impl ThecaProfile {
         }
 
         // write buffer to file
-        try!(file.write(&*buffer));
+        try!(file.write_all(&*buffer));
 
         Ok(())
     }

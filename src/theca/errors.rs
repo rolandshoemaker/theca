@@ -16,7 +16,7 @@ use docopt;
 use time::{ParseError};
 use std::error::{FromError};
 use crypto::symmetriccipher::SymmetricCipherError;
-use std::io::{IoError};
+use std::old_io::{IoError};
 use std::string::FromUtf8Error;
 use rustc_serialize::json::EncoderError;
 

@@ -9,15 +9,15 @@
 // util.rs
 //   various utility functions for doings things we need to do.
 
-use std::io::stdio::{stdin};
-use std::io::{File, Open, ReadWrite,
+use std::old_io::stdio::{stdin};
+use std::old_io::{File, Open, ReadWrite,
               TempDir, Command, SeekSet};
 use time::{get_time};
 use std::os::{getenv, homedir};
-use std::io::process::{InheritFd};
+use std::old_io::process::{InheritFd};
 use term::{stdout};
 use term::attr::Attr::{Bold};
-use std::io::{IoError};
+use std::old_io::{IoError};
 use std::os::errno;
 use std::cmp::{Ordering};
 use time::{strftime, strptime, at, Tm};
