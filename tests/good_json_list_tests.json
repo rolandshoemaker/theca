@@ -3,27 +3,6 @@
   "desc": "testing correct JSON output from note lists.",
   "tests": [
     {
-      "name": "view",
-      "profile": "",
-      "profile_folder": "",
-      "cmds": [
-        ["new-profile"],
-        ["add", "a title this is"],
-        ["1", "-j"]
-      ],
-      "stdin": [],
-      "result_type": "json",
-      "results": [
-        null,
-        null,
-        {
-          "id": 1,
-          "title": "a title this is",
-          "status": "",
-          "body": ""
-        }
-      ]
-    },{
       "name": "view full",
       "profile": "",
       "profile_folder": "",

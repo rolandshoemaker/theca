@@ -3,6 +3,24 @@
   "desc": "testing incorrect JSON output from lists and searches.",
   "tests": [
     {
+      "name": "empty search by title keyword",
+      "profile": "",
+      "profile_folder": "",
+      "cmds": [
+        ["new-profile"],
+        ["add", "a title this is"],
+        ["add", "not in here"],
+        ["search", "muhahahaha", "-j"]
+      ],
+      "stdin": [],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        []
+      ]
+    },{
       "name": "search notes by title keyword",
       "profile": "",
       "profile_folder": "",
