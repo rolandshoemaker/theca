@@ -32,8 +32,8 @@ case "$1" in
                     echo $"# copied target/release/theca to ."
                 else
                     echo $"# built target/theca"
-                    echo $"# copied target/theca to ."
                     cp target/theca .
+                    echo $"# copied target/theca to ."
                 fi
             else
                 echo $"couldn't build target/theca"

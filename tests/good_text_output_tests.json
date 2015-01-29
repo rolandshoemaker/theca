@@ -1,0 +1,72 @@
+{
+  "title": "GOOD TEXT OUTPUT TESTS",
+  "desc": "testing correct text output from theca.",
+  "tests": [
+    {
+      "name": "new-profile",
+      "cmds": [
+        ["new-profile"]
+      ],
+      "result_type": "text",
+      "results": [
+        "creating profile 'default'\n"
+      ]
+    },{
+      "name": "add note",
+      "cmds": [
+        ["new-profile"],
+        ["add", "test"]
+      ],
+      "result_type": "text",
+      "results": [
+        "creating profile 'default'\n",
+        "note 1 added\n"
+      ]
+    },{
+      "name": "delete note",
+      "cmds": [
+        ["new-profile"],
+        ["add", "test"],
+        ["del", "1"]
+      ],
+      "result_type": "text",
+      "results": [
+        "creating profile 'default'\n",
+        "note 1 added\n",
+        "deleted note 1\n"
+      ]
+    },{
+      "name": "add some notes",
+      "cmds": [
+        ["new-profile"],
+        ["add", "test"],
+        ["add", "test"],
+        ["add", "test"]
+      ],
+      "result_type": "text",
+      "results": [
+        "creating profile 'default'\n",
+        "note 1 added\n",
+        "note 2 added\n",
+        "note 3 added\n"
+      ]
+    },{
+      "name": "add some notes, delete some notes",
+      "cmds": [
+        ["new-profile"],
+        ["add", "test"],
+        ["add", "test"],
+        ["del", "1"],
+        ["del", "2"]
+      ],
+      "result_type": "text",
+      "results": [
+        "creating profile 'default'\n",
+        "note 1 added\n",
+        "note 2 added\n",
+        "deleted note 1\n",
+        "deleted note 2\n"
+      ]
+    }
+  ]
+}

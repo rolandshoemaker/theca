@@ -1,6 +1,6 @@
 {
-  "title": "BAD TESTS",
-  "desc": "testing incorrect input.",
+  "title": "BAD INPUT, GOOD PROFILE TESTS",
+  "desc": "testing incorrect input and correct resulting profiles.",
   "tests": [
     {
       "name": "add note with no title",

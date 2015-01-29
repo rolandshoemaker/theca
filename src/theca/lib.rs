@@ -68,6 +68,7 @@ pub struct Args {
     pub cmd_new_profile: bool,
     pub cmd_search: bool,
     pub cmd_transfer: bool,
+    pub cmd_transfer_from: bool,
     pub cmd__: bool,
     pub arg_id: Vec<usize>,
     pub arg_name: Vec<String>,
@@ -832,8 +833,28 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
     if args.cmd_del { profile.delete_note(&args.arg_id); }
 
     // transfer
-    if args.cmd_transfer {
-        try!(profile.transfer_note(args));
+    if args.cmd_transfer || args.cmd_transfer_from {
+        if args.cmd_transfer {
+            try!(profile.transfer_note(args));
+        } else {
+            let mut from_args = args.clone();
+            from_args.cmd_transfer = args.cmd_transfer_from;
+            from_args.cmd_transfer_from = false;
+            from_args.flag_profile = args.arg_name[0].clone();
+            from_args.arg_name[0] = args.flag_profile.clone();
+            
+            let (mut from_profile, from_fingerprint) = try!(ThecaProfile::new(
+                &from_args.flag_profile,
+                &from_args.flag_profile_folder,
+                &from_args.flag_key,
+                from_args.cmd_new_profile,
+                from_args.flag_encrypted,
+                from_args.flag_yes
+            ));
+
+            try!(parse_cmds(&mut from_profile, &mut from_args, &from_fingerprint));
+            return Ok(())
+        }
     }
 
     // clear

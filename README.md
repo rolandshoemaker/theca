@@ -1,4 +1,9 @@
-# theca
+<pre align="center">  _   _                    
+ | |_| |__   ___  ___ __ _ 
+ | __| '_ \ / _ \/ __/ _` |
+ | |_| | | |  __/ (_| (_| |
+  \__|_| |_|\___|\___\__,_| 
+</code></pre>
 
 ![example usage of theca](screenshots/1.png)
 

@@ -338,6 +338,7 @@
         ["add", "this is another title"],
         ["clear"]
       ],
+      "should_fail": true,
       "stdin": [
         null,
         null,

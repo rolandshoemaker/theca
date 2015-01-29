@@ -7,11 +7,12 @@
 // licensed under the MIT license <http://opensource.org/licenses/MIT>
 //
 // theca.rs
-//   the theca binary, we finish error unwinding in here and set the exit status
-//   if there was an error.
+//   the theca binary, we finish error unwinding in here and set
+//   the exit status if there was an error.
 
 
 #![allow(unstable)]
+
 extern crate theca;
 extern crate docopt;
 
@@ -30,6 +31,7 @@ Usage:
     theca [options] <id>
     theca [options] search [--regex, --search-body] <pattern>
     theca [options] transfer <id> to <name>
+    theca [options] transfer-from <id> from <name>
     theca [options] add <title> [-s|-u] [-b BODY|-t|-]
     theca [options] edit <id> [<title>] [-s|-u|-n] [-b BODY|-t|-]
     theca [options] del <id>...
@@ -47,7 +49,7 @@ Printing format:
     -j, --json                          Print list output as a JSON object.
 
 Note list formatting:
-    -l LIMIT, --limit LIMIT             Limit output to LIMIT items
+    -l LIMIT, --limit LIMIT             Limit output to LIMIT items.
                                         [default: 0].
     -d, --datesort                      Sort items by date.
     -r, --reverse                       Reverse list.
@@ -87,7 +89,6 @@ fn theca_main() -> Result<(), ThecaError> {
                             .and_then(|d| d.decode()));
     try!(setup_args(&mut args));
 
-    // let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(&mut args));
     let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(
         &args.flag_profile,
         &args.flag_profile_folder,

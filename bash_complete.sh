@@ -1,4 +1,14 @@
-# have theca &&
+#  _   _                    
+# | |_| |__   ___  ___ __ _ 
+# | __| '_ \ / _ \/ __/ _` |
+# | |_| | | |  __/ (_| (_| |
+#  \__|_| |_|\___|\___\__,_|
+#
+# licensed under the MIT license <http://opensource.org/licenses/MIT>
+#
+# bash_complete.sh
+#   (minimal) bash completion for the theca binary (also *seems* to work with zsh?)
+
 _theca() {
 	local commands
 	local cur cmd

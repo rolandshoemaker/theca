@@ -126,7 +126,7 @@ pub fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
     // setup temporary file to write/read
     let tmppath = tmpdir.path().join(get_time().sec.to_string());
     let mut tmpfile = try!(File::open_mode(&tmppath, Open, ReadWrite));
-    try!(tmpfile.write_line(contents.as_slice()));
+    try!(tmpfile.write_line(&contents[]));
     // we now have a temp file, at `tmppath`, that contains `contents`
     // first we need to know which onqe
     let editor = match getenv("VISUAL") {
@@ -181,13 +181,13 @@ pub fn get_yn_input() -> Result<bool, ThecaError> {
         print!("[y/n]# ");
         let mut input = try!(stdin.read_line());
         input = input.trim().to_string();
-        match yes.iter().any(|n| n.as_slice() == input) {
+        match yes.iter().any(|n| &n[] == input) {
             true => {
                 answer = true;
                 break;
             },
             false => {
-                match no.iter().any(|n| n.as_slice() == input) {
+                match no.iter().any(|n| &n[] == input) {
                     true => {
                         answer = false;
                         break;

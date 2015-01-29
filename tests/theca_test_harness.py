@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 #  _   _                    
 # | |_| |__   ___  ___ __ _ 
 # | __| '_ \ / _ \/ __/ _` |
@@ -27,7 +28,7 @@ PROFILE_TESTS = [
     "tests/good_default_tests.json",
     "tests/good_second_profile_tests.json",
     "tests/good_encrypted_profile_tests.json",
-    "tests/bad_tests.json"
+    "tests/bad_input_good_profile_tests.json"
 ]
 
 JSON_OUTPUT_TESTS = [
@@ -35,7 +36,9 @@ JSON_OUTPUT_TESTS = [
     "tests/good_json_search_tests.json"
 ]
 
-TEXT_OUTPUT_TESTS = []
+TEXT_OUTPUT_TESTS = [
+    "tests/good_text_output_tests.json"
+]
 
 THECA_CMD = "theca"
 
@@ -87,7 +90,7 @@ def validate_profile_contents(profile):
                     profile['notes'][i-1]['id'],
                     n['id'])
                 )
-            if n['status'] not in STATUSES: raise AssertionError("")
+            if n['status'] not in STATUSES: raise AssertionError()
         if n['id'] < 0:
             raise AssertionError(
                 "object #%d id is negative (%d)" % 
@@ -126,9 +129,9 @@ def run_cmds(
     tmpdir,
     stdin=[],
     get_output=False,
-    wait=None
+    wait=None,
+    should_fail=False
 ):
-    # devnull = open(os.devnull, "w")
     if get_output:
         stdout = subprocess.PIPE
     else:
@@ -156,6 +159,8 @@ def run_cmds(
                 output += [p.communicate(input=stdin_input)[0].decode('utf-8')]
             else:
                 p.communicate(input=stdin_input)
+            if not p.returncode == 0 and not should_fail:
+                raise AssertionError() 
     else:
         for c in cmds:
             if get_output:
@@ -163,7 +168,7 @@ def run_cmds(
                 output += [subprocess.Popen(cmd+c, stdout=stdout)
                                      .communicate()[0].decode('utf-8')]
             else:
-                [subprocess.Popen(cmd+c, stdout=stdout).communicate()]
+                subprocess.Popen(cmd+c, stdout=stdout).communicate()
     if not stdout == subprocess.PIPE:
         stdout.close()
     if get_output:
@@ -189,8 +194,8 @@ def test_harness(tests):
                     t.get("profile", None),
                     t.get("profile_folder", None),
                     TMPDIR,
-                    stdin=t.get("stdin", [])
-                    # stdin=t["stdin"]
+                    stdin=t.get("stdin", []),
+                    should_fail=t.get("should_fail", False)
                 )
 
                 result_path = os.path.join(TMPDIR, t["result_path"])
@@ -208,7 +213,8 @@ def test_harness(tests):
                     t.get("profile_folder", None),
                     TMPDIR,
                     get_output=True,
-                    wait=t.get("cmd_interval", None)
+                    wait=t.get("cmd_interval", None),
+                    should_fail=t.get("should_fail", False)
                 )
                 for clean, dirty in zip(t["results"], results):
                     if t['result_type'] == "json":
@@ -220,7 +226,7 @@ def test_harness(tests):
                             if not clean == None: compare_notes(clean, json.loads(dirty))
                     elif t['result_type'] == "text":
                         if not clean == None and not clean == dirty:
-                            raise AssertionError("expect and resulting output don't match")
+                            raise AssertionError("expected and resulting output don't match")
             print(" [PASSED]")
         except (AssertionError, FileNotFoundError) as e:
             print("\033[91m"+" [FAILED]"+"\033[0m")
@@ -261,7 +267,7 @@ if __name__ == "__main__":
     args = arg_parser.parse_args()
     if args.theca_command:
         THECA_CMD = args.theca_command
-        
+
     ALL_TESTS = []
     if args.profile_tests:
         ALL_TESTS += PROFILE_TESTS
