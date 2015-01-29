@@ -261,6 +261,7 @@ if __name__ == "__main__":
     args = arg_parser.parse_args()
     if args.theca_command:
         THECA_CMD = args.theca_command
+        
     ALL_TESTS = []
     if args.profile_tests:
         ALL_TESTS += PROFILE_TESTS
@@ -273,6 +274,7 @@ if __name__ == "__main__":
             ALL_TESTS.append(args.test_file)
         else:
             ALL_TESTS += PROFILE_TESTS+JSON_OUTPUT_TESTS+TEXT_OUTPUT_TESTS
+
     test_sum = 0
     failed = 0
     start = time.time()
@@ -281,7 +283,7 @@ if __name__ == "__main__":
         t_set = read_json_file(t_set_path)
         test_sum += len(t_set['tests'])
         failed += test_harness(t_set)
-        
+
     elapsed = time.time()-start
     m, s = divmod(elapsed, 60)
     h, m = divmod(m, 60)
