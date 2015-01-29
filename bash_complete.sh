@@ -16,7 +16,7 @@ _theca() {
 	COMPREPLY=()
 	cmd="${COMP_WORDS[1]}"
 	cur="${COMP_WORDS[COMP_CWORD]}"
-	commands="add edit del clear transfer search info new-profile --help --version"
+	commands="add edit del clear transfer transfer-from search info new-profile --help --version"
 	global_opts="--profile --profile-folder --encrypted"
 
 	case "${cmd}" in

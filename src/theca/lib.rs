@@ -11,7 +11,15 @@
 
 #![crate_name="theca"]
 #![crate_type="lib"]
-#![allow(unstable)]
+#![feature(core)]
+#![feature(libc)]
+#![feature(collections)]
+#![feature(os)]
+#![feature(path)]
+#![feature(io)]
+#![feature(rand)]
+#![feature(rustc_private)]
+
 
 extern crate core;
 extern crate libc;
