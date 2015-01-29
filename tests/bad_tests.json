@@ -4,61 +4,45 @@
   "tests": [
     {
       "name": "add note with no title",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": []
       }
     },{
       "name": "add note with no title and a status",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "-s"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": []
       }
     },{
       "name": "add note with no title and a status and a body (from arg)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "-s", "-b", "haha bad"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": []
       }
     },{
       "name": "transfer note to profile that doesn't exist",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"],
         ["transfer", "1", "to", "fakey"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [

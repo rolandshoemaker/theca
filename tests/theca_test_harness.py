@@ -44,7 +44,13 @@ DATEFMT = "%Y-%m-%d %H:%M:%S %z"
 SCHEMA_PATH = "schema.json"
 
 def decrypt_profile(ciphertext, passphrase):
-    key = pbkdf2(bytes(passphrase.encode("utf-8")), sha256(bytes(passphrase.encode("utf-8"))).hexdigest().encode("utf-8"), 2056, 32, "hmac-sha256")
+    key = pbkdf2(
+        bytes(passphrase.encode("utf-8")),
+        sha256(bytes(passphrase.encode("utf-8"))).hexdigest().encode("utf-8"),
+        2056,
+        32,
+        "hmac-sha256"
+    )
     iv = ciphertext[0:16]
     decryptor = AES.new(key, AES.MODE_CBC, iv)
     plaintext = decryptor.decrypt(ciphertext[16:])
@@ -75,15 +81,30 @@ def validate_profile_contents(profile):
     for i, n in enumerate(profile['notes']):
         if i > 0 and i < len(profile['notes'])-1:
             if not profile['notes'][i-1]['id'] < n['id'] < profile['notes'][i+1]['id']:
-                raise AssertionError("object #"+str(i)+" id is out of order ("+str(profile['notes'][i-1]['id'])+", "+str(n['id'])+", "+str(profile['notes'][i+1]['id'])+")")
+                raise AssertionError(
+                    "object #%d id is out of order (%d, %d, %d)" %
+                    (i,
+                    profile['notes'][i-1]['id'],
+                    n['id'])
+                )
             if n['status'] not in STATUSES: raise AssertionError("")
-        if n['id'] < 0: raise AssertionError("object #"+str(i)+" id is negative ("+str(n['id'])+")")
+        if n['id'] < 0:
+            raise AssertionError(
+                "object #%d id is negative (%d)" % 
+                (i,
+                n['id'])
+            )
         try:
             strptime(n['last_touched'], DATEFMT)
         except ValueError:
-            raise AssertionError("object #"+str(i)+" last_touched doesn't match time format "+DATEFMT)
+            raise AssertionError(
+                "object #%d last_touched doesn't match time format %s" % 
+                (i,
+                DATEFMT)
+            )
         profile_ids = [n['id'] for n in profile['notes']]
-        if len(profile_ids) != len(set(profile_ids)): raise AssertionError("there are duplicate IDs in 'notes'")
+        if len(profile_ids) != len(set(profile_ids)):
+            raise AssertionError("there are duplicate IDs in 'notes'")
 
 def compare_notes(clean, dirty):
         if not clean['id'] == dirty['id']: raise AssertionError()
@@ -98,17 +119,25 @@ def compare_profile(clean, dirty):
     for c, d in zip(clean['notes'], dirty['notes']):
         compare_notes(c, d)
 
-def run_cmds(cmds, profile, profile_folder, tmpdir, stdin=[],  get_output=False, wait=None):
+def run_cmds(
+    cmds,
+    profile,
+    profile_folder,
+    tmpdir,
+    stdin=[],
+    get_output=False,
+    wait=None
+):
     # devnull = open(os.devnull, "w")
     if get_output:
         stdout = subprocess.PIPE
     else:
         stdout = open(os.devnull, "w")
     cmd = [THECA_CMD]
-    if not profile == "":
+    if not profile == None:
         cmd += ["-p", profile]
-    if not profile_folder == "":
-        cmd += ["-f", os.path.join(TMPDIR, profile_folder)]
+    if not profile_folder == None:
+        cmd += ["-f", os.path.join(tmpdir, profile_folder)]
     else:
         cmd += ["-f", tmpdir]
 
@@ -131,7 +160,8 @@ def run_cmds(cmds, profile, profile_folder, tmpdir, stdin=[],  get_output=False,
         for c in cmds:
             if get_output:
                 if wait: time.sleep(wait)
-                output += [subprocess.Popen(cmd+c, stdout=stdout).communicate()[0].decode('utf-8')]
+                output += [subprocess.Popen(cmd+c, stdout=stdout)
+                                     .communicate()[0].decode('utf-8')]
             else:
                 [subprocess.Popen(cmd+c, stdout=stdout).communicate()]
     if not stdout == subprocess.PIPE:
@@ -154,7 +184,14 @@ def test_harness(tests):
         sys.stdout.flush()
         try:
             if not t.get("result_type"):
-                run_cmds(t["cmds"], t["profile"], t["profile_folder"], TMPDIR, stdin=t["stdin"])
+                run_cmds(
+                    t["cmds"],
+                    t.get("profile", None),
+                    t.get("profile_folder", None),
+                    TMPDIR,
+                    stdin=t.get("stdin", [])
+                    # stdin=t["stdin"]
+                )
 
                 result_path = os.path.join(TMPDIR, t["result_path"])
                 if t["result"]["encrypted"]:
@@ -165,7 +202,14 @@ def test_harness(tests):
                 validate_profile_contents(json_result)
                 compare_profile(t["result"], json_result)
             else:
-                results = run_cmds(t["cmds"], t["profile"], t["profile_folder"], TMPDIR, get_output=True, wait=t.get("cmd_interval", None))
+                results = run_cmds(
+                    t["cmds"],
+                    t.get("profile", None),
+                    t.get("profile_folder", None),
+                    TMPDIR,
+                    get_output=True,
+                    wait=t.get("cmd_interval", None)
+                )
                 for clean, dirty in zip(t["results"], results):
                     if t['result_type'] == "json":
                         if type(clean) == list:
@@ -175,7 +219,8 @@ def test_harness(tests):
                         else:
                             if not clean == None: compare_notes(clean, json.loads(dirty))
                     elif t['result_type'] == "text":
-                        if not clean == None and not clean == dirty: raise AssertionError("expect and resulting output don't match")
+                        if not clean == None and not clean == dirty:
+                            raise AssertionError("expect and resulting output don't match")
             print(" [PASSED]")
         except (AssertionError, FileNotFoundError) as e:
             print("\033[91m"+" [FAILED]"+"\033[0m")
@@ -195,9 +240,24 @@ if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(description="test harness for the theca cli binary.")
     arg_parser.add_argument("-tc", "--theca-command", help="where is the theca binary")
     arg_parser.add_argument("-tf", "--test-file", help="specific test file to load.")
-    arg_parser.add_argument("-pt", "--profile-tests", action="store_true", help="only run the profile output tests")
-    arg_parser.add_argument("-jt", "--json-tests", action="store_true", help="only run the json output tests")
-    arg_parser.add_argument("-tt", "--text-tests", action="store_true", help="only run the text output tests")
+    arg_parser.add_argument(
+        "-pt",
+        "--profile-tests",
+        action="store_true",
+        help="only run the profile output tests"
+    )
+    arg_parser.add_argument(
+        "-jt",
+        "--json-tests",
+        action="store_true",
+        help="only run the json output tests"
+    )
+    arg_parser.add_argument(
+        "-tt",
+        "--text-tests",
+        action="store_true",
+        help="only run the text output tests"
+    )
     args = arg_parser.parse_args()
     if args.theca_command:
         THECA_CMD = args.theca_command
@@ -216,15 +276,25 @@ if __name__ == "__main__":
     test_sum = 0
     failed = 0
     start = time.time()
+
     for t_set_path in ALL_TESTS:
         t_set = read_json_file(t_set_path)
         test_sum += len(t_set['tests'])
         failed += test_harness(t_set)
+        
     elapsed = time.time()-start
     m, s = divmod(elapsed, 60)
     h, m = divmod(m, 60)
 
-    print("ran %d tests overall: %d passed, %d failed, took %02d:%02d:%02d\n" % (test_sum, test_sum-failed, failed, h, m, s))
+    print(
+        "ran %d tests overall: %d passed, %d failed, took %02d:%02d:%02d\n" %
+        (test_sum,
+        test_sum-failed,
+        failed,
+        h,
+        m,
+        s)
+    )
 
     if failed > 0:
         print("\033[91m"+"BAD"+"\033[0m")

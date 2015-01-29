@@ -4,14 +4,11 @@
   "tests": [
     {
       "name": "view",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "a title this is"],
         ["1", "-j"]
       ],
-      "stdin": [],
       "result_type": "json",
       "results": [
         null,
@@ -25,14 +22,11 @@
       ]
     },{
       "name": "view full",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "a title this is", "-s", "-b", "p short body ya know"],
         ["1", "-j"]
       ],
-      "stdin": [],
       "result_type": "json",
       "results": [
         null,
@@ -46,13 +40,10 @@
       ]
     },{
       "name": "empty list",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["-j"]
       ],
-      "stdin": [],
       "result_type": "json",
       "results": [
         null,
@@ -60,15 +51,12 @@
       ]
     },{
       "name": "list",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "a title this is"],
         ["add", "another title this is"],
         ["-j"]
       ],
-      "stdin": [],
       "result_type": "json",
       "results": [
         null,
@@ -90,15 +78,12 @@
       ]
     },{
       "name": "reversed list",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "a title this is"],
         ["add", "another title this is"],
         ["-j", "-r"]
       ],
-      "stdin": [],
       "result_type": "json",
       "results": [
         null,
@@ -120,15 +105,12 @@
       ]
     },{
       "name": "limit list",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "a title this is"],
         ["add", "another title this is"],
         ["-j", "-l", "1"]
       ],
-      "stdin": [],
       "result_type": "json",
       "results": [
         null,
@@ -145,15 +127,12 @@
       ]
     },{
       "name": "limit reversed list",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "a title this is"],
         ["add", "another title this is"],
         ["-j", "-r", "-l", "1"]
       ],
-      "stdin": [],
       "result_type": "json",
       "results": [
         null,
@@ -170,8 +149,6 @@
       ]
     },{
       "name": "datesort list (takes a long time)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "a title this is"],
@@ -181,7 +158,6 @@
         ["-j", "-d"]
       ],
       "cmd_interval": 1,
-      "stdin": [],
       "result_type": "json",
       "results": [
         null,
@@ -210,8 +186,6 @@
       ]
     },{
       "name": "datesort reversed list (takes a long time)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "a title this is"],
@@ -221,7 +195,6 @@
         ["-j", "-d", "-r"]
       ],
       "cmd_interval": 1,
-      "stdin": [],
       "result_type": "json",
       "results": [
         null,

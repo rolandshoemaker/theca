@@ -5,13 +5,10 @@
     {
       "name": "new profile 'second'",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": []
@@ -19,14 +16,11 @@
     },{
       "name": "second profile, add note",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "this is the title"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -41,14 +35,11 @@
     },{
       "name": "second profile, add full note (body from arg)",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "this is the title", "-s", "-b", "test body"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -63,7 +54,6 @@
     },{
       "name": "second profile, add full note (body from stdin)",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "this is the title", "-s", "-"]
@@ -73,7 +63,6 @@
         "test body"
       ],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -88,16 +77,13 @@
     },{
       "name": "second profile, add statuses",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "a"],
         ["add", "b", "-s"],
         ["add", "c", "-u"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -122,15 +108,12 @@
     },{
       "name": "second profile, edit title",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "this is the title"],
         ["edit", "1", "new title"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -145,7 +128,6 @@
     },{
       "name": "second profile, edit statuses",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "finished", "-u"],
@@ -155,9 +137,7 @@
         ["edit", "2", "-s"],
         ["edit", "3", "-u"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -182,15 +162,12 @@
     },{
       "name": "second profile, edit body (from arg)",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "this is the title"],
         ["edit", "1", "-b", "a body yo"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -205,7 +182,6 @@
     },{
       "name": "second profile, edit body (from stdin)",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "this is the title"],
@@ -217,7 +193,6 @@
         "a body yo"
       ],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -232,15 +207,12 @@
     },{
       "name": "second profile, edit everything (from args)",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "this is the title"],
         ["edit", "1", "new title yo", "-b", "a body", "-s"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -255,15 +227,12 @@
     },{
       "name": "second profile, edit nothing",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "this is the title"],
         ["edit", "1"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -278,7 +247,6 @@
     },{
       "name": "second profile, edit everything (from stdin)",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "this is the title"],
@@ -290,7 +258,6 @@
         "a body yo"
       ],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -305,15 +272,12 @@
     },{
       "name": "second profile, delete note",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "this is the title"],
         ["del", "1"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": []
@@ -321,16 +285,13 @@
     },{
       "name": "second profile, clear notes (yes from arg)",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "this is the title"],
         ["add", "this is another title"],
         ["clear", "-y"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": []
@@ -338,7 +299,6 @@
     },{
       "name": "second profile, clear notes (yes from stdin)",
       "profile": "second",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "second"],
         ["add", "this is the title"],
@@ -352,7 +312,6 @@
         "y"
       ],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": []

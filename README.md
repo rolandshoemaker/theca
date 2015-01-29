@@ -2,7 +2,7 @@
 
 ![example usage of theca](screenshots/1.png)
 
-a minimal command line note taking tool written in *rust*.
+a minimal command line note taking tool written in [*Rust*](http://www.rust-lang.org/).
 
 ## features
 

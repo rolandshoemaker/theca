@@ -4,12 +4,9 @@
   "tests": [
     {
       "name": "new encrypted profile (key from args)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "enc", "-e", "-k", "DEBUG"]
       ],
-      "stdin": [],
       "result_path": "enc.json",
       "result_passphrase": "DEBUG",
       "result": {
@@ -18,8 +15,6 @@
       }
     },{
       "name": "new encrypted profile (key from stdin)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "enc", "-e"]
       ],
@@ -35,12 +30,10 @@
     },{
       "name": "add note to encrypted profile (title only) (key from args)",
       "profile": "enc",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "enc", "-e", "-k", "DEBUG"],
         ["add", "encrypted title", "-k", "DEBUG"]
       ],
-      "stdin": [],
       "result_path": "enc.json",
       "result_passphrase": "DEBUG",
       "result": {
@@ -57,7 +50,6 @@
     },{
       "name": "add note to encrypted profile (title only) (key from stdin)",
       "profile": "enc",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "enc", "-e"],
         ["add", "encrypted title", "-e"]
@@ -82,12 +74,10 @@
     },{
       "name": "add note to encrypted profile (title+body from args) (key from args)",
       "profile": "enc",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "enc", "-e", "-k", "DEBUG"],
         ["add", "encrypted title", "-b", "super secret", "-k", "DEBUG"]
       ],
-      "stdin": [],
       "result_path": "enc.json",
       "result_passphrase": "DEBUG",
       "result": {
@@ -104,7 +94,6 @@
     },{
       "name": "add note to encrypted profile (title+body from stdin) (key from stdin)",
       "profile": "enc",
-      "profile_folder": "",
       "cmds": [
         ["new-profile", "enc", "-e"],
         ["add", "encrypted title", "-", "-e"]

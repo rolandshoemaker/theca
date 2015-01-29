@@ -4,29 +4,21 @@
   "tests": [
     {
       "name": "new profile",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": []
       }
     },{
       "name": "add note",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -40,15 +32,11 @@
       }
     },{
       "name": "add full note (body from arg)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title", "-s", "-b", "test body"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -62,8 +50,6 @@
       }
     },{
       "name": "add full note (body from stdin)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title", "-s", "-"]
@@ -73,7 +59,6 @@
         "test body"
       ],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -87,17 +72,13 @@
       }
     },{
       "name": "add statuses",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "a"],
         ["add", "b", "-s"],
         ["add", "c", "-u"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -121,16 +102,12 @@
       }
     },{
       "name": "edit title",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"],
         ["edit", "1", "new title"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -144,8 +121,6 @@
       }
     },{
       "name": "edit statuses",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "finished", "-u"],
@@ -155,9 +130,7 @@
         ["edit", "2", "-s"],
         ["edit", "3", "-u"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -181,16 +154,12 @@
       }
     },{
       "name": "edit body (from arg)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"],
         ["edit", "1", "-b", "a body yo"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -204,8 +173,6 @@
       }
     },{
       "name": "edit body (from stdin)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"],
@@ -217,7 +184,6 @@
         "a body yo"
       ],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -231,16 +197,12 @@
       }
     },{
       "name": "edit everything (from args)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"],
         ["edit", "1", "new title yo", "-b", "a body", "-s"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -254,16 +216,12 @@
       }
     },{
       "name": "edit nothing",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"],
         ["edit", "1"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -277,8 +235,6 @@
       }
     },{
       "name": "edit everything (from stdin)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"],
@@ -290,7 +246,6 @@
         "a body yo"
       ],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -304,24 +259,18 @@
       }
     },{
       "name": "delete note",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"],
         ["del", "1"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": []
       }
     },{
       "name": "delete multiple notes",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"],
@@ -331,9 +280,7 @@
         ["add", "this is the title"],
         ["del", "1", "4", "5"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -353,25 +300,19 @@
       }
     },{
       "name": "clear notes (yes from arg)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"],
         ["add", "this is another title"],
         ["clear", "-y"]
       ],
-      "stdin": [],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": []
       }
     },{
       "name": "clear notes (yes from stdin)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"],
@@ -385,15 +326,12 @@
         "y"
       ],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": []
       }
     },{
       "name": "clear notes (no from stdin)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["add", "this is the title"],
@@ -407,7 +345,6 @@
         "n"
       ],
       "result_path": "default.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -426,17 +363,13 @@
       }
     },{
       "name": "transfer note (only title)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["new-profile", "second"],
         ["add", "this is the title"],
         ["transfer", "1", "to", "second"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -451,17 +384,13 @@
     },
     {
       "name": "transfer note (title+body) (from arg)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["new-profile", "second"],
         ["add", "this is the title", "-b", "boody yo"],
         ["transfer", "1", "to", "second"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -476,8 +405,6 @@
     },
     {
       "name": "transfer note (title+body) (from stdin)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["new-profile", "second"],
@@ -491,7 +418,6 @@
         null
       ],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -505,17 +431,13 @@
       }
     },{
       "name": "transfer note (title+status)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["new-profile", "second"],
         ["add", "this is the title", "-s"],
         ["transfer", "1", "to", "second"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -529,17 +451,13 @@
       }
     },{
       "name": "transfer note (title+status+body) (from arg)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["new-profile", "second"],
         ["add", "this is the title", "-s", "-b", "boody"],
         ["transfer", "1", "to", "second"]
       ],
-      "stdin": [],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
@@ -553,8 +471,6 @@
       }
     },{
       "name": "transfer note (title+status+body) (from stdin)",
-      "profile": "",
-      "profile_folder": "",
       "cmds": [
         ["new-profile"],
         ["new-profile", "second"],
@@ -568,7 +484,6 @@
         null
       ],
       "result_path": "second.json",
-      "result_passphrase": "",
       "result": {
         "encrypted": false,
         "notes": [
