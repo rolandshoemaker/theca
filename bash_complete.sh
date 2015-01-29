@@ -15,33 +15,34 @@ _theca() {
 
 	COMPREPLY=()
 	cmd="${COMP_WORDS[1]}"
+	cur="${COMP_WORDS[COMP_CWORD]}"
 	commands="add edit del clear transfer search info new-profile --help --version"
 	global_opts="--profile --profile-folder --encrypted"
 
 	case "${cmd}" in
 		add)
 			COMPREPLY=( $(compgen -W \
-        		"${global_opts} --started --urgent --none --body --editor - --yes") )
+        		"${global_opts} --started --urgent --none --body --editor - --yes" -- $cur) )
         	return 0
 			;;
 		edit)
 			COMPREPLY=( $(compgen -W \
-        		"${global_opts} --started --urgent --body --editor - --yes") )
+        		"${global_opts} --started --urgent --body --editor - --yes" -- $cur) )
         	return 0
 			;;
 		search)
 			COMPREPLY=( $(compgen -W \
-        		"${global_opts} --search-body --regex --limit --reverse --datesort --json") )
+        		"${global_opts} --search-body --regex --limit --reverse --datesort --json" -- $cur) )
         	return 0
 			;;
 		del|clear|transfer|new-profile)
 			COMPREPLY=( $(compgen -W \
-        		"${global_opts} --yes") )
+        		"${global_opts} --yes" -- $cur) )
         	return 0
 			;;
 		info)
 			COMPREPLY=( $(compgen -W \
-        		"${global_opts}") )
+        		"${global_opts}" -- $cur) )
         	return 0
 			;;
 		help|version)
@@ -51,13 +52,13 @@ _theca() {
 
 	if [[ "${cmd}" =~ "^[0-9]+$" ]]; then
 		COMPREPLY=( $(compgen -W \
-    		"${global_opts} --json") )
+    		"${global_opts} --json --condensed" -- $cur) )
     	return 0
 	fi
 
 	if [ ${COMP_CWORD} -eq 1 ]; then
         COMPREPLY=( $(compgen -W \
-        	"${commands} --help --version --limit --reverse --datesort --json") )
+        	"${commands} --help --version --limit --reverse --datesort --json --condensed" -- $cur) )
         return 0
     fi
 } &&
