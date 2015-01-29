@@ -13,8 +13,11 @@
 # globals
 INSTALL_DIR="/usr/bin"
 MAN_DIR="/usr/local/share/man/man1"
+BASH_COMPLETE_DIR="/usr/local/etc/bash_complete.d"
 
+# check subcommand
 case "$1" in
+    # building the binary (just pass through to cargo then copy to .)
     build)
         if command -v cargo >/dev/null 2>&1; then
             BUILD_CMD="cargo build"
@@ -41,11 +44,12 @@ case "$1" in
         else
             echo $"cargo could not be found"
             exit 1
-            # there is probably a hard way to do this with
-            # just rustc... but w/e for now
+            # there is a hard way to do this with just rustc but idk if
+            # i want to write that shell script right now
         fi
         ;;
 
+    # build the man page, i can never remember the name of this program
     build-man)
         if command -v md2man-roff >/dev/null 2>&1; then
             md2man-roff docs/THECA.1.md > docs/THECA.1
@@ -56,22 +60,53 @@ case "$1" in
         fi
         ;;
 
+    # install the binary in . so we don't have to bother about --dev/--release
+    # binaries
     install)
         if [ -e "theca" ]; then
             cp theca $INSTALL_DIR/
             echo $"# copied ./theca -> $INSTALL_DIR/theca"
-        else
-            echo $"# there is no theca binary in . did you forget to run build.sh build?"
-            exit 1
-        fi
-        if [[ $@ =~  "--man" ]]; then
-            if [ -e "docs/THECA.1" ]; then
-                cp docs/THECA.1 $MAN_DIR/
-                echo $"# copied docs/THECA.1 -> $MAN_DIR/THECA.1"
+            if [[ $@ =~ "--bash-complete" ]]; then
+                cp bash_complete.sh $BASH_COMPLETE_DIR/theca
+                echo $"# copied ./bash_complete.sh -> $BASH_COMPLETE_DIR/theca"
             fi
+            if [[ $@ =~  "--man" ]]; then
+                if [ -e "docs/THECA.1" ]; then
+                    cp docs/THECA.1 $MAN_DIR/
+                    echo $"# copied docs/THECA.1 -> $MAN_DIR/THECA.1"
+                fi
+            fi
+            echo $"have fun :>"
+        else
+            echo $"# there is no theca binary in . did you forget to run './build.sh build'?"
+            exit 1
         fi
         ;;
 
+    # run all the tests in one place
+    test)
+        # run the rust tests
+        if ! cargo test; then
+            echo $"# rust tests did not pass!"
+            exit 1
+        fi
+
+        # build the binary
+        if ! cargo build; then
+            echo $"# couldn't build the binary!"
+            exit 1
+        fi
+
+        # run the python tests
+        if ! python3 tests/theca_test_harness.py -tc target/theca; then
+            echo $"# python harness tests did not pass!"
+            exit 1
+        fi
+
+        echo $"# it seems like everything is ok..."
+        ;;
+
+    # delete the target/ dir, the binary in . and the man page (if --man is used)
     clean)
         if [ -d "target" ]; then
             rm -r target
@@ -81,14 +116,15 @@ case "$1" in
             rm theca
             echo $"# deleted ./theca"
         fi
-        if [ -e "docs/THECA.1" ]; then
+        if [ -e "docs/THECA.1" ] && [[ $@ =~  "--man" ]]; then
             rm docs/THECA.1
             echo $"# deleted ./docs/THECA.1"
         fi
         ;;
 
+    # print the help
     *)
-        echo $"Usage: $0 {build|build-man|install|clean}"
+        echo $"Usage: $0 {build|build-man|install|test|clean}"
         exit 1
         ;;
 esac

@@ -14,30 +14,34 @@ _theca() {
 	local cur cmd
 
 	COMPREPLY=()
-	# cur=$(_get_cword "=")
 	cmd="${COMP_WORDS[1]}"
-	commands="add edit del clear transfer search info new-profile"
-	global_opts="--profile --profile-folder --encrypted --yes --help --version"
+	commands="add edit del clear transfer search info new-profile --help --version"
+	global_opts="--profile --profile-folder --encrypted"
 
 	case "${cmd}" in
 		add)
 			COMPREPLY=( $(compgen -W \
-        		"${global_opts} --started --urgent --none --body --editor -" -- "${cur}") )
+        		"${global_opts} --started --urgent --none --body --editor - --yes") )
         	return 0
 			;;
 		edit)
 			COMPREPLY=( $(compgen -W \
-        		"${global_opts} --started --urgent --body --editor -" -- "${cur}") )
+        		"${global_opts} --started --urgent --body --editor - --yes") )
         	return 0
 			;;
 		search)
 			COMPREPLY=( $(compgen -W \
-        		"${global_opts} --search-body --regex" -- "${cur}") )
+        		"${global_opts} --search-body --regex --limit --reverse --datesort --json") )
         	return 0
 			;;
-		del|clear|transfer|new-profile|info)
+		del|clear|transfer|new-profile)
 			COMPREPLY=( $(compgen -W \
-        		"${global_opts}" -- "${cur}") )
+        		"${global_opts} --yes") )
+        	return 0
+			;;
+		info)
+			COMPREPLY=( $(compgen -W \
+        		"${global_opts}") )
         	return 0
 			;;
 		help|version)
@@ -45,9 +49,15 @@ _theca() {
 			;;
 	esac
 
+	if [[ "${cmd}" =~ "^[0-9]+$" ]]; then
+		COMPREPLY=( $(compgen -W \
+    		"${global_opts} --json") )
+    	return 0
+	fi
+
 	if [ ${COMP_CWORD} -eq 1 ]; then
         COMPREPLY=( $(compgen -W \
-        	"${commands} --help --version" -- "${cur}") )
+        	"${commands} --help --version --limit --reverse --datesort --json") )
         return 0
     fi
 } &&
