@@ -1,18 +1,19 @@
-<pre align="center">  _   _                    
- | |_| |__   ___  ___ __ _ 
- | __| '_ \ / _ \/ __/ _` |
- | |_| | | |  __/ (_| (_| |
-  \__|_| |_|\___|\___\__,_| 
-</code></pre>
+
+	#  _   _                    
+	# | |_| |__   ___  ___ __ _ 
+	# | __| '_ \ / _ \/ __/ _` |
+	# | |_| | | |  __/ (_| (_| |
+	#  \__|_| |_|\___|\___\__,_|
+	#
 
 ![example usage of theca](screenshots/1.png)
 
-a minimal command line note taking tool written in [*Rust*](http://www.rust-lang.org/).
+a simple command line note taking tool written in [*Rust*](http://www.rust-lang.org/).
 
 ## features
 
 * add/edit/delete notes
-* add/edit note body using command line arguments, `STDIN`, or using the editor set in `$EDITOR` or `$VISUAL`.
+* add/edit note body using command line arguments, `STDIN`, or using the editor set in `$EDITOR` or `$VISUAL`
 * multiple profile support
 * plaintext or 256-bit AES encrypted profiles
 * note transfer between profiles
