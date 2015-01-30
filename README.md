@@ -12,15 +12,40 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 
 ## Features
 
-* multiple profile support
-* plaintext or 256-bit AES encrypted profiles
+* Multiple profile support
+* Plaintext or 256-bit AES encrypted profiles
 * *JSON* profile format for easy scripting/integration
-* table and condensed printing modes
-* add/edit/delete notes
-* add/edit note body using command line arguments, `STDIN`, or using the editor set in `$EDITOR`
+* Traditional and condensed printing modes
+* Add/edit/delete notes
+* Add/edit note body using command line arguments, `STDIN`, or using the editor set in `$EDITOR`
   or `$VISUAL`
-* note transfer between profiles
-* note searching (title or body using keyword or regex pattern)
+* Note transfer between profiles
+* Note searching (title or body using keyword or regex pattern)
+
+## Contents
+
+- [Installation](#)
+	- [From source](#)
+- [Usage](#)
+	- [First run](#)
+	- [Add a note](#)
+	- [Edit a note](#)
+	- [Delete a note](#)
+	- [Transfer a note](#)
+	- [View a note](#)
+	- [List all notes](#)
+	- [Search notes](#)
+	- [Non-default profiles](#)
+		- [Encrypted profiles](#)
+- [Tab completion](#)
+- [Development](#)
+	- [JSON profile format](#)
+	- [Cryptographic design](#)
+		- [Basic Python implementation](#)
+	- [theca_test_harness.py](#)
+		- [Test suite file format](#)
+			- [Test formats](#)
+	- [Bugs](#)
 
 ## Installation
 
