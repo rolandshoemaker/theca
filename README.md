@@ -24,7 +24,7 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 
 ## Contents
 
-- [Installation](#)
+- [Installation](#installation)
 	- [From source](#)
 - [Usage](#)
 	- [First run](#)
