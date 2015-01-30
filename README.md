@@ -26,6 +26,7 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 
 - [Installation](#installation)
 	- [From source](#from-source)
+	- [Binaries](#binaries)
 - [Usage](#usage)
 	- [First run](#first-run)
 	- [Add a note](#add-a-note)
@@ -37,6 +38,7 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 	- [Search notes](#search-notes)
 	- [Non-default profiles](#non-default-profiles)
 		- [Encrypted profiles](#encrypted-profiles)
+		- [Synchronizing profiles](#synchronizing-profiles)
 - [Tab completion](#tab-completion)
 - [Development](#development)
 	- [JSON profile format](#json-profile-format)
@@ -72,15 +74,14 @@ will additionally install the man page and `--bash-complete` and `--zsh-complete
 bash or zsh tab completion scripts. `cargo` will automatically download and compile `theca`s dependencies
 for you.
 
+### Binaries
+
+At some point i'll provide pre-built binaries for linux, os x, and windows but for now
+it is up to you to build them for yourself.
+
 ## Usage
 
-	$ theca --help
-	theca - simple cli note taking tool
-
-	Usage:
-	    theca [options] new-profile [<name>]
-	    theca [options] info
-	    theca [options] clear
+	$ theca --helpclear
 	    theca [options]
 	    theca [options] <id>
 	    theca [options] search [--regex, --search-body] <pattern>
@@ -142,25 +143,53 @@ for you.
 ![new default profile](screenshots/first_run.png)
 
 `theca new-profile` will create the `~/.theca` folder as well as the default
-note profile in `~/.theca/default.json`.
+note profile in `~/.theca/default.json`. If you would like to use a non-standard
+profile folder you can use `--profile-folder PATH`.
 
 ### Add a note
 
 ![adding a basic note](screenshots/add_simple_note.png)
 
-`theca add` will add a note to the default profile with no body or status.
+`theca add <title>` will add a note to the default profile with no body or status.
+These flags can be used to add a note with a status and/or a body
+
+	Statuses:
+	    -s, --started                       Started status.
+	    -u, --urgent                        Urgent status.
+
+	Body:
+	    -b BODY, --body BODY                Set body of the note to BODY.
+	    -t, --editor                        Drop to $EDITOR to set/edit note body.
+	    -                                   Set body of the note from STDIN.
 
 ### Edit a note
 
 ![editing a notes status](screenshots/edit_statuses.png)
 
+`theca edit <id> [<title>] [-s|-u|-n] [-b BODY|-t|-]` is used to edit the title, status,
+or body of a note.
+
+	Statuses:
+	    -n, --none                          No status. (note default)
+	    -s, --started                       Started status.
+	    -u, --urgent                        Urgent status.
+
+	Body:
+	    -b BODY, --body BODY                Set body of the note to BODY.
+	    -t, --editor                        Drop to $EDITOR to set/edit note body.
+	    -                                   Set body of the note from STDIN.
+
 ### Delete a note
 
-
+`theca del <id>..` deletes one or more notes specified by space separated note ids.
 
 ### Transfer a note
 
+`theca transfer <id> to <name` transfers a note from the current profile (in this case
+`default`) to another profile (without the `.json` extension).
 
+`theca transfer-from <id> from <name>` transfers a note from the profile `<name>` to
+the current profile (in this case `default`).
 
 ### View a note
 
@@ -168,13 +197,40 @@ note profile in `~/.theca/default.json`.
 
 ![view a note using the short print style](screenshots/view_note_condensed.png)
 
+`theca <id>` prints out a single note, including the status and body, the following
+options can be used to alter the output style
+
+	Printing format:
+	    -c, --condensed                     Use the condensed printing format.
+	    -j, --json                          Print list output as a JSON object.
+
+
 ### List all notes
 
 ![list all notes](screenshots/list_notes.png)
 
+`theca` prints out all notes in the current profile, the following options can be
+used to limit/sort the resulting list
+
+	Printing format:
+	    -c, --condensed                     Use the condensed printing format.
+	    -j, --json                          Print list output as a JSON object.
+
+	Note list formatting:
+	    -l LIMIT, --limit LIMIT             Limit output to LIMIT notes.
+	                                        [default: 0].
+	    -d, --datesort                      Sort notes by date.
+	    -r, --reverse                       Reverse list.
+
 ### Search notes
 
 ![search notes by title using regex](screenshots/search_note_regex.png)
+
+	Search:
+	    --search-body                       Search the body of notes instead of
+	                                        the title.
+	    --regex                             Set search pattern to regex (default
+	                                        is plaintext).
 
 ### Non-default profiles
 
@@ -184,11 +240,25 @@ note profile in `~/.theca/default.json`.
 
 ![new encrypted profile](screenshots/new_encrypted_profile.png)
 
+	Encryption:
+	    -e, --encrypted                     Specifies using an encrypted profile.
+	    -k KEY, --key KEY                   Encryption key to use for encryption/
+	                                        decryption, a prompt will be
+	                                        displayed if no key is provided.
+
+#### Synchronizing profiles
+
+If you use a synchronization tool like Dropbox, ownCloud, BitTorrent Sync, or some obscure
+`rsync` setup you can easily share your note profiles between machine by using
+`--profile-folder` to specify a folder for your profiles that is synced and your sync'r should
+do the rest for you.
+
 ## Tab completion
 
 There are preliminary `bash` and `zsh` tab completion scripts in the `completion/` directory
 that can be installed manually or using the `--bash-complete` or `--zsh-complete` flags with
-`sudo ./build.sh install`. They both need quite a bit of work but are still relatively usable.
+`sudo ./build.sh install`. They both need quite a bit of work but are still relatively usable
+for the time being.
 
 ## Development
 
@@ -368,3 +438,9 @@ A JSON test suite file looks something like this
 `theca` almost certainly contains bugs, I haven't had the time to write as many test cases as are really
 necessary to fully cover the codebase. if you find one, please submit a issue explaining how to trigger
 the bug, and if you're really awesome a test case that exposes it.
+
+## Author
+
+`theca` is written by roland shoemaker <rolandshoemaker@gmail.com>, this is my first foray
+into a Rust project and my first time diving back into a systems language since 2007 or excuse
+the messiness of some of the code.
