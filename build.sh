@@ -8,12 +8,14 @@
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
 # build.sh
-#   a (linux) tool to build/install the theca binary and man page etc
+#   a (linux) tool to build/install the theca binary and man page and tab
+#   completion stuff etc
 
 # globals
-INSTALL_DIR="/usr/bin"
+INSTALL_DIR="/usr/local/bin"
 MAN_DIR="/usr/local/share/man/man1"
-BASH_COMPLETE_DIR="/etc/bash_complete.d"
+BASH_COMPLETE_DIR="/usr/local/etc/bash_completion.d"
+ZSH_COMPLETE_DIR="/usr/local/share/zsh/site-functions"
 
 # check subcommand
 case "$1" in
@@ -67,8 +69,12 @@ case "$1" in
             cp theca $INSTALL_DIR/
             echo $"# copied ./theca -> $INSTALL_DIR/theca"
             if [[ $@ =~ "--bash-complete" ]]; then
-                cp bash_complete.sh $BASH_COMPLETE_DIR/theca
+                cp completion/bash_complete.sh $BASH_COMPLETE_DIR/theca
                 echo $"# copied ./bash_complete.sh -> $BASH_COMPLETE_DIR/theca"
+            fi
+            if [[ "$@" =~ "--zsh-complete" ]]; then
+                cp completion/_theca $ZSH_COMPLETE_DIR/_theca
+                echo $"# copied ./_theca -> $ZSH_COMPLETE_DIR/theca"
             fi
             if [[ $@ =~  "--man" ]]; then
                 if [ -e "docs/THECA.1" ]; then

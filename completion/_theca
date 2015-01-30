@@ -8,22 +8,22 @@
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
 # zsh_complete.sh
-#   (minimal) zsh completion for the theca binary
+#   (minimal) zsh completion for the theca binary, this is really really
+#   super annoying
 
 typeset -A opt_args
 
 _theca() {
 	_arguments \
-		'(- 1 *)'{-h,--help}'[show help message]' \
-		'(- 1 *)'{-v,--version}'[show version information]' \
 		'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
 		'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
 		'(-e, --encrypted)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
+		'(-k, --key)'{-k,--key}'[specify a encryption key instead of waiting for a prompt]' \
 		'(-l, --limit)'{-l,--limit}'[number of notes to limit list by]' \
 		'(-r, --reverse)'{-r,--reverse}'[reverse note listing]' \
 		'(-d, --datesort)'{-d,--datesort}'[sort note listing by date modified]' \
 		'(-j, --json)'{-j,--json}'[output note lists as JSON]' \
-		'(-c, --condensed)'{-c,--condensed}'[use the condensed list printing style]' \
+		'(-c, --condensed)'{-c,--condensed}'[use the condensed printing style]' \
 		'*:: :->args' \
 		'1: :_theca_cmds' \
 
@@ -61,7 +61,7 @@ _theca() {
 						'(-r, --reverse)'{-r,--reverse}'[reverse note listing]' \
 						'(-d, --datesort)'{-d,--datesort}'[sort note listing by date modified]' \
 						'(-j, --json)'{-j,--json}'[output note lists as JSON]' \
-						'(-c, --condensed)'{-c,--condensed}'[use the condensed list printing style]' \
+						'(-c, --condensed)'{-c,--condensed}'[use the condensed printing style]' \
 					;;
 				del|clear|transfer|transfer-from|new-profile)
 					_arguments \
@@ -93,6 +93,8 @@ _theca_cmds(){
 		'search:search for notes in the current profile'
 		'info:print information about the current profile'
 		'new-profile:create a new profile'
+		'-h, --help:show the help message'
+		'-v, --version:show version information'
 	)
 	_describe 'command' commands
 }

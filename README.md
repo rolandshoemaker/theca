@@ -40,16 +40,20 @@ to get the nightly binaries, once those have finished building we can clone and 
 	$ cargo build [--release]
 	...
 
-	$ sudo ./build.sh install [--man, --bash-complete]
+	$ sudo ./build.sh install [--man, --bash-complete, --zsh-complete]
 
 the `cargo` flag `--release` enables `rustc` optimizations. for `install` the flag `--man`
-will additionally install the man page and `--bash-complete` will additionally install the
-bash tab completion script. `cargo` will automatically download and compile `theca`s dependencies
+will additionally install the man page and `--bash-complete` and `--zsh-complete` will additionally install the
+bash or zsh tab completion scripts. `cargo` will automatically download and compile `theca`s dependencies
 for you.
 
 ## usage
 
 ## development
+
+currently i (roland) am the only developer of `theca` so literally any other pair of eyes
+looking at the codebase would be super useful, especially considering how recently i started
+using Rust, so feel free to submit pull requests!
 
 ### `theca_test_harness.py`
 
@@ -60,7 +64,83 @@ information like passed/failed/time taken.
 the harness can preform three different output checks, against
  * the resulting profile file
  * the JSON output of view, list, and search commands
- * the text output of add, edit, and delete commands
+ * the text output of add, edit, delete commands, etc
+
+a JSON test file looks something like this
+
+	{
+	  "title": "GOOD DEFAULT TESTS",
+	  "desc": "testing correct input with the default profile.",
+	  "tests": [
+	  	...
+	  ]
+	 }
+
+a profile result test looks something like this
+
+	{
+      "name": "add note",
+      "cmds": [
+        ["new-profile"],
+        ["add", "this is the title"]
+      ],
+      "result_path": "default.json",
+      "result": {
+        "encrypted": false,
+        "notes": [
+          {
+            "id": 1,
+            "title": "this is the title",
+            "status": "",
+            "body": ""
+          }
+        ]
+      }
+    }
+
+a JSON output test looks something like this
+
+	{
+      "name": "list",
+      "cmds": [
+        ["new-profile"],
+        ["add", "a title this is"],
+        ["add", "another title this is"],
+        ["-j"]
+      ],
+      "result_type": "json",
+      "results": [
+        null,
+        null,
+        null,
+        [
+          {
+            "id": 1,
+            "title": "a title this is",
+            "status": "",
+            "body": ""
+          },{
+            "id": 2,
+            "title": "another title this is",
+            "status": "",
+            "body": ""
+          }
+        ]
+      ]
+    }
+
+and a text output test looks something like this
+
+	{
+      "name": "new-profile",
+      "cmds": [
+        ["new-profile"]
+      ],
+      "result_type": "text",
+      "results": [
+        "creating profile 'default'\n"
+      ]
+    }
 
 ### bugs
 
