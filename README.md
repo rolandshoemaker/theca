@@ -20,7 +20,7 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 * add/edit note body using command line arguments, `STDIN`, or using the editor set in `$EDITOR`
   or `$VISUAL`
 * note transfer between profiles
-* note searching (title or body) using keyword or regex pattern
+* note searching (title or body using keyword or regex pattern)
 
 ## installation
 
@@ -76,7 +76,9 @@ note profile in `~/.theca/default.json`.
 
 ### view a note
 
+![view a note](screenshots/view_note.png)
 
+![view a note using the short print style](screenshots/view_note_condensed.png)
 
 ### list all notes
 
@@ -90,26 +92,25 @@ note profile in `~/.theca/default.json`.
 
 ![new encrypted profile](screenshots/new_second_profile.png)
 
-
 #### encrypted
 
 ![new encrypted profile](screenshots/new_encrypted_profile.png)
 
 ## development
 
-currently i (roland) am the only developer of `theca` so literally any other pair of eyes
+currently there is only one developer of `theca`, myself, so literally any other pair of eyes
 looking at the codebase would be super useful, especially considering how recently i started
 using Rust, so feel free to submit pull requests!
 
 ### profile JSON format
 
-the profile files follow the JSON schema below
+as described in `schema.json` this is what a note profile might look like
 
     {
         "encrypted": false,
         "notes": [
             {
-                "id": 2,
+                "id": 1,
                 "title": "\\(◕ ◡ ◕\\)",
                 "status": "",
                 "body": "",
@@ -121,16 +122,10 @@ the profile files follow the JSON schema below
                 "status": "",
                 "body": "",
                 "last_touched": "2015-01-22 15:21:01 -0800"
-            },
-            {
-                "id": 5,
-                "title": "(THECA) check about drop_to_editor adding newlines?",
-                "status": "",
-                "body": "",
-                "last_touched": "2015-01-22 15:31:14 -0800"
             }
         ]
     }
+
 ### cryptographic design
 
 `theca` uses the AES CBC mode symmetric cipher with a 256-bit key derived using *pbkdf2*
@@ -177,7 +172,7 @@ the harness can preform three different output checks, against
 
 the python script has a number of arguments that may help
 
-	$ python3 tests/theca_test_harness.py -h        (master) 
+	$ python3 tests/theca_test_harness.py -h
 	usage: theca_test_harness.py [-h] [-tc THECA_COMMAND] [-tf TEST_FILE] [-pt]
 	                             [-jt] [-tt]
 
@@ -204,7 +199,7 @@ a JSON test file looks something like this
 	  "tests": [
 	  	...
 	  ]
-	 }
+	}
 
 ##### test formats
 
