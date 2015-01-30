@@ -32,7 +32,7 @@ _theca() {
 			;;
 		search)
 			COMPREPLY=( $(compgen -W \
-        		"${global_opts} --search-body --regex --limit --reverse --datesort --json" -- $cur) )
+        		"${global_opts} --search-body --regex --limit --reverse --datesort --json --condensed" -- $cur) )
         	return 0
 			;;
 		del|clear|transfer|transfer-from|new-profile)
