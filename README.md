@@ -49,6 +49,17 @@ for you.
 
 ## usage
 
+### first run
+
+![new default profile](screenshots/2.png)
+
+running `theca new-profile` will create the `~/.theca` folder as well as the default
+note profile in `~/.theca/default.json`.
+
+### add a note
+
+![adding a basic note](screenshots/3.png)
+
 ## development
 
 currently i (roland) am the only developer of `theca` so literally any other pair of eyes
