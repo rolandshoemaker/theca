@@ -40,6 +40,8 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 		- [Encrypted profiles](#encrypted-profiles)
 		- [Synchronizing profiles](#synchronizing-profiles)
 - [Tab completion](#tab-completion)
+- [man page](#man-page)
+- [Contributing](#contributing)
 - [Development](#development)
 	- [JSON profile format](#json-profile-format)
 	- [Cryptographic design](#cryptographic-design)
@@ -49,6 +51,7 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 		- [Test suite file format](#test-suite-file-format)
 			- [Test formats](#test-formats)
 	- [Bugs](#bugs)
+- [License](#license)
 
 ## Installation
 
@@ -82,7 +85,13 @@ it is up to you to build them for yourself.
 
 ## Usage
 
-	$ theca --helpclear
+	$ theca --help
+	theca - simple cli note taking tool
+
+	Usage:
+	    theca [options] new-profile [<name>]
+	    theca [options] info
+	    theca [options] clear
 	    theca [options]
 	    theca [options] <id>
 	    theca [options] search [--regex, --search-body] <pattern>
@@ -252,24 +261,35 @@ If you use a synchronization tool like Dropbox, ownCloud, BitTorrent Sync, or so
 `rsync` setup you can easily share your note profiles between machine by using
 `--profile-folder` to specify a folder for your profiles that is synced and your sync'r should
 do the rest for you. Since `theca` makes transactional*-ish* updates to the profile files it
-should be perfectly safe, unless you concurrently edit a profile, although `theca` will attempt
+should be perfectly safe, unless you concurrently edit a profile, though `theca` will *attempt*
 to merge changes when this happens.
 
 ## Tab completion
 
 There are preliminary `bash` and `zsh` tab completion scripts in the `completion/` directory
-that can be installed manually or using the `--bash-complete` or `--zsh-complete` flags with
+which can be installed manually or by using the `--bash-complete` or `--zsh-complete` flags with
 `sudo ./build.sh install` when installing the `theca` binary. They both need quite a bit of 
 work but are still relatively usable for the time being.
 
-## Development
+## man page
 
-Currently there is only one developer of `theca`, myself, so literally any other pair of eyes
-looking at the codebase would be super useful, especially considering how recently I started
-using Rust, so feel free to submit pull requests!
+![the man page](screenshots/man-page.png)
+
+`theca` uses `md2man-roff` from [md2man](https://github.com/sunaku/md2man) to convert
+`docs/THECA.1.md` to the roff format man page `docs/THECA.1`.
+
+## Contributing
+
+I can't think of any more required features but if you think I've left out some necessary
+feature feel free to open an issue or to fork the project and work on a patch that introduces
+it.
 
 I'm pretty sure there are quite a few places where memory optimizations could be made, as well
 as various other speed and design improvements.
+
+Any and all pull requests will be considered and tremendously appreciated.
+
+## Development
 
 ### JSON profile format
 
@@ -471,3 +491,8 @@ the bug, and if you're really awesome a test case that exposes it.
 `theca` is written by roland shoemaker <rolandshoemaker@gmail.com>, this is my first foray
 into a Rust project and my first time diving back into a systems language since 2007 or so,
 please excuse the messiness of some of the code.
+
+## License
+
+theca is licensed under the MIT license, full text can be found 
+<http://opensource.org/licenses/MIT> here or in the file `LICENSE`.

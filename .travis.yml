@@ -15,6 +15,6 @@ install:
     - sudo python3.4 -m pip install pycrypto
 
 script:
-    - ./build.sh test
+    - ./build.sh test --travis
     - ./build.sh build --release --verbose
     - sudo ./build.sh install

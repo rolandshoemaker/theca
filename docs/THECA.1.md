@@ -1,4 +1,4 @@
-THECA 1 "2015" theca v1.0-alpha THECA
+THECA 1 "2015" theca v1.0.0-dev THECA
 =====================================
 
 NAME

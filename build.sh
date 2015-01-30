@@ -97,7 +97,7 @@ case "$1" in
             exit 1
         fi
 
-        build the binary
+        # build the binary
         if ! cargo build; then
             echo $"# couldn't build the binary!"
             exit 1
