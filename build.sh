@@ -130,7 +130,7 @@ case "$1" in
 
     # print the help
     *)
-        echo $"Usage: $0 {build|build-man|install|test|clean}"
+        echo $"Usage: $0 {build|build-man|test|install|clean}"
         exit 1
         ;;
 esac

@@ -44,7 +44,8 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 	- [JSON profile format](#json-profile-format)
 	- [Cryptographic design](#cryptographic-design)
 		- [Basic Python implementation](#basic-python-implementation)
-	- [theca_test_harness.py](#theca_test_harnesspy)
+	- [`build.sh`](#buildsh)
+	- [`theca_test_harness.py`](#theca_test_harnesspy)
 		- [Test suite file format](#test-suite-file-format)
 			- [Test formats](#test-formats)
 	- [Bugs](#bugs)
@@ -70,9 +71,9 @@ to get the nightly binaries, once those have finished building we can clone and 
 	$ sudo ./build.sh install [--man, --bash-complete, --zsh-complete]
 
 The `cargo` flag `--release` enables `rustc` optimizations. for `install` the flag `--man`
-will additionally install the man page and `--bash-complete` and `--zsh-complete` will additionally install the
-bash or zsh tab completion scripts. `cargo` will automatically download and compile `theca`s dependencies
-for you.
+will additionally install the man page and `--bash-complete` and `--zsh-complete` will
+additionally install the `bash` or `zsh` tab completion scripts. `cargo` will automatically
+download and compile `theca`s dependencies for you.
 
 ### Binaries
 
@@ -166,8 +167,7 @@ These flags can be used to add a note with a status and/or a body
 
 ![editing a notes status](screenshots/edit_statuses.png)
 
-`theca edit <id> [<title>] [-s|-u|-n] [-b BODY|-t|-]` is used to edit the title, status,
-or body of a note.
+`theca edit <id>` is used to edit the title, status, or body of a note.
 
 	Statuses:
 	    -n, --none                          No status. (note default)
@@ -251,20 +251,25 @@ used to limit/sort the resulting list
 If you use a synchronization tool like Dropbox, ownCloud, BitTorrent Sync, or some obscure
 `rsync` setup you can easily share your note profiles between machine by using
 `--profile-folder` to specify a folder for your profiles that is synced and your sync'r should
-do the rest for you.
+do the rest for you. Since `theca` makes transactional*-ish* updates to the profile files it
+should be perfectly safe, unless you concurrently edit a profile, although `theca` will attempt
+to merge changes when this happens.
 
 ## Tab completion
 
 There are preliminary `bash` and `zsh` tab completion scripts in the `completion/` directory
 that can be installed manually or using the `--bash-complete` or `--zsh-complete` flags with
-`sudo ./build.sh install`. They both need quite a bit of work but are still relatively usable
-for the time being.
+`sudo ./build.sh install` when installing the `theca` binary. They both need quite a bit of 
+work but are still relatively usable for the time being.
 
 ## Development
 
 Currently there is only one developer of `theca`, myself, so literally any other pair of eyes
 looking at the codebase would be super useful, especially considering how recently I started
 using Rust, so feel free to submit pull requests!
+
+I'm pretty sure there are quite a few places where memory optimizations could be made, as well
+as various other speed and design improvements.
 
 ### JSON profile format
 
@@ -294,7 +299,7 @@ As described much more verbosely in `schema.json`, this is what a note profile m
 
 `theca` uses the AES CBC mode symmetric cipher with a 256-bit key derived using *pbkdf2*
 (using the sha-256 prf) with 2056 rounds salted with the sha-256 hash of the password
-used for the key derivation (probably not the best idea).
+used for the key derivation (probably not the best idea) to encrypt/decrypt profile files.
 
 #### Basic Python implementation
 
@@ -322,6 +327,28 @@ and the ciphertext can be decrypted using the AES implementation from `pycrypto`
 
     # remove any padding from the end of the final block
     plaintext = plaintext[:-plaintext[-1]].decode("utf-8")
+
+### `build.sh`
+
+`build.sh` is a pretty simple `bash` holdall in lieu of a `Makefile` (ew) that really exists
+because I have a bad memory and forget some of the commands i'm supposed to remember.
+
+Usage is pretty simple
+
+	$ ./build.sh
+	Usage: ./build.sh {build|build-man|test|install|clean}
+
+* `build` passes through any argument to `cargo build` so things like `--release` and
+  `--verbose` should work fine, it then copies the resulting binary to `.` so `install`
+  doesn't have to guess which profile you built (`--release` or `--dev` etc)
+* `build-man` requires the `md2man-roff` tool to convert the Markdown man page to the
+  roff man page format
+* `test` runs both all the Rust tests (`cargo test`) and all the Python harness tests
+* `install` copies the binary to `/usr/local/bin`. It can also be used with `--man`,
+  `--bash-complete`, or `--zsh-complete` to install the man page, `bash` completion script,
+  or the `zsh` completion script manually
+* `clean` deletes the binary in `.`, the `target/` folder, and the man page in `docs/`
+  if they exist
 
 ### `theca_test_harness.py`
 
@@ -442,5 +469,5 @@ the bug, and if you're really awesome a test case that exposes it.
 ## Author
 
 `theca` is written by roland shoemaker <rolandshoemaker@gmail.com>, this is my first foray
-into a Rust project and my first time diving back into a systems language since 2007 or excuse
-the messiness of some of the code.
+into a Rust project and my first time diving back into a systems language since 2007 or so,
+please excuse the messiness of some of the code.
