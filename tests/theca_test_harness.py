@@ -245,7 +245,7 @@ def test_harness(tests):
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(description="test harness for the theca cli binary.")
     arg_parser.add_argument("-tc", "--theca-command", help="where is the theca binary")
-    arg_parser.add_argument("-tf", "--test-file", help="specific test file to load.")
+    arg_parser.add_argument("-tf", "--test-file", help="path to specific test file to run")
     arg_parser.add_argument(
         "-pt",
         "--profile-tests",
