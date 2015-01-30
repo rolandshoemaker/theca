@@ -10,7 +10,7 @@
 
 a simple command line note taking tool written in [*Rust*](http://www.rust-lang.org/).
 
-## features
+## Features
 
 * multiple profile support
 * plaintext or 256-bit AES encrypted profiles
@@ -22,11 +22,11 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 * note transfer between profiles
 * note searching (title or body using keyword or regex pattern)
 
-## installation
+## Installation
 
-### from source
+### From source
 
-all we need to build theca is a copy of the `rustc` compiler and the `cargo` packaging tool which can
+All that's needed to build theca is a copy of the `rustc` compiler and the `cargo` packaging tool which can
 be downloaded directly from the [Rust website](http://www.rust-lang.org/install.html) or by running
 
 	$ curl -s https://static.rust-lang.org/rustup.sh | sudo sh
@@ -42,69 +42,138 @@ to get the nightly binaries, once those have finished building we can clone and 
 
 	$ sudo ./build.sh install [--man, --bash-complete, --zsh-complete]
 
-the `cargo` flag `--release` enables `rustc` optimizations. for `install` the flag `--man`
+The `cargo` flag `--release` enables `rustc` optimizations. for `install` the flag `--man`
 will additionally install the man page and `--bash-complete` and `--zsh-complete` will additionally install the
 bash or zsh tab completion scripts. `cargo` will automatically download and compile `theca`s dependencies
 for you.
 
-## usage
+## Usage
 
-### first run
+	$ theca --help
+	theca - simple cli note taking tool
+
+	Usage:
+	    theca [options] new-profile [<name>]
+	    theca [options] info
+	    theca [options] clear
+	    theca [options]
+	    theca [options] <id>
+	    theca [options] search [--regex, --search-body] <pattern>
+	    theca [options] transfer <id> to <name>
+	    theca [options] transfer-from <id> from <name>
+	    theca [options] add <title> [-s|-u] [-b BODY|-t|-]
+	    theca [options] edit <id> [<title>] [-s|-u|-n] [-b BODY|-t|-]
+	    theca [options] del <id>...
+
+	Profiles:
+	    -f PATH, --profile-folder PATH      Path to folder containing profile.json
+	                                        files [default can be set with env var 
+	                                        THECA_PROFILE_FOLDER].
+	    -p PROFILE, --profile PROFILE       Specify non-default profile [default
+	                                        can be set with env var 
+	                                        THECA_DEFAULT_PROFILE].
+
+	Printing format:
+	    -c, --condensed                     Use the condensed printing format.
+	    -j, --json                          Print list output as a JSON object.
+
+	Note list formatting:
+	    -l LIMIT, --limit LIMIT             Limit output to LIMIT notes.
+	                                        [default: 0].
+	    -d, --datesort                      Sort notes by date.
+	    -r, --reverse                       Reverse list.
+
+	Input:
+	    -y, --yes                           Silently agree to any [y/n] prompts.
+
+	Statuses:
+	    -n, --none                          No status. (note default)
+	    -s, --started                       Started status.
+	    -u, --urgent                        Urgent status.
+
+	Body:
+	    -b BODY, --body BODY                Set body of the note to BODY.
+	    -t, --editor                        Drop to $EDITOR to set/edit note body.
+	    -                                   Set body of the note from STDIN.
+
+	Encryption:
+	    -e, --encrypted                     Specifies using an encrypted profile.
+	    -k KEY, --key KEY                   Encryption key to use for encryption/
+	                                        decryption, a prompt will be
+	                                        displayed if no key is provided.
+
+	Search:
+	    --search-body                       Search the body of notes instead of
+	                                        the title.
+	    --regex                             Set search pattern to regex (default
+	                                        is plaintext).
+
+	Miscellaneous:
+	    -h, --help                          Display this help and exit.
+	    -v, --version                       Display the version of theca and exit.
+
+### First run
 
 ![new default profile](screenshots/first_run.png)
 
 `theca new-profile` will create the `~/.theca` folder as well as the default
 note profile in `~/.theca/default.json`.
 
-### add a note
+### Add a note
 
 ![adding a basic note](screenshots/add_simple_note.png)
 
 `theca add` will add a note to the default profile with no body or status.
 
-### edit a note
+### Edit a note
 
 ![editing a notes status](screenshots/edit_statuses.png)
 
-### delete a note
+### Delete a note
 
 
 
-### transfer a note
+### Transfer a note
 
 
 
-### view a note
+### View a note
 
 ![view a note](screenshots/view_note.png)
 
 ![view a note using the short print style](screenshots/view_note_condensed.png)
 
-### list all notes
+### List all notes
 
 ![list all notes](screenshots/list_notes.png)
 
-### search notes
+### Search notes
 
 ![search notes by title using regex](screenshots/search_note_regex.png)
 
-### non-default profiles
+### Non-default profiles
 
 ![new encrypted profile](screenshots/new_second_profile.png)
 
-#### encrypted
+#### Encrypted profiles
 
 ![new encrypted profile](screenshots/new_encrypted_profile.png)
 
-## development
+## Tab completion
 
-currently there is only one developer of `theca`, myself, so literally any other pair of eyes
-looking at the codebase would be super useful, especially considering how recently i started
+There are preliminary `bash` and `zsh` tab completion scripts in the `completion/` directory
+that can be installed manually or using the `--bash-complete` or `--zsh-complete` flags with
+`sudo ./build.sh install`. They both need quite a bit of work but are still relatively usable.
+
+## Development
+
+Currently there is only one developer of `theca`, myself, so literally any other pair of eyes
+looking at the codebase would be super useful, especially considering how recently I started
 using Rust, so feel free to submit pull requests!
 
-### profile JSON format
+### JSON profile format
 
-as described in `schema.json` this is what a note profile might look like
+As described much more verbosely in `schema.json`, this is what a note profile might look like
 
     {
         "encrypted": false,
@@ -126,15 +195,15 @@ as described in `schema.json` this is what a note profile might look like
         ]
     }
 
-### cryptographic design
+### Cryptographic design
 
 `theca` uses the AES CBC mode symmetric cipher with a 256-bit key derived using *pbkdf2*
 (using the sha-256 prf) with 2056 rounds salted with the sha-256 hash of the password
 used for the key derivation (probably not the best idea).
 
-#### basic python implementation
+#### Basic Python implementation
 
-using python a key can be derived as such
+Using `python3` a key can be derived quite quickly using `hashlib` and `passlib`
 
 	from hashlib import sha256
 	from passlib.utils.pbkdf2 import pbkdf2
@@ -147,7 +216,7 @@ using python a key can be derived as such
         "hmac-sha256"
     )
 
-and the ciphertext can be decrypted like so
+and the ciphertext can be decrypted using the AES implementation from `pycrypto`
 
 	from Crypto.Cipher import AES
 
@@ -162,15 +231,15 @@ and the ciphertext can be decrypted like so
 ### `theca_test_harness.py`
 
 `theca_test_harness.py` is a *relatively* simple python3 test harness for the compiled `theca` binary.
-it reads in JSON files which describe test cases and executes them, providing relatively simple
+It reads in JSON files which describe test cases and executes them, providing relatively simple
 information like passed/failed/time taken.
 
-the harness can preform three different output checks, against
+The harness can preform three different output checks, against
  * the resulting profile file
  * the JSON output of view, list, and search commands
  * the text output of add, edit, delete commands, etc
 
-the python script has a number of arguments that may help
+The python script has a number of arguments that may or may not be helpful
 
 	$ python3 tests/theca_test_harness.py -h
 	usage: theca_test_harness.py [-h] [-tc THECA_COMMAND] [-tf TEST_FILE] [-pt]
@@ -189,9 +258,9 @@ the python script has a number of arguments that may help
 	  -tt, --text-tests     only run the text output tests
 
 
-#### test file format
+#### Test suite file format
 
-a JSON test file looks something like this
+A JSON test suite file looks something like this
 
 	{
 	  "title": "GOOD DEFAULT TESTS",
@@ -201,7 +270,7 @@ a JSON test file looks something like this
 	  ]
 	}
 
-##### test formats
+##### Test formats
 
 * a profile result test looks something like this
 
@@ -269,8 +338,8 @@ a JSON test file looks something like this
 	      ]
 	    }
 
-### bugs
+### Bugs
 
-`theca` almost certainly contains bugs, i haven't had the time to write as many test cases as are really
+`theca` almost certainly contains bugs, I haven't had the time to write as many test cases as are really
 necessary to fully cover the codebase. if you find one, please submit a issue explaining how to trigger
 the bug, and if you're really awesome a test case that exposes it.
