@@ -20,7 +20,7 @@ use theca::{Args, ThecaProfile, setup_args, parse_cmds};
 use theca::errors::{ThecaError};
 
 static USAGE: &'static str = "
-theca - cli note taking tool
+theca - simple cli note taking tool
 
 Usage:
     theca [options] new-profile [<name>]
@@ -48,9 +48,9 @@ Printing format:
     -j, --json                          Print list output as a JSON object.
 
 Note list formatting:
-    -l LIMIT, --limit LIMIT             Limit output to LIMIT items.
+    -l LIMIT, --limit LIMIT             Limit output to LIMIT notes.
                                         [default: 0].
-    -d, --datesort                      Sort items by date.
+    -d, --datesort                      Sort notes by date.
     -r, --reverse                       Reverse list.
 
 Input:
@@ -62,14 +62,14 @@ Statuses:
     -u, --urgent                        Urgent status.
 
 Body:
-    -b BODY, --body BODY                Set body of the item to BODY.
-    -t, --editor                        Drop to $EDITOR to set/edit item body.
-    -                                   Set body of the item from STDIN.
+    -b BODY, --body BODY                Set body of the note to BODY.
+    -t, --editor                        Drop to $EDITOR to set/edit note body.
+    -                                   Set body of the note from STDIN.
 
 Encryption:
     -e, --encrypted                     Specifies using an encrypted profile.
-    -k KEY, --key KEY                   Encryption key to use for
-                                        encryption/decryption, a prompt will be
+    -k KEY, --key KEY                   Encryption key to use for encryption/
+                                        decryption, a prompt will be
                                         displayed if no key is provided.
 
 Search:

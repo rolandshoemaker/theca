@@ -405,107 +405,118 @@ mod tests {
     }
 
     #[test]
-    fn test_new_line_format_body_started_expanded() {
-        let notes = vec![
-            ThecaItem {
-                id: 1,
-                title: "a title".to_string(),
-                body: "".to_string(),
-                status: "Started".to_string(),
-                last_touched: "2015-01-22 19:43:24 -0800".to_string()
+    fn test_new_line_format_full() {
+        let body_tests = vec![
+            LineTest {
+                input_notes: vec![
+                    ThecaItem {
+                        id: 1,
+                        title: "a title".to_string(),
+                        body: "".to_string(),
+                        status: "Started".to_string(),
+                        last_touched: "2015-01-22 19:43:24 -0800".to_string()
+                    },
+                    ThecaItem {
+                        id: 2,
+                        title: "a longer title".to_string(),
+                        body: "this is a body".to_string(),
+                        status: "".to_string(),
+                        last_touched: "2015-01-22 19:43:24 -0800".to_string()
+                    }
+                ],
+                condensed: false,
+                search: false,
+                expected_format: LineFormat {
+                    colsep: 2,
+                    id_width: 2,
+                    title_width: 18,
+                    status_width: 7,
+                    touched_width: 19
+                }
             },
-            ThecaItem {
-                id: 2,
-                title: "a longer title".to_string(),
-                body: "this is a body".to_string(),
-                status: "".to_string(),
-                last_touched: "2015-01-22 19:43:24 -0800".to_string()
+            LineTest {
+                input_notes: vec![
+                    ThecaItem {
+                        id: 1,
+                        title: "a title".to_string(),
+                        body: "".to_string(),
+                        status: "Started".to_string(),
+                        last_touched: "2015-01-22 19:43:24 -0800".to_string()
+                    },
+                    ThecaItem {
+                        id: 2,
+                        title: "a longer title".to_string(),
+                        body: "this is a body".to_string(),
+                        status: "".to_string(),
+                        last_touched: "2015-01-22 19:43:24 -0800".to_string()
+                    }
+                ],
+                condensed: true,
+                search: false,
+                expected_format: LineFormat {
+                    colsep: 1,
+                    id_width: 1,
+                    title_width: 18,
+                    status_width: 1,
+                    touched_width: 10
+                }
+            },
+            LineTest {
+                input_notes: vec![
+                    ThecaItem {
+                        id: 1,
+                        title: "a title".to_string(),
+                        body: "".to_string(),
+                        status: "Urgent".to_string(),
+                        last_touched: "2015-01-22 19:43:24 -0800".to_string()
+                    },
+                    ThecaItem {
+                        id: 2,
+                        title: "a longer title".to_string(),
+                        body: "this is a body".to_string(),
+                        status: "".to_string(),
+                        last_touched: "2015-01-22 19:43:24 -0800".to_string()
+                    }
+                ],
+                condensed: false,
+                search: true,
+                expected_format: LineFormat {
+                    colsep: 2,
+                    id_width: 2,
+                    title_width: 14,
+                    status_width: 6,
+                    touched_width: 19
+                }
+            },
+            LineTest {
+                input_notes: vec![
+                    ThecaItem {
+                        id: 1,
+                        title: "a title".to_string(),
+                        body: "".to_string(),
+                        status: "".to_string(),
+                        last_touched: "2015-01-22 19:43:24 -0800".to_string()
+                    },
+                    ThecaItem {
+                        id: 2,
+                        title: "a longer title".to_string(),
+                        body: "this is a body".to_string(),
+                        status: "Urgent".to_string(),
+                        last_touched: "2015-01-22 19:43:24 -0800".to_string()
+                    }
+                ],
+                condensed: true,
+                search: true,
+                expected_format: LineFormat {
+                    colsep: 1,
+                    id_width: 1,
+                    title_width: 14,
+                    status_width: 1,
+                    touched_width: 10
+                }
             }
         ];
-        let expected_format = LineFormat {
-            colsep: 2,
-            id_width: 2,
-            title_width: 18,
-            status_width: 7,
-            touched_width: 19
-        };
-        let wrapped_format = LineFormat::new(&notes, false, false);
-        assert!(wrapped_format.is_ok());
-        let actual_format = wrapped_format.ok().unwrap();
-        assert_eq!(expected_format.colsep, actual_format.colsep);
-        assert_eq!(expected_format.id_width, actual_format.id_width);
-        assert_eq!(expected_format.title_width, actual_format.title_width);
-        assert_eq!(expected_format.status_width, actual_format.status_width);
-        assert_eq!(expected_format.touched_width, actual_format.touched_width);
-    }
 
-    #[test]
-    fn test_new_line_format_body_urgent_expanded() {
-        let notes = vec![
-            ThecaItem {
-                id: 1,
-                title: "a title".to_string(),
-                body: "".to_string(),
-                status: "".to_string(),
-                last_touched: "2015-01-22 19:43:24 -0800".to_string()
-            },
-            ThecaItem {
-                id: 2,
-                title: "a longer title".to_string(),
-                body: "this is a body".to_string(),
-                status: "Urgent".to_string(),
-                last_touched: "2015-01-22 19:43:24 -0800".to_string()
-            }
-        ];
-        let expected_format = LineFormat {
-            colsep: 2,
-            id_width: 2,
-            title_width: 18,
-            status_width: 6,
-            touched_width: 19
-        };
-        let wrapped_format = LineFormat::new(&notes, false, false);
-        assert!(wrapped_format.is_ok());
-        let actual_format = wrapped_format.ok().unwrap();
-        assert_eq!(expected_format.colsep, actual_format.colsep);
-        assert_eq!(expected_format.id_width, actual_format.id_width);
-        assert_eq!(expected_format.title_width, actual_format.title_width);
-        assert_eq!(expected_format.status_width, actual_format.status_width);
-        assert_eq!(expected_format.touched_width, actual_format.touched_width);
-    }
-
-    #[test]
-    fn test_new_line_format_body_started_condensed() {
-        let notes = vec![
-            ThecaItem {
-                id: 1,
-                title: "a title".to_string(),
-                body: "".to_string(),
-                status: "Started".to_string(),
-                last_touched: "2015-01-22 19:43:24 -0800".to_string()
-            },
-            ThecaItem {
-                id: 2,
-                title: "a longer title".to_string(),
-                body: "this is a body".to_string(),
-                status: "".to_string(),
-                last_touched: "2015-01-22 19:43:24 -0800".to_string()
-            }
-        ];
-        let expected_format = LineFormat {
-            colsep: 1,
-            id_width: 1,
-            title_width: 18,
-            status_width: 1,
-            touched_width: 10
-        };
-        let wrapped_format = LineFormat::new(&notes, true, false);
-        assert!(wrapped_format.is_ok());
-        let actual_format = wrapped_format.ok().unwrap();
-        assert_eq!(expected_format.colsep, actual_format.colsep);
-        assert_eq!(expected_format.id_width, actual_format.id_width);
-        assert_eq!(expected_format.title_width, actual_format.title_width);
-        assert_eq!(expected_format.status_width, actual_format.status_width);
-        assert_eq!(expected_format.touched_width, actual_format.touched_width);
+        test_formatter(&body_tests[]);
     }
 }

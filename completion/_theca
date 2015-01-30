@@ -1,0 +1,73 @@
+#compdef theca
+#  _   _                    
+# | |_| |__   ___  ___ __ _ 
+# | __| '_ \ / _ \/ __/ _` |
+# | |_| | | |  __/ (_| (_| |
+#  \__|_| |_|\___|\___\__,_|
+#
+# licensed under the MIT license <http://opensource.org/licenses/MIT>
+#
+# zsh_complete.sh
+#   (minimal) zsh completion for the theca binary
+
+typeset -A opt_args
+
+_theca() {
+	_arguments \
+		'(- 1 *)'{-h,--help}'[show help message]' \
+		'(- 1 *)'{-v,--version}'[show version information]' \
+		'(- 1 *)'{-l=,--limit=}'[number of notes to limit list by]' \
+		'(- 1 *)'{-r,--reverse}'[reverse note listing]' \
+		'(- 1 *)'{-d,--datesort}'[sort note listing by date modified]' \
+		'(- 1 *)'{-j,--json}'[output note lists as JSON]' \
+		'(- 1 *)'{-c,--condensed}'[use the condensed list printing style]' \
+		'1: :_theca_cmds' \
+		'*:: :->args'
+
+	case $state in
+		args)
+			case "$words[1]" in
+				add)
+					_arguments \
+						'(-s, --started)'{-s,--started}'[set note status to Started]' \
+						'(-u, --urgent)'{-u,--urgent}'[set note status to Urgent]' \
+						'(-b, --body)'{-b=,--body=}'[text to set note body to]' \
+						'(-t, --editor)'{-t,--editor}'[set note body using visual editor]' \
+					;;
+				edit)
+					_arguments \
+						'(-s, --started)'{-s,--started}'[set note status to Started]' \
+						'(-u, --urgent)'{-u,--urgent}'[set note status to Urgent]' \
+						'(-n, --none)'{-n,--none}'[set note status to None]' \
+						'(-b, --body)'{-b=,--body=}'[text to set note body to]' \
+						'(-t, --editor)'{-t,--editor}'[set note body using visual editor]' \
+					;;
+				search)
+					;;
+				del|clear|transfer|transfer-from|new-profile)
+					;;
+				info)
+					;;
+				help|version)
+					;;
+			esac
+			;;
+	esac
+}
+
+_theca_cmds(){
+	local -a commands
+	commands=(
+		'add:add a new note'
+		'edit:edit a existing note'
+		'del:delete a existing note'
+		'transfer:transfer a note from the current profile to another'
+		'transfer-from:transfer a note from a different profile to the current'
+		'search:search for notes in the current profile'
+		'info:print information about the current profile'
+		'new-profile:create a new profile'
+	)
+	_describe 'command' commands
+}
+
+_theca

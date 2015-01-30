@@ -13,7 +13,7 @@
 # globals
 INSTALL_DIR="/usr/bin"
 MAN_DIR="/usr/local/share/man/man1"
-BASH_COMPLETE_DIR="/usr/local/etc/bash_complete.d"
+BASH_COMPLETE_DIR="/etc/bash_complete.d"
 
 # check subcommand
 case "$1" in

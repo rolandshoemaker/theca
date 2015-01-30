@@ -7,7 +7,7 @@
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
 # bash_complete.sh
-#   (minimal) bash completion for the theca binary (also *seems* to work with zsh?)
+#   (minimal) bash completion for the theca binary
 
 _theca() {
 	local commands
@@ -22,12 +22,12 @@ _theca() {
 	case "${cmd}" in
 		add)
 			COMPREPLY=( $(compgen -W \
-        		"${global_opts} --started --urgent --none --body --editor - --yes" -- $cur) )
+        		"${global_opts} --started --urgent --body --editor - --yes" -- $cur) )
         	return 0
 			;;
 		edit)
 			COMPREPLY=( $(compgen -W \
-        		"${global_opts} --started --urgent --body --editor - --yes" -- $cur) )
+        		"${global_opts} --started --urgent --none --body --editor - --yes" -- $cur) )
         	return 0
 			;;
 		search)
@@ -35,7 +35,7 @@ _theca() {
         		"${global_opts} --search-body --regex --limit --reverse --datesort --json" -- $cur) )
         	return 0
 			;;
-		del|clear|transfer|new-profile)
+		del|clear|transfer|transfer-from|new-profile)
 			COMPREPLY=( $(compgen -W \
         		"${global_opts} --yes" -- $cur) )
         	return 0
