@@ -6,7 +6,7 @@
 	#  \__|_| |_|\___|\___\__,_|
 	#
 
-![example usage of theca](screenshots/1.png)
+![example usage of theca](screenshots/main.png)
 
 a simple command line note taking tool written in [*Rust*](http://www.rust-lang.org/).
 
@@ -51,14 +51,49 @@ for you.
 
 ### first run
 
-![new default profile](screenshots/2.png)
+![new default profile](screenshots/first_run.png)
 
-running `theca new-profile` will create the `~/.theca` folder as well as the default
+`theca new-profile` will create the `~/.theca` folder as well as the default
 note profile in `~/.theca/default.json`.
 
 ### add a note
 
-![adding a basic note](screenshots/3.png)
+![adding a basic note](screenshots/add_simple_note.png)
+
+`theca add` will add a note to the default profile with no body or status.
+
+### edit a note
+
+![editing a notes status](screenshots/edit_statuses.png)
+
+### delete a note
+
+
+
+### transfer a note
+
+
+
+### view a note
+
+
+
+### list all notes
+
+![list all notes](screenshots/list_notes.png)
+
+### search notes
+
+![search notes by title using regex](screenshots/search_note_regex.png)
+
+### non-default profiles
+
+![new encrypted profile](screenshots/new_second_profile.png)
+
+
+#### encrypted
+
+![new encrypted profile](screenshots/new_encrypted_profile.png)
 
 ## development
 
