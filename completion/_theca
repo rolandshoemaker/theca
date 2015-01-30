@@ -14,53 +14,50 @@ typeset -A opt_args
 
 _theca() {
 	_arguments \
-		'(- 1 *)'{-p=,--profile=}'[name of the profile to load]' \
-		'(- 1 *)'{-f=,--profile-folder=}'[path of the profile folder]' \
-		'(- 1 *)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
 		'(- 1 *)'{-h,--help}'[show help message]' \
 		'(- 1 *)'{-v,--version}'[show version information]' \
-		'(- 1 *)'{-l=,--limit=}'[number of notes to limit list by]' \
-		'(- 1 *)'{-r,--reverse}'[reverse note listing]' \
-		'(- 1 *)'{-d,--datesort}'[sort note listing by date modified]' \
-		'(- 1 *)'{-j,--json}'[output note lists as JSON]' \
-		'(- 1 *)'{-c,--condensed}'[use the condensed list printing style]' \
+		'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
+		'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
+		'(-e, --encrypted)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
+		'(-l, --limit)'{-l,--limit}'[number of notes to limit list by]' \
+		'(-r, --reverse)'{-r,--reverse}'[reverse note listing]' \
+		'(-d, --datesort)'{-d,--datesort}'[sort note listing by date modified]' \
+		'(-j, --json)'{-j,--json}'[output note lists as JSON]' \
+		'(-c, --condensed)'{-c,--condensed}'[use the condensed list printing style]' \
+		'*:: :->args' \
 		'1: :_theca_cmds' \
-		'*:: :->args'
 
 	case $state in
 		args)
 			case "$words[1]" in
 				add)
 					_arguments \
-						'(-p, --profile'{-p=,--profile=}'[name of the profile to load]' \
-						'(-f, --profile-folder'{-f=,--profile-folder=}'[path of the profile folder]' \
-						'(-e, --encrypted'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
 						'(-y, --yes)'{-y,--yes}'[say yes to all prompts]' \
 						'(-s, --started)'{-s,--started}'[set note status to Started]' \
 						'(-u, --urgent)'{-u,--urgent}'[set note status to Urgent]' \
-						'(-b, --body)'{-b=,--body=}'[text to set note body to]' \
+						'(-b, --body)'{-b,--body}'[text to set note body to]' \
 						'(-t, --editor)'{-t,--editor}'[set note body using visual editor]' \
 					;;
 				edit)
 					_arguments \
-						'(-p, --profile'{-p=,--profile=}'[name of the profile to load]' \
-						'(-f, --profile-folder'{-f=,--profile-folder=}'[path of the profile folder]' \
-						'(-e, --encrypted'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
+						'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
+						'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
+						'(-e, --encrypted)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
 						'(-y, --yes)'{-y,--yes}'[say yes to all prompts]' \
 						'(-s, --started)'{-s,--started}'[set note status to Started]' \
 						'(-u, --urgent)'{-u,--urgent}'[set note status to Urgent]' \
 						'(-n, --none)'{-n,--none}'[set note status to None]' \
-						'(-b, --body)'{-b=,--body=}'[text to set note body to]' \
+						'(-b, --body)'{-b,--body}'[text to set note body to]' \
 						'(-t, --editor)'{-t,--editor}'[set note body using visual editor]' \
 					;;
 				search)
 					_arguments \
-						'(-p, --profile'{-p=,--profile=}'[name of the profile to load]' \
-						'(-f, --profile-folder'{-f=,--profile-folder=}'[path of the profile folder]' \
-						'(-e, --encrypted'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
+						'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
+						'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
+						'(-e, --encrypted)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
 						'--regex[search using a regex pattern]' \
 						'--search-body[search notes by body instead of title]' \
-						'(-l, --limit)'{-l=,--limit=}'[number of notes to limit list by]' \
+						'(-l, --limit)'{-l,--limit}'[number of notes to limit list by]' \
 						'(-r, --reverse)'{-r,--reverse}'[reverse note listing]' \
 						'(-d, --datesort)'{-d,--datesort}'[sort note listing by date modified]' \
 						'(-j, --json)'{-j,--json}'[output note lists as JSON]' \
@@ -68,18 +65,16 @@ _theca() {
 					;;
 				del|clear|transfer|transfer-from|new-profile)
 					_arguments \
-						'(-p, --profile'{-p=,--profile=}'[name of the profile to load]' \
-						'(-f, --profile-folder'{-f=,--profile-folder=}'[path of the profile folder]' \
-						'(-e, --encrypted'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
+						'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
+						'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
+						'(-e, --encrypted)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
 						'(-y, --yes)'{-y,--yes}'[say yes to all prompts]' \
 					;;
 				info)
 					_arguments \
-						'(-p, --profile'{-p=,--profile=}'[name of the profile to load]' \
-						'(-f, --profile-folder'{-f=,--profile-folder=}'[path of the profile folder]' \
-						'(-e, --encrypted'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
-					;;
-				help|version)
+						'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
+						'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
+						'(-e, --encrypted)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
 					;;
 			esac
 			;;
@@ -89,6 +84,7 @@ _theca() {
 _theca_cmds(){
 	local -a commands
 	commands=(
+		':list all notes'
 		'add:add a new note'
 		'edit:edit a existing note'
 		'del:delete a existing note'
