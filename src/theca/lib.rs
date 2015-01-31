@@ -372,7 +372,7 @@ impl ThecaProfile {
             ))
         };
         println!(
-            "transfered {}: note {} -> {}: note {}",
+            "transfered [{}: note {} -> {}: note {}]",
             args.flag_profile,
             args.arg_id[0],
             args.arg_name[0],

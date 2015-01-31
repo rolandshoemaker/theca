@@ -42,6 +42,7 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 - [Tab completion](#tab-completion)
 - [man page](#man-page)
 - [Contributing](#contributing)
+	- [Todo](#todo)
 - [Development](#development)
 	- [JSON profile format](#json-profile-format)
 	- [Cryptographic design](#cryptographic-design)
@@ -73,7 +74,8 @@ to get the nightly binaries, once those have finished building we can clone and 
 
 	$ sudo ./build.sh install [--man, --bash-complete, --zsh-complete]
 
-The `cargo` flag `--release` enables `rustc` optimizations. for `install` the flag `--man`
+The `cargo` flag `--release` enables `rustc` optimizations. F
+The `cargo` flag `--release` enables `rustc` optimizations.or the `install` the flag `--man`
 will additionally install the man page and `--bash-complete` and `--zsh-complete` will
 additionally install the `bash` or `zsh` tab completion scripts. `cargo` will automatically
 download and compile `theca`s dependencies for you.
@@ -190,6 +192,8 @@ These flags can be used to add a note with a status and/or a body
 
 ### Delete a note
 
+![deleting some notes](screenshots/delete_note.ng)
+
 `theca del <id>..` deletes one or more notes specified by space separated note ids.
 
 ### Transfer a note
@@ -262,7 +266,8 @@ If you use a synchronization tool like Dropbox, ownCloud, BitTorrent Sync, or so
 `--profile-folder` to specify a folder for your profiles that is synced and your sync'r should
 do the rest for you. Since `theca` makes transactional*-ish* updates to the profile files it
 should be perfectly safe, unless you concurrently edit a profile, though `theca` will *attempt*
-to merge changes when this happens.
+to merge changes when this happens. You could even store a profle in a *git* repo if you really
+wanted to.
 
 ## Tab completion
 
@@ -289,11 +294,15 @@ as various other speed and design improvements.
 
 Any and all pull requests will be considered and tremendously appreciated.
 
+### Todo
+
+
+
 ## Development
 
 ### JSON profile format
 
-As described much more verbosely in `schema.json`, this is what a note profile might look like
+As described much more verbosely in `docs/schema.json`, this is what a note profile might look like
 
     {
         "encrypted": false,
@@ -490,9 +499,9 @@ the bug, and if you're really awesome a test case that exposes it.
 
 `theca` is written by roland shoemaker <rolandshoemaker@gmail.com>, this is my first foray
 into a Rust project and my first time diving back into a systems language since 2007 or so,
-please excuse the messiness of some of the code.
+so please excuse the messiness of some of the code.
 
 ## License
 
-theca is licensed under the MIT license, full text can be found 
-<http://opensource.org/licenses/MIT> here or in the file `LICENSE`.
+theca is licensed under the MIT license, full text can be found at
+<http://opensource.org/licenses/MIT> or in the file `LICENSE`.
