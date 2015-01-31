@@ -44,7 +44,7 @@ THECA_CMD = "theca"
 
 STATUSES = ["", "Started", "Urgent"]
 DATEFMT = "%Y-%m-%d %H:%M:%S %z"
-SCHEMA_PATH = "schema.json"
+SCHEMA_PATH = "docs/schema.json"
 
 def decrypt_profile(ciphertext, passphrase):
     key = pbkdf2(

@@ -111,19 +111,17 @@ case "$1" in
         # should allow some way to set theca command by arg?
         python_cmd="$python tests/theca_test_harness.py -tc target/theca"
         # run the python tests
-        echo $"# running python harness tests\n"
+        echo $"# running python harness tests"
         if ! eval "$python_cmd -pt"; then
-            echo $"# python harness profile tests did not pass!"
+            echo $"# profile tests did not pass!"
             exit 1
         fi
-        echo $"\n"
         if ! eval "$python_cmd -jt"; then
-            echo $"# python harness json output tests did not pass!"
+            echo $"# json output tests did not pass!"
             exit 1
         fi
-        echo $"\n"
         if ! eval "$python_cmd -tt"; then
-            echo $"# python harness text output tests did not pass!"
+            echo $"# text output tests did not pass!"
             exit 1
         fi
 

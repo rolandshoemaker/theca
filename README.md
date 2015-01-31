@@ -309,10 +309,10 @@ the bug, and if you're really awesome a test case that exposes it.
 
 * `encrypt-profile` and `decrypt-profile` commands to convert from one to another.
 
-	can leverage how save_to_file(...) works by just switching the
-	`encrypted` bool and letting the saver take its course.
+		can leverage how save_to_file and --profile works by just loading the profile
+		then switching the `encrypted` bool and letting save_to_file take its course.
 
-	if plain->enc need to set a key but that shouldn't be hard
+		If plain->enc need to set a key but that shouldn't be hard.
 
 * `ThecaError` in `src/theca/errors.rs` could definitely be cleaned up
 * `save_to_file` and `transfer_note` (and inherently the `import` logic) could use some
