@@ -430,7 +430,7 @@ impl ThecaProfile {
             body: body,
             last_touched: try!(strftime(DATEFMT, &now()))
         });
-        println!("note {} added", new_id+1);
+        // println!("note {} added", new_id+1);
         Ok(())
     }
 
@@ -818,7 +818,8 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
             args.flag_urgent,
             args.cmd__,
             args.flag_editor
-        )); 
+        ));
+        println!("note {} added", profile.notes.last().unwrap().id);
     }
 
     // edit    

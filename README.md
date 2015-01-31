@@ -198,7 +198,7 @@ These flags can be used to add a note with a status and/or a body
 
 ### Transfer a note
 
-`theca transfer <id> to <name` transfers a note from the current profile (in this case
+`theca transfer <id> to <name>` transfers a note from the current profile (in this case
 `default`) to another profile (without the `.json` extension).
 
 `theca transfer-from <id> from <name>` transfers a note from the profile `<name>` to
