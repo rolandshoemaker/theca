@@ -206,6 +206,8 @@ These flags can be used to add a note with a status and/or a body
 
 ### Import a note from another profile
 
+![import a note](screenshots/import_note.png)
+
 `theca import <id> from <name>` transfers a note from the profile `<name>` to
 the current profile (in this case `default`).
 
