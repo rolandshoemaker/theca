@@ -33,6 +33,7 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 	- [Edit a note](#edit-a-note)
 	- [Delete a note](#delete-a-note)
 	- [Transfer a note](#transfer-a-note)
+	- [Import a note](#import-a-note)
 	- [View a note](#view-a-note)
 	- [List all notes](#list-all-notes)
 	- [Search notes](#search-notes)
@@ -98,7 +99,7 @@ it is up to you to build them for yourself.
 	    theca [options] <id>
 	    theca [options] search [--regex, --search-body] <pattern>
 	    theca [options] transfer <id> to <name>
-	    theca [options] transfer-from <id> from <name>
+	    theca [options] import <id> from <name>
 	    theca [options] add <title> [-s|-u] [-b BODY|-t|-]
 	    theca [options] edit <id> [<title>] [-s|-u|-n] [-b BODY|-t|-]
 	    theca [options] del <id>...
@@ -198,10 +199,14 @@ These flags can be used to add a note with a status and/or a body
 
 ### Transfer a note
 
+![transfer a note](screenshots/transfer_note.png)
+
 `theca transfer <id> to <name>` transfers a note from the current profile (in this case
 `default`) to another profile (without the `.json` extension).
 
-`theca transfer-from <id> from <name>` transfers a note from the profile `<name>` to
+### Import a note
+
+`theca import <id> from <name>` transfers a note from the profile `<name>` to
 the current profile (in this case `default`).
 
 ### View a note

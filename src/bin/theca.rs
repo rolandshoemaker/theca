@@ -30,7 +30,7 @@ Usage:
     theca [options] <id>
     theca [options] search [--regex, --search-body] <pattern>
     theca [options] transfer <id> to <name>
-    theca [options] transfer-from <id> from <name>
+    theca [options] import <id> from <name>
     theca [options] add <title> [-s|-u] [-b BODY|-t|-]
     theca [options] edit <id> [<title>] [-s|-u|-n] [-b BODY|-t|-]
     theca [options] del <id>...

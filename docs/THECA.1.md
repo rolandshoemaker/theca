@@ -29,6 +29,8 @@ SYNOPSIS
 
 `theca` [`options`] transfer <`id`> to <`name`>
 
+`theca` [`options`] import <`id`> from <`name`>
+
 DESCRIPTION
 -----------
 

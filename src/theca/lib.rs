@@ -72,11 +72,11 @@ pub struct Args {
     pub cmd_clear: bool,
     pub cmd_del: bool,
     pub cmd_edit: bool,
+    pub cmd_import: bool,
     pub cmd_info: bool,
     pub cmd_new_profile: bool,
     pub cmd_search: bool,
     pub cmd_transfer: bool,
-    pub cmd_transfer_from: bool,
     pub cmd__: bool,
     pub arg_id: Vec<usize>,
     pub arg_name: Vec<String>,
@@ -842,13 +842,13 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
     if args.cmd_del { profile.delete_note(&args.arg_id); }
 
     // transfer
-    if args.cmd_transfer || args.cmd_transfer_from {
+    if args.cmd_transfer || args.cmd_import {
         if args.cmd_transfer {
             try!(profile.transfer_note(args));
         } else {
             let mut from_args = args.clone();
-            from_args.cmd_transfer = args.cmd_transfer_from;
-            from_args.cmd_transfer_from = false;
+            from_args.cmd_transfer = args.cmd_import;
+            from_args.cmd_import = false;
             from_args.flag_profile = args.arg_name[0].clone();
             from_args.arg_name[0] = args.flag_profile.clone();
             
