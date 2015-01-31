@@ -32,17 +32,18 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 	- [Add a note](#add-a-note)
 	- [Edit a note](#edit-a-note)
 	- [Delete a note](#delete-a-note)
-	- [Transfer a note to another profile](#transfer-a-note-to-another-profile)
-	- [Import a note from another profile](#import-a-note-from-another-profile)
-	- [View a note](#view-a-note)
 	- [List all notes](#list-all-notes)
+	- [View a single note](#view-a-single-note)
 	- [Search notes](#search-notes)
 	- [Non-default profiles](#non-default-profiles)
+		- [Transfer a note to another profile](#transfer-a-note-to-another-profile)
+		- [Import a note from another profile](#import-a-note-from-another-profile)
 		- [Encrypted profiles](#encrypted-profiles)
 		- [Synchronizing profiles](#synchronizing-profiles)
 - [Tab completion](#tab-completion)
 - [man page](#man-page)
 - [Contributing](#contributing)
+	- [Bugs](#bugs)
 	- [Todo](#todo)
 - [Development](#development)
 	- [JSON profile format](#json-profile-format)
@@ -52,7 +53,6 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 	- [`theca_test_harness.py`](#theca_test_harnesspy)
 		- [Test suite file format](#test-suite-file-format)
 			- [Test formats](#test-formats)
-	- [Bugs](#bugs)
 - [License](#license)
 
 ## Installation
@@ -197,34 +197,6 @@ These flags can be used to add a note with a status and/or a body
 
 `theca del <id>..` deletes one or more notes specified by space separated note ids.
 
-### Transfer a note to another profile
-
-![transfer a note](screenshots/transfer_note.png)
-
-`theca transfer <id> to <name>` transfers a note from the current profile (in this case
-`default`) to another profile (without the `.json` extension).
-
-### Import a note from another profile
-
-![import a note](screenshots/import_note.png)
-
-`theca import <id> from <name>` transfers a note from the profile `<name>` to
-the current profile (in this case `default`).
-
-### View a note
-
-![view a note](screenshots/view_note.png)
-
-![view a note using the short print style](screenshots/view_note_condensed.png)
-
-`theca <id>` prints out a single note, including the status and body, the following
-options can be used to alter the output style
-
-	Printing format:
-	    -c, --condensed                     Use the condensed printing format.
-	    -j, --json                          Print list output as a JSON object.
-
-
 ### List all notes
 
 ![list all notes](screenshots/list_notes.png)
@@ -242,6 +214,19 @@ used to limit/sort the resulting list
 	    -d, --datesort                      Sort notes by date.
 	    -r, --reverse                       Reverse list.
 
+### View a single note
+
+![view a note](screenshots/view_note.png)
+
+![view a note using the short print style](screenshots/view_note_condensed.png)
+
+`theca <id>` prints out a single note, including the status and body, the following
+options can be used to alter the output style
+
+	Printing format:
+	    -c, --condensed                     Use the condensed printing format.
+	    -j, --json                          Print list output as a JSON object.
+
 ### Search notes
 
 ![search notes by title using regex](screenshots/search_note_regex.png)
@@ -256,6 +241,20 @@ used to limit/sort the resulting list
 
 ![new encrypted profile](screenshots/new_second_profile.png)
 
+#### Transfer a note to another profile
+
+![transfer a note](screenshots/transfer_note.png)
+
+`theca transfer <id> to <name>` transfers a note from the current profile (in this case
+`default`) to another profile (without the `.json` extension).
+
+#### Import a note from another profile
+
+![import a note](screenshots/import_note.png)
+
+`theca import <id> from <name>` transfers a note from the profile `<name>` to
+the current profile (in this case `default`).
+
 #### Encrypted profiles
 
 ![new encrypted profile](screenshots/new_encrypted_profile.png)
@@ -268,7 +267,7 @@ used to limit/sort the resulting list
 
 #### Synchronizing profiles
 
-If you use a synchronization tool like Dropbox, ownCloud, BitTorrent Sync, or some obscure
+If you use a synchronization tool like Dropbox, ownCloud, BitTorrent Sync, or even some obscure
 `rsync` setup you can easily share your note profiles between machine by using
 `--profile-folder` to specify a folder for your profiles that is synced and your sync'r should
 do the rest for you. Since `theca` makes transactional*-ish* updates to the profile files it
@@ -292,18 +291,34 @@ work but are still relatively usable for the time being.
 
 ## Contributing
 
-I can't think of any more required features but if you think I've left out some necessary
-feature feel free to open an issue or to fork the project and work on a patch that introduces
-it.
+If you think I've left out some necessary feature feel free to open an issue or to fork the
+project and work on a patch that introduces it.
 
 I'm pretty sure there are quite a few places where memory optimizations could be made, as well
 as various other speed and design improvements.
 
 Any and all pull requests will be considered and tremendously appreciated.
 
+### Bugs
+
+`theca` almost certainly contains bugs, I haven't had the time to write as many test cases as are really
+necessary to fully cover the codebase. if you find one, please submit a issue explaining how to trigger
+the bug, and if you're really awesome a test case that exposes it.
+
 ### Todo
 
+* `encrypt-profile` and `decrypt-profile` commands to convert from one to another.
 
+	can leverage how save_to_file(...) works by just switching the
+	`encrypted` bool and letting the saver take its course.
+
+	if plain->enc need to set a key but that shouldn't be hard
+
+* `ThecaError` in `src/theca/errors.rs` could definitely be cleaned up
+* `save_to_file` and `transfer_note` (and inherently the `import` logic) could use some
+  work, specifically the profile changed stuff...
+* various large clean ups in argument passing (references could probably be used more
+  in some places...)
 
 ## Development
 
@@ -333,9 +348,10 @@ As described much more verbosely in `docs/schema.json`, this is what a note prof
 
 ### Cryptographic design
 
-`theca` uses the AES CBC mode symmetric cipher with a 256-bit key derived using *pbkdf2*
-(using the sha-256 prf) with 2056 rounds salted with the sha-256 hash of the password
-used for the key derivation (probably not the best idea) to encrypt/decrypt profile files.
+`theca` uses the AES CBC mode symmetric cipher with a 256-bit key to encrypt/decrypt
+profile files. The key is derived using *pbkdf2* (using the sha-256 prf) with 2056 rounds
+salted with the sha-256 hash of the password used for the key derivation (probably not
+the best idea).
 
 #### Basic Python implementation
 
@@ -344,6 +360,7 @@ Using `python3` a key can be derived quite quickly using `hashlib` and `passlib`
 	from hashlib import sha256
 	from passlib.utils.pbkdf2 import pbkdf2
 
+	passphrase = "DEBUG"
 	key = pbkdf2(
         bytes(passphrase.encode("utf-8")),
         sha256(bytes(passphrase.encode("utf-8"))).hexdigest().encode("utf-8"),
@@ -495,12 +512,6 @@ A JSON test suite file looks something like this
 	        "creating profile 'default'\n"
 	      ]
 	    }
-
-### Bugs
-
-`theca` almost certainly contains bugs, I haven't had the time to write as many test cases as are really
-necessary to fully cover the codebase. if you find one, please submit a issue explaining how to trigger
-the bug, and if you're really awesome a test case that exposes it.
 
 ## Author
 
