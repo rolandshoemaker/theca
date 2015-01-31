@@ -8,7 +8,8 @@
 
 ![example usage of theca](screenshots/main.png)
 
-a simple command line note taking tool written in [*Rust*](http://www.rust-lang.org/).
+a simple, fully featured, command line note taking tool written in
+[*Rust*](http://www.rust-lang.org/). 
 
 ## Features
 
@@ -241,12 +242,16 @@ options can be used to alter the output style
 
 ![new encrypted profile](screenshots/new_second_profile.png)
 
+New named profiles can be created with the `theca new-profile <name>` command and will be
+stored alongside `default.json` in either `~/.theca/` or in the folder specified by
+`--profile-folder PATH`.
+
 #### Transfer a note to another profile
 
 ![transfer a note](screenshots/transfer_note.png)
 
 `theca transfer <id> to <name>` transfers a note from the current profile (in this case
-`default`) to another profile (without the `.json` extension).
+`default`) to another profile.
 
 #### Import a note from another profile
 
@@ -258,6 +263,14 @@ the current profile (in this case `default`).
 #### Encrypted profiles
 
 ![new encrypted profile](screenshots/new_encrypted_profile.png)
+
+Using `--encrypted` tells theca that it should be dealing with encrypted profiles, so
+using `theca --encrypted new-profile secrets` theca knows to create an encrypted profile
+and will ask you for a key to encrypt the resulting `secrets.json`. If you'd like not to
+be prompted you can specify it with the argument `--key KEY`.
+
+`--encrypted` and `--key` can be used with all the other commands that read or write a
+profile to specify that the profile you want to use will need to be encrypted/decrypted.
 
 	Encryption:
 	    -e, --encrypted                     Specifies using an encrypted profile.
@@ -435,7 +448,7 @@ The python script has a number of arguments that may or may not be helpful
 
 #### Test suite file format
 
-A JSON test suite file looks something like this
+A JSON test suite file for `theca_test_harness.py` looks something like this
 
 	{
 	  "title": "GOOD DEFAULT TESTS",
@@ -515,11 +528,11 @@ A JSON test suite file looks something like this
 
 ## Author
 
-`theca` is written by roland shoemaker <rolandshoemaker@gmail.com>, this is my first foray
+`theca` is written by roland shoemaker (<rolandshoemaker@gmail.com>), this is my first foray
 into a Rust project and my first time diving back into a systems language since 2007 or so,
-so please excuse the messiness of some of the code.
+so please excuse the messiness of some of the code, dynamic languages have ruined me.
 
 ## License
 
-theca is licensed under the MIT license, full text can be found at
+`theca` is licensed under the MIT license, full text can be found at
 <http://opensource.org/licenses/MIT> or in the file `LICENSE`.
