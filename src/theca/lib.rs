@@ -773,7 +773,7 @@ pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
 
 pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerprint: &u64) -> Result<(), ThecaError> {
     // view
-    if !args.arg_id.is_empty() && !args.cmd_del && !args.cmd_edit && !args.cmd_transfer {
+    if !args.arg_id.is_empty() && !args.cmd_del && !args.cmd_edit && !args.cmd_transfer && !args.cmd_import {
         try!(profile.view_note(
             args.arg_id[0],
             args.flag_json,
@@ -844,8 +844,10 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
     // transfer
     if args.cmd_transfer || args.cmd_import {
         if args.cmd_transfer {
+            // transfer a note
             try!(profile.transfer_note(args));
         } else {
+            // reverse(?) transfer a note
             let mut from_args = args.clone();
             from_args.cmd_transfer = args.cmd_import;
             from_args.cmd_import = false;
@@ -871,7 +873,7 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
 
     // list
     if args.arg_id.is_empty() && !args.cmd_add && !args.cmd_edit && !args.cmd_del &&
-       !args.cmd_transfer && !args.cmd_clear && !args.cmd_new_profile {
+       !args.cmd_transfer && !args.cmd_import && !args.cmd_clear && !args.cmd_new_profile {
         try!(profile.list_notes(
             args.flag_limit,
             args.flag_condensed,
@@ -890,7 +892,7 @@ pub fn parse_cmds(profile: &mut ThecaProfile, args: &mut Args, profile_fingerpri
         println!("creating profile '{}'", args.arg_name[0]);
     }
 
-    // new-profile, add, edit, del, transfer, clear
+    // new-profile, add, edit, del, transfer, imort, clear
     try!(profile.save_to_file(args, profile_fingerprint));
 
     Ok(())

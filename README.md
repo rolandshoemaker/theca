@@ -32,8 +32,8 @@ a simple command line note taking tool written in [*Rust*](http://www.rust-lang.
 	- [Add a note](#add-a-note)
 	- [Edit a note](#edit-a-note)
 	- [Delete a note](#delete-a-note)
-	- [Transfer a note](#transfer-a-note)
-	- [Import a note](#import-a-note)
+	- [Transfer a note to another profile](#transfer-a-note-to-another-profile)
+	- [Import a note from another profile](#import-a-note-from-another-profile)
 	- [View a note](#view-a-note)
 	- [List all notes](#list-all-notes)
 	- [Search notes](#search-notes)
@@ -117,7 +117,7 @@ it is up to you to build them for yourself.
 	    -j, --json                          Print list output as a JSON object.
 
 	Note list formatting:
-	    -l LIMIT, --limit LIMIT             Limit output to LIMIT notes.
+	    -l LIMIT, --limit LIMIT             Limit output to LIMIT notes
 	                                        [default: 0].
 	    -d, --datesort                      Sort notes by date.
 	    -r, --reverse                       Reverse list.
@@ -197,14 +197,14 @@ These flags can be used to add a note with a status and/or a body
 
 `theca del <id>..` deletes one or more notes specified by space separated note ids.
 
-### Transfer a note
+### Transfer a note to another profile
 
 ![transfer a note](screenshots/transfer_note.png)
 
 `theca transfer <id> to <name>` transfers a note from the current profile (in this case
 `default`) to another profile (without the `.json` extension).
 
-### Import a note
+### Import a note from another profile
 
 `theca import <id> from <name>` transfers a note from the profile `<name>` to
 the current profile (in this case `default`).

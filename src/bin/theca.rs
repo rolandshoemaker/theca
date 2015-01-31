@@ -48,7 +48,7 @@ Printing format:
     -j, --json                          Print list output as a JSON object.
 
 Note list formatting:
-    -l LIMIT, --limit LIMIT             Limit output to LIMIT notes.
+    -l LIMIT, --limit LIMIT             Limit output to LIMIT notes
                                         [default: 0].
     -d, --datesort                      Sort notes by date.
     -r, --reverse                       Reverse list.
