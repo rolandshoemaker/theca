@@ -192,7 +192,7 @@ These flags can be used to add a note with a status and/or a body
 
 ### Delete a note
 
-![deleting some notes](screenshots/delete_note.ng)
+![deleting some notes](screenshots/delete_note.png)
 
 `theca del <id>..` deletes one or more notes specified by space separated note ids.
 
