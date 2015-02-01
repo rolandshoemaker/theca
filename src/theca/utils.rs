@@ -269,7 +269,6 @@ pub fn sorted_print(
     if !condensed && !json {
         try!(print_header(&line_format));
     }
-    // im not really sure why this... works?
     if datesort {
         notes.sort_by(|a, b| match cmp_last_touched(&*a.last_touched, &*b.last_touched) {
             Ok(o) => o,
@@ -286,7 +285,7 @@ pub fn sorted_print(
         },
         true => {
             if reverse { notes.reverse(); }
-            println!("{}", as_pretty_json(notes))
+            println!("{}", as_pretty_json(&notes[0..limit].to_vec()))
         }
     };
     
