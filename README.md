@@ -298,9 +298,10 @@ wanted to.
 ![view note as json](screenshots/json_note.png)
 
 You can view a single note or note list (using `theca` or `theca search`) to output the
-result as either a JSON object or list of JSON objects by passing the `--json` or -j` flag.
+result as either a JSON object or list of JSON objects by passing the `--json` or `-j` flag.
 This works with the standard limit formatting arguments like `-r`, `-d`, and `-l LIMIT`.
 
+	Printing format:
 	    -j, --json                          Print list output as a JSON object.
 
 	Note list formatting:
