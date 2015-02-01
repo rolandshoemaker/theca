@@ -11,6 +11,8 @@
 a simple, fully featured, command line note taking tool written in
 [*Rust*](http://www.rust-lang.org/). 
 
+[![Build Status](https://travis-ci.org/rolandshoemaker/theca.svg?branch=master)](https://travis-ci.org/rolandshoemaker/theca)
+
 ## Features
 
 * Multiple profile support
@@ -146,7 +148,7 @@ it is up to you to build them for yourself.
 	    --search-body                       Search the body of notes instead of
 	                                        the title.
 	    --regex                             Set search pattern to regex (default
-	                                        is plaintext).
+	                                        is keyword).
 
 	Miscellaneous:
 	    -h, --help                          Display this help and exit.
@@ -178,7 +180,7 @@ These flags can be used to add a note with a status and/or a body
 
 ### Edit a note
 
-![editing a notes status](screenshots/edit_statuses.png)
+![editing a notes status](screenshots/edit_notes.png)
 
 `theca edit <id>` is used to edit the title, status, or body of a note.
 
@@ -236,7 +238,7 @@ options can be used to alter the output style
 	    --search-body                       Search the body of notes instead of
 	                                        the title.
 	    --regex                             Set search pattern to regex (default
-	                                        is plaintext).
+	                                        is keyword).
 
 ### Non-default profiles
 
@@ -368,7 +370,9 @@ the best idea).
 
 #### Basic Python implementation
 
-Using `python3` a key can be derived quite quickly using `hashlib` and `passlib`
+During development it can be quite useful to encrypt/decrypt profiles using a scripting
+language like Python. A key can be derived quite quickly using
+`hashlib` and `passlib`
 
 	from hashlib import sha256
 	from passlib.utils.pbkdf2 import pbkdf2
@@ -534,5 +538,5 @@ so please excuse the messiness of some of the code, dynamic languages have ruine
 
 ## License
 
-`theca` is licensed under the MIT license, full text can be found at
-<http://opensource.org/licenses/MIT> or in the file `LICENSE`.
+`theca` is licensed under the MIT license, the full text of which can be found at
+<http://opensource.org/licenses/MIT> or in `LICENSE`.

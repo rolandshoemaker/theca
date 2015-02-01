@@ -76,7 +76,7 @@ Search:
     --search-body                       Search the body of notes instead of
                                         the title.
     --regex                             Set search pattern to regex (default
-                                        is plaintext).
+                                        is keyword).
 
 Miscellaneous:
     -h, --help                          Display this help and exit.

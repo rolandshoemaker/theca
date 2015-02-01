@@ -20,6 +20,7 @@
 #![feature(rand)]
 #![feature(rustc_private)]
 
+//! Definitions of ThecaItem and ThecaProfile and their implementations
 
 extern crate core;
 extern crate libc;
@@ -29,7 +30,6 @@ extern crate "rustc-serialize" as rustc_serialize;
 extern crate regex;
 extern crate crypto;
 extern crate term;
-// extern crate test;
 
 // std lib imports
 use std::os::{getenv};
@@ -64,8 +64,10 @@ pub mod lineformat;
 pub mod utils;
 pub mod crypt;
 
+/// Current version of theca
 static VERSION:  &'static str = "1.0.0-dev";
 
+/// theca docopt argument struct
 #[derive(RustcDecodable, Show, Clone)]
 pub struct Args {
     pub cmd_add: bool,
@@ -102,16 +104,19 @@ pub struct Args {
     pub flag_yes: bool
 }
 
-// statics statuses
+/// No status text
 static NOSTATUS: &'static str = "";
+/// Started status text
 static STARTED: &'static str = "Started";
+/// Urgent status text
 static URGENT: &'static str = "Urgent";
 
-// static date formats for strp/strf time
+/// datetime formating string
 static DATEFMT: &'static str = "%F %T %z";
+/// short datetime formating string for printing
 static DATEFMT_SHORT: &'static str = "%F %T";
 
-// a note within the profile
+/// Represents a note within a profile
 #[derive(RustcDecodable, RustcEncodable, Clone)]
 pub struct ThecaItem {
     pub id: usize,
@@ -152,7 +157,7 @@ impl ThecaItem {
     }
 }
 
-// root object for theca profile files
+/// Main container of a theca profile file
 #[derive(RustcDecodable, RustcEncodable, Clone)]
 pub struct ThecaProfile {
     pub encrypted: bool,
@@ -657,7 +662,7 @@ impl ThecaProfile {
         Ok(())
     }
 
-    /// print all items in the profile
+    /// print all notes in the profile
     pub fn list_notes(
         &mut self,
         limit: usize,
@@ -686,7 +691,7 @@ impl ThecaProfile {
         Ok(())
     }
 
-    /// print items search for in the profile
+    /// print notes search for in the profile
     pub fn search_notes(
         &mut self,
         pattern: &String,
