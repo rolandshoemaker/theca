@@ -43,6 +43,7 @@ a simple, fully featured, command line note taking tool written in
 		- [Import a note from another profile](#import-a-note-from-another-profile)
 		- [Encrypted profiles](#encrypted-profiles)
 		- [Synchronizing profiles](#synchronizing-profiles)
+	- [JSON output mode](#json-output-mode)
 - [Tab completion](#tab-completion)
 - [man page](#man-page)
 - [Contributing](#contributing)
@@ -289,6 +290,24 @@ do the rest for you. Since `theca` makes transactional*-ish* updates to the prof
 should be perfectly safe, unless you concurrently edit a profile, though `theca` will *attempt*
 to merge changes when this happens. You could even store a profle in a *git* repo if you really
 wanted to.
+
+### JSON output mode
+
+![view list as json](screenshots/json_list.png)
+
+![view note as json](screenshots/json_note.png)
+
+You can view a single note or note list (using `theca` or `theca search`) to output the
+result as either a JSON object or list of JSON objects by passing the `--json` or -j` flag.
+This works with the standard limit formatting arguments like `-r`, `-d`, and `-l LIMIT`.
+
+	    -j, --json                          Print list output as a JSON object.
+
+	Note list formatting:
+	    -l LIMIT, --limit LIMIT             Limit output to LIMIT notes
+	                                        [default: 0].
+	    -d, --datesort                      Sort notes by date.
+	    -r, --reverse                       Reverse list.
 
 ## Tab completion
 
