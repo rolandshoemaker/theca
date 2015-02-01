@@ -220,6 +220,8 @@ def test_harness(tests):
                     if t['result_type'] == "json":
                         if type(clean) == list:
                             dirty = json.loads(dirty)
+                            if len(clean) != len(dirty):
+                                raise AssertionError()
                             for c, d in zip(clean, dirty):
                                 if not c == None: compare_notes(c, d)
                         else:
