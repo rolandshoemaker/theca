@@ -68,7 +68,7 @@ pub mod crypt;
 static VERSION:  &'static str = "1.0.0-dev";
 
 /// theca docopt argument struct
-#[derive(RustcDecodable, Show, Clone)]
+#[derive(RustcDecodable, Clone)]
 pub struct Args {
     pub cmd_add: bool,
     pub cmd_clear: bool,
