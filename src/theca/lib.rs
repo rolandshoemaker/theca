@@ -302,23 +302,26 @@ impl ThecaProfile {
         let mut file = try!(File::open_mode(&profile_path, Truncate, Write));
 
         // encode to buffer
-        let mut buffer: Vec<u8> = Vec::new();
+        let mut json_prof = String::new();
         {
-            let mut encoder = Encoder::new_pretty(&mut buffer);
+            let mut encoder = Encoder::new_pretty(&mut json_prof);
             try!(self.encode(&mut encoder));
         }
 
         // encrypt json if its an encrypted profile
-        if self.encrypted {
-            let key = password_to_key(&*args.flag_key);
-            buffer = try!(encrypt(
-                &*buffer,
-                &*key
-            ));
-        }
+        let buffer = match self.encrypted {
+            true => {
+                let key = password_to_key(&*args.flag_key);
+                try!(encrypt(
+                    &json_prof.into_bytes(),
+                    &*key
+                ))
+            },
+            false => json_prof.into_bytes()
+        };
 
         // write buffer to file
-        try!(file.write_all(&*buffer));
+        try!(file.write_all(&buffer));
 
         Ok(())
     }
