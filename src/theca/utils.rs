@@ -13,7 +13,7 @@ use std::old_io::stdio::{stdin};
 use std::old_io::{File, Open, ReadWrite,
               TempDir, Command, SeekSet};
 use time::{get_time};
-use std::os::{getenv, homedir};
+use std::env::{var_string, home_dir};
 use std::old_io::process::{InheritFd};
 use term::{stdout};
 use term::attr::Attr::{Bold};
@@ -127,15 +127,11 @@ pub fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
     let tmppath = tmpdir.path().join(get_time().sec.to_string());
     let mut tmpfile = try!(File::open_mode(&tmppath, Open, ReadWrite));
     try!(tmpfile.write_line(&contents[]));
-    // we now have a temp file, at `tmppath`, that contains `contents`
-    // first we need to know which onqe
-    let editor = match getenv("VISUAL") {
-        Some(val) => val,
-        None => {
-            match getenv("EDITOR") {
-                Some(val) => val,
-                None => specific_fail!("neither $VISUAL nor $EDITOR is set.".to_string())
-            }
+    let editor = match var_string("VISUAL") {
+        Ok(v) => v,
+        Err(_) => match var_string("EDITOR") {
+            Ok(v) => v,
+            Err(_) => specific_fail!("neither $VISUAL nor $EDITOR is set.".to_string())
         }
     };
     // lets start `editor` and edit the file at `tmppath`
@@ -296,7 +292,7 @@ pub fn find_profile_folder(profile_folder: &String) -> Result<Path, ThecaError> 
     if !profile_folder.is_empty() {
         Ok(Path::new(profile_folder.to_string()))
     } else {
-        match homedir() {
+        match home_dir() {
             Some(ref p) => Ok(p.join(".theca")),
             None => specific_fail!("failed to find your home directory".to_string())
         }

@@ -10,7 +10,7 @@
 //   the theca binary, we finish error unwinding in here and set
 //   the exit status if there was an error.
 
-#![feature(os)]
+#![feature(env)]
 
 extern crate theca;
 extern crate docopt;
@@ -18,6 +18,7 @@ extern crate docopt;
 use docopt::Docopt;
 use theca::{Args, ThecaProfile, setup_args, parse_cmds};
 use theca::errors::{ThecaError};
+use std::env::{set_exit_status};
 
 static USAGE: &'static str = "
 theca - simple cli note taking tool
@@ -105,7 +106,7 @@ fn main() {
     match theca_main() {
         Err(e) => {
             println!("{}", e.desc);
-            std::os::set_exit_status(1);
+            set_exit_status(1);
         },
         Ok(_) => ()
     };
