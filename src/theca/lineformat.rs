@@ -25,7 +25,11 @@ pub struct LineFormat {
 }
 
 impl LineFormat {
-    pub fn new(items: &Vec<ThecaItem>, condensed: bool, search: bool) -> Result<LineFormat, ThecaError> {
+    pub fn new(
+        items: &Vec<ThecaItem>,
+        condensed: bool,
+        search: bool
+    ) -> Result<LineFormat, ThecaError> {
         // get termsize :>
         let console_width = termsize();
 
@@ -35,11 +39,17 @@ impl LineFormat {
             false => 2
         };
 
-        let mut line_format = LineFormat {colsep: colsep, id_width:0, title_width:0,
-                                          status_width:0, touched_width:0};
+        let mut line_format = LineFormat {
+            colsep: colsep,
+            id_width:0,
+            title_width:0,
+            status_width:0,
+            touched_width:0
+        };
 
         // get length of longest id string
-        line_format.id_width = match items.iter().max_by(|n| n.id.to_string().len()) {
+        line_format.id_width = match items.iter()
+                                          .max_by(|n| n.id.to_string().len()) {
             Some(w) => w.id.to_string().len(),
             None => 0
         };
@@ -48,7 +58,8 @@ impl LineFormat {
         if line_format.id_width < 2 && !condensed {line_format.id_width = 2;}
 
         // get length of longest title string
-        line_format.title_width = match items.iter().max_by(|n| match n.body.len() > 0 {
+        line_format.title_width = match items.iter()
+                                             .max_by(|n| match n.body.len() > 0 {
             true => n.title.len()+4,
             false => n.title.len()
         }) {
@@ -60,10 +71,13 @@ impl LineFormat {
         };
         // if using extended and longest title is less than 5 chars
         // set title_width to 5 so "title" won't be truncated
-        if line_format.title_width < 5 && !condensed {line_format.title_width = 5;}
+        if line_format.title_width < 5 && !condensed {
+            line_format.title_width = 5;
+        }
 
         // status length stuff
-        line_format.status_width = match items.iter().any(|n| n.status.len() > 0) {
+        line_format.status_width = match items.iter()
+                                              .any(|n| n.status.len() > 0) {
             true => {
                 match condensed {
                     // expanded print, get longest status (7 or 6 / started or urgent)
