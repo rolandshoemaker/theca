@@ -30,6 +30,7 @@ extern crate "rustc-serialize" as rustc_serialize;
 extern crate regex;
 extern crate crypto;
 extern crate term;
+// extern crate rand;
 
 // std lib imports
 use std::env::{var_string};
@@ -209,7 +210,7 @@ impl ThecaProfile {
                         profile_path.display()
                     );
                     if !try!(get_yn_input()) {
-                        specific_fail!("ok bye ♥".to_string());
+                        specific_fail_str!("ok bye ♥");
                     }
                 }
                 try!(mkdir(&profile_path, USER_RWX));
@@ -277,7 +278,7 @@ impl ThecaProfile {
             println!(
                 "are you sure you want to delete all the notes in this profile?"
             );
-            if !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
+            if !try!(get_yn_input()) {specific_fail_str!("ok bye ♥");}
         }
         self.notes.truncate(0);
         Ok(())
@@ -307,7 +308,7 @@ impl ThecaProfile {
                 profile_path.display()
             );
             if !try!(get_yn_input()) {
-                specific_fail!("ok bye ♥".to_string());
+                specific_fail_str!("ok bye ♥");
             }
         }
 
@@ -319,7 +320,7 @@ impl ThecaProfile {
                     args.flag_profile
                 );
                 if !try!(get_yn_input()) {
-                    specific_fail!("ok bye ♥".to_string());
+                    specific_fail_str!("ok bye ♥");
                 }
                 let mut new_args = args.clone();
                 if args.flag_editor { 
@@ -578,7 +579,7 @@ impl ThecaProfile {
                                         "increasing the possibilty it could be recovered later.",
                                         "are you sure you want to continue?"
                                     );
-                                    if !try!(get_yn_input()) {specific_fail!("ok bye ♥".to_string());}
+                                    if !try!(get_yn_input()) {specific_fail_str!("ok bye ♥");}
                                 }
                                 let new_body = try!(
                                     drop_to_editor(&self.notes[item_pos].body)
@@ -616,8 +617,8 @@ impl ThecaProfile {
             Err(_) => now() // FIXME
         }) {
             Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
-            None => specific_fail!(
-                "last_touched is not properly formated".to_string()
+            None => specific_fail_str!(
+                "last_touched is not properly formated"
             )
         };
         let max = match self.notes.iter()
@@ -626,8 +627,8 @@ impl ThecaProfile {
             Err(_) => now() // FIXME
         }) {
             Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
-            None => specific_fail!(
-                "last_touched is not properly formated".to_string()
+            None => specific_fail_str!(
+                "last_touched is not properly formated"
             )
         };
         try!(pretty_line("name: ", &format!("{}\n", name), tty));

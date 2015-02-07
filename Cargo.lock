@@ -3,11 +3,11 @@ name = "theca"
 version = "1.0.0-dev"
 dependencies = [
  "docopt 0.6.35 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "regex 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex_macros 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust-crypto 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "time 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -15,7 +15,7 @@ name = "docopt"
 version = "0.6.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "regex 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "regex 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -31,7 +31,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "regex"
-version = "0.1.13"
+version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -39,7 +39,7 @@ name = "regex_macros"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "regex 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "regex 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -48,7 +48,7 @@ version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "rustc-serialize 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "time 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -58,7 +58,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "time"
-version = "0.1.15"
+version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "gcc 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",

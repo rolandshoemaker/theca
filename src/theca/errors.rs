@@ -36,7 +36,6 @@ pub struct ThecaError {
     pub detail: Option<String>
 }
 
-#[macro_export]
 macro_rules! specific_fail {
     ($short:expr) => {
         return Err(::std::error::FromError::from_error(
@@ -49,11 +48,16 @@ macro_rules! specific_fail {
     }
 }
 
+macro_rules! specific_fail_str {
+    ($s:expr) => {
+        return specific_fail!($s.to_string())
+    }
+}
+
 macro_rules! try_errno {
     ($e:expr) => {
         {
-            let err = $e;
-            if err != 0 {
+            if $e != 0 {
                 return Err(::std::error::FromError::from_error(IoError::from_errno(errno() as usize, true)));
             }
         }

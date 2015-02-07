@@ -131,7 +131,7 @@ pub fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
         Ok(v) => v,
         Err(_) => match var_string("EDITOR") {
             Ok(v) => v,
-            Err(_) => specific_fail!("neither $VISUAL nor $EDITOR is set.".to_string())
+            Err(_) => specific_fail_str!("neither $VISUAL nor $EDITOR is set.")
         }
     };
     // lets start `editor` and edit the file at `tmppath`
@@ -150,7 +150,7 @@ pub fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
             try!(tmpfile.seek(0, SeekSet));
             Ok(try!(tmpfile.read_to_string()).trim().to_string())
         }
-        false => specific_fail!("the editor broke... I think".to_string())
+        false => specific_fail_str!("the editor broke... I think")
     }
 }
 
@@ -200,7 +200,7 @@ pub fn get_yn_input() -> Result<bool, ThecaError> {
 pub fn pretty_line(bold: &str, plain: &String, tty: bool) -> Result<(), ThecaError> {
     let mut t = match stdout() {
         Some(t) => t,
-        None => specific_fail!("could not retrieve standard output.".to_string())
+        None => specific_fail_str!("could not retrieve standard output.")
     };
     if tty {try!(t.attr(Bold));}
     try!(write!(t, "{}", bold.to_string()));
@@ -220,7 +220,7 @@ pub fn format_field(value: &String, width: usize, truncate: bool) -> String {
 fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
     let mut t = match stdout() {
         Some(t) => t,
-        None => specific_fail!("could not retrieve standard output.".to_string())
+        None => specific_fail_str!("could not retrieve standard output.")
     };
     let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
     let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
@@ -294,7 +294,7 @@ pub fn find_profile_folder(profile_folder: &String) -> Result<Path, ThecaError> 
     } else {
         match home_dir() {
             Some(ref p) => Ok(p.join(".theca")),
-            None => specific_fail!("failed to find your home directory".to_string())
+            None => specific_fail_str!("failed to find your home directory")
         }
     }
 }

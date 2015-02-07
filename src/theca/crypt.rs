@@ -7,8 +7,8 @@
 // licensed under the MIT license <http://opensource.org/licenses/MIT>
 //
 // crypt.rs
-//   defintions of the AES encryption, decryption, and key derivation
-//   function required to read encrypted profiles.
+//   defintions of the AES encryption, decryption, and PBKDF2 key derivation
+//   functions required to read and write encrypted profiles.
 
 use std::iter::{repeat};
 use crypto::{symmetriccipher, buffer, aes, blockmodes};
@@ -18,7 +18,8 @@ use crypto::hmac::{Hmac};
 use crypto::sha2::{Sha256};
 use crypto::digest::{Digest};
 use crypto::fortuna::{Fortuna};
-use std::rand::{SeedableRng, Rng};
+use std::rand::{SeedableRng, Rng}; // FIXME
+// use rand::{SeedableRng, Rng};
 
 // ALL the encryption functions thx rust-crypto ^_^
 pub fn encrypt(data: &[u8], key: &[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
