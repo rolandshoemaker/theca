@@ -101,7 +101,7 @@ impl FromError<ParseError> for ThecaError {
     fn from_error(err: ParseError) -> ThecaError {
         ThecaError {
             kind: GenericError,
-            desc: format!("\ntime parsing error: {}", err),
+            desc: format!("time parsing error: {}", err),
             detail: None
         }
     }
@@ -112,7 +112,7 @@ impl FromError<FromUtf8Error> for ThecaError {
         ThecaError {
             kind: GenericError,
             desc: format!(
-                "\nerror parsing utf-8, is profile encrypted?\n({})",
+                "error parsing utf-8, is profile encrypted? ({})",
                 err
             ),
             detail: None
@@ -124,7 +124,7 @@ impl FromError<SymmetricCipherError> for ThecaError {
     fn from_error(_: SymmetricCipherError) -> ThecaError {
         ThecaError {
             kind: GenericError,
-            desc: "\ninvalid encryption key".to_string(),
+            desc: "invalid encryption key".to_string(),
             detail: None
         }
     }
@@ -140,7 +140,7 @@ impl FromError<fmt::Error> for ThecaError {
     fn from_error(_: fmt::Error) -> ThecaError {
         ThecaError {
             kind: GenericError,
-            desc: "\nformatting error".to_string(),
+            desc: "formatting error".to_string(),
             detail: None
         }
     }

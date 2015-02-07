@@ -939,6 +939,7 @@ pub fn parse_cmds(
             //        changed during execution
             if args.cmd_decrypt_profile {
                 profile.encrypted = false; // is it that easy? i think it is
+                println!("decrypting '{}'", args.flag_profile);
             }
 
             // encrypt profile
@@ -956,6 +957,7 @@ pub fn parse_cmds(
 
                 // set profile to encrypted
                 profile.encrypted = true;
+                println!("encrypting '{}'", args.flag_profile);
             }
 
             // new profile
