@@ -44,7 +44,7 @@ a simple, fully featured, command line note taking tool written in
 		- [Encrypted profiles](#encrypted-profiles)
 			- [Encrypt a plaintext profile](#encrypt-a-plaintext-profile)
 			- [Decrypt a encrypted profile](#decrypt-a-encrypted-profile)
-			- [Changing the encryption key for an encrypted profile](#changing-the-encryption-key-for-an-encrypted-profile)
+			- [Changing the encryption key for an already encrypted profile](#changing-the-encryption-key-for-an-already-encrypted-profile)
 		- [Synchronizing profiles](#synchronizing-profiles)
 	- [JSON output mode](#json-output-mode)
 - [Tab completion](#tab-completion)
@@ -90,8 +90,11 @@ download and compile `theca`s dependencies for you.
 
 ### Binaries
 
-At some point i'll provide pre-built binaries for linux, os x, and windows but for now
-it is up to you to build them for yourself.
+At some point i'll provide pre-built binaries for linux (32 and 64 bit) ad os x (64 bit) but for now
+it is up to you to build them for yourself. (i'm currently building a really simple multi-platform
+builder/packager called *build-a-tron* that you can find
+[here](https://github.com/rolandshoemaker/build-a-tron) which will hopefully preform this task in the
+future.)
 
 ## Usage
 
@@ -294,7 +297,7 @@ You can decrypt an encrypted profile in place using `theca decrypt-profile`.
 
 ![encrypt a profile](screenshots/encrypt_profile.png)
 
-You can encrypt a profile in place using `theca encrypt-profile [--new-key KEY]`, if `--new-key`
+You can also encrypt a profile in place using `theca encrypt-profile [--new-key KEY]`, if `--new-key`
 isn't used you will be prompted for the encryption key to use to encrypt the profile.
 
     --new-key KEY                       Specifies the encryption key for a
@@ -302,7 +305,7 @@ isn't used you will be prompted for the encryption key to use to encrypt the pro
                                         a prompt will be displayed if no key
                                         is provided.
 
-##### Changing the encryption key for an encrypted profile
+##### Changing the encryption key for an already encrypted profile
 
 ![change encryption key](screenshots/change_key.png)
 
