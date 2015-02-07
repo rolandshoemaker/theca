@@ -25,6 +25,8 @@ theca - simple cli note taking tool
 
 Usage:
     theca [options] new-profile [<name>]
+    theca [options] encrypt-profile [--new-key KEY]
+    theca [options] decrypt-profile
     theca [options] info
     theca [options] clear
     theca [options]
@@ -72,6 +74,10 @@ Encryption:
     -k KEY, --key KEY                   Encryption key to use for encryption/
                                         decryption, a prompt will be
                                         displayed if no key is provided.
+    --new-key KEY                       Specifies the encryption key for a
+                                        profile when using `encrypt-profile`,
+                                        a prompt will be displayed if not key
+                                        is provided.
 
 Search:
     --search-body                       Search the body of notes instead of
@@ -99,7 +105,7 @@ fn theca_main() -> Result<(), ThecaError> {
     ));
 
     try!(parse_cmds(&mut profile, &mut args, &profile_fingerprint));
-    
+
     Ok(())
 }
 

@@ -74,7 +74,9 @@ pub struct Args {
     pub cmd_add: bool,
     pub cmd_clear: bool,
     pub cmd_del: bool,
+    pub cmd_decrypt_profile: bool,
     pub cmd_edit: bool,
+    pub cmd_encrypt_profile: bool,
     pub cmd_import: bool,
     pub cmd_info: bool,
     pub cmd_new_profile: bool,
@@ -93,6 +95,7 @@ pub struct Args {
     pub flag_json: bool,
     pub flag_key: String,
     pub flag_limit: usize,
+    pub flag_new_key: String,
     pub flag_none: bool,
     pub flag_profile: String,
     pub flag_profile_folder: String,
@@ -883,7 +886,9 @@ pub fn parse_cmds(
     match [
         args.cmd_add,
         args.cmd_edit,
+        args.cmd_encrypt_profile,
         args.cmd_del,
+        args.cmd_decrypt_profile,
         args.cmd_transfer,
         args.cmd_clear,
         args.cmd_new_profile
@@ -930,6 +935,31 @@ pub fn parse_cmds(
             // clear
             if args.cmd_clear { try!(profile.clear(args.flag_yes)); }
 
+            // decrypt profile
+            // FIXME: should test how this interacts with save_to_file when the profile has
+            //        changed during execution
+            if args.cmd_decrypt_profile {
+                profile.encrypted = false; // is it that easy? i think it is
+            }
+
+            // encrypt profile
+            // FIXME: should test how this interacts with save_to_file when the profile has
+            //        changed during execution
+            if args.cmd_encrypt_profile {
+                // get the new key
+                if !args.flag_new_key.is_empty() {
+                    args.flag_new_key = try!(get_password());
+                }
+
+                // set args.key and args.encrypted
+                args.flag_encrypted = true;
+                args.flag_key = args.flag_new_key.clone();
+
+                // set profile to encrypted
+                profile.encrypted = true;
+            }
+
+            // new profile
             if args.cmd_new_profile {
                 if args.cmd_new_profile && args.arg_name.is_empty() {
                     args.arg_name.push("default".to_string())
@@ -997,7 +1027,7 @@ pub fn parse_cmds(
                 try!(parse_cmds(&mut from_profile, &mut from_args, &from_fingerprint));
                 return Ok(())
             }
-            
+
             // list
             if args.arg_id.is_empty() {
                 try!(profile.list_notes(
