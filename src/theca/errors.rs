@@ -58,7 +58,14 @@ macro_rules! try_errno {
     ($e:expr) => {
         {
             if $e != 0 {
-                return Err(::std::error::FromError::from_error(IoError::from_errno(errno() as usize, true)));
+                return Err(
+                    ::std::error::FromError::from_error(
+                        IoError::from_errno(
+                            errno() as usize,
+                            true
+                        )
+                    )
+                );
             }
         }
     }
@@ -104,7 +111,10 @@ impl FromError<FromUtf8Error> for ThecaError {
     fn from_error(err: FromUtf8Error) -> ThecaError {
         ThecaError {
             kind: GenericError,
-            desc: format!("\nerror parsing utf-8, is profile encrypted?\n({})", err),
+            desc: format!(
+                "\nerror parsing utf-8, is profile encrypted?\n({})",
+                err
+            ),
             detail: None
         }
     }
