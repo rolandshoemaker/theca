@@ -10,15 +10,15 @@
 //   definitions for ThecaError, a catch-all for converting various 
 //   lib errors.
 
-use core::fmt;
-use core::error::Error;
-use docopt;
-use time::{ParseError};
+use core::{fmt};
+use core::error::{Error};
 use std::error::{FromError};
-use crypto::symmetriccipher::SymmetricCipherError;
 use std::old_io::{IoError};
-use std::string::FromUtf8Error;
-use rustc_serialize::json::EncoderError;
+use std::string::{FromUtf8Error};
+use time::{ParseError};
+use crypto::symmetriccipher::{SymmetricCipherError};
+use rustc_serialize::json::{EncoderError};
+use docopt;
 
 pub use self::ErrorKind::{
     InternalIoError,
