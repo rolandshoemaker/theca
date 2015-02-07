@@ -16,7 +16,6 @@
 #![feature(collections)]
 #![feature(path)]
 #![feature(io)]
-#![feature(rand)]
 #![feature(rustc_private)]
 #![feature(env)]
 
@@ -30,7 +29,7 @@ extern crate "rustc-serialize" as rustc_serialize;
 extern crate regex;
 extern crate crypto;
 extern crate term;
-// extern crate rand;
+extern crate rand;
 
 // std lib imports
 use std::env::{var_string};

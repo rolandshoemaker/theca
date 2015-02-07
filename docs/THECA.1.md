@@ -21,6 +21,10 @@ SYNOPSIS
 
 `theca` [`options`] new-profile [<`name`>]
 
+`theca` [`options`] encrypt-profile [`--new-key` *KEY*]
+
+`theca` [`options`] decrypt-profile
+
 `theca` [`options`] info
 
 `theca` [`options`] clear
@@ -110,11 +114,16 @@ ENCRYPTION OPTIONS
    Encryption key to use for encryption/decryption, a prompt
    will be displayed if no key is provided.
 
+`--new-key` *KEY*
+   Specifies the encryption key for a profile when using
+   `encrypt-profile`, a prompt will be displayed if no key
+   is provided.
+
 SEARCH OPTIONS
 --------------
 
 `--search-body`
-   Search the body of notes instead of the title.
+   Search the note bodies instead of titles.
 
 `--regex`
    Set search pattern to regex (default is plaintext).

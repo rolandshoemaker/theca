@@ -42,6 +42,8 @@ a simple, fully featured, command line note taking tool written in
 		- [Transfer a note to another profile](#transfer-a-note-to-another-profile)
 		- [Import a note from another profile](#import-a-note-from-another-profile)
 		- [Encrypted profiles](#encrypted-profiles)
+			- [Encrypt a plaintext profile](#encrypt-a-plaintext-profile)
+			- [Decrypt a encrypted profile](#decrypt-a-encrypted-profile)
 		- [Synchronizing profiles](#synchronizing-profiles)
 	- [JSON output mode](#json-output-mode)
 - [Tab completion](#tab-completion)
@@ -280,6 +282,24 @@ profile to specify that the profile you want to use will need to be encrypted/de
 	    -k KEY, --key KEY                   Encryption key to use for encryption/
 	                                        decryption, a prompt will be
 	                                        displayed if no key is provided.
+
+##### Encrypt a plaintext profile
+
+![encrypt a profile](screenshots/encrypt_profile.png)
+
+You can encrypt a profile in place using `theca encrypt-profile [--new-key KEY]`, if `--new-key`
+isn't used you will be prompted for the encryption key to use to encrypt the profile.
+
+    --new-key KEY                       Specifies the encryption key for a
+                                        profile when using `encrypt-profile`,
+                                        a prompt will be displayed if no key
+                                        is provided.
+
+##### Decrypt a encrypted profile
+
+![decrypt a profile](screenshots/decrypt_profile.png)
+
+You can decrypt an encrypted profile in place using `theca decrypt-profile`.
 
 #### Synchronizing profiles
 

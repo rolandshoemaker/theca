@@ -16,6 +16,10 @@ theca \- minimal cli note taking tool
 .PP
 \fB\fCtheca\fR [\fB\fCoptions\fR] new\-profile [<\fB\fCname\fR>]
 .PP
+\fB\fCtheca\fR [\fB\fCoptions\fR] encrypt\-profile [\fB\fC\-\-new\-key\fR \fIKEY\fP]
+.PP
+\fB\fCtheca\fR [\fB\fCoptions\fR] decrypt\-profile
+.PP
 \fB\fCtheca\fR [\fB\fCoptions\fR] info
 .PP
 \fB\fCtheca\fR [\fB\fCoptions\fR] clear
@@ -88,10 +92,15 @@ format.
 \fB\fC\-k\fR \fIKEY\fP, \fB\fC\-\-key\fR \fIKEY\fP
    Encryption key to use for encryption/decryption, a prompt
    will be displayed if no key is provided.
+.PP
+\fB\fC\-\-new\-key\fR \fIKEY\fP
+   Specifies the encryption key for a profile when using
+   \fB\fCencrypt\-profile\fR, a prompt will be displayed if no key
+   is provided.
 .SH SEARCH OPTIONS
 .PP
 \fB\fC\-\-search\-body\fR
-   Search the body of notes instead of the title.
+   Search the note bodies instead of titles.
 .PP
 \fB\fC\-\-regex\fR
    Set search pattern to regex (default is plaintext).

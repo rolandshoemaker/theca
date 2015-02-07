@@ -76,12 +76,13 @@ Encryption:
                                         displayed if no key is provided.
     --new-key KEY                       Specifies the encryption key for a
                                         profile when using `encrypt-profile`,
-                                        a prompt will be displayed if not key
+                                        a prompt will be displayed if no key
                                         is provided.
 
 Search:
-    --search-body                       Search the body of notes instead of
-                                        the title.
+    --search-body                       Search the note bodies instead of
+                                        titles.
+
     --regex                             Set search pattern to regex (default
                                         is keyword).
 

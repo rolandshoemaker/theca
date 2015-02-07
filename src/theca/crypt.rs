@@ -18,8 +18,7 @@ use crypto::hmac::{Hmac};
 use crypto::sha2::{Sha256};
 use crypto::digest::{Digest};
 use crypto::fortuna::{Fortuna};
-use std::rand::{SeedableRng, Rng}; // FIXME
-// use rand::{SeedableRng, Rng};
+use rand::{SeedableRng, Rng};
 
 // ALL the encryption functions thx rust-crypto ^_^
 pub fn encrypt(
