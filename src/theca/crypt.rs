@@ -22,7 +22,10 @@ use std::rand::{SeedableRng, Rng}; // FIXME
 // use rand::{SeedableRng, Rng};
 
 // ALL the encryption functions thx rust-crypto ^_^
-pub fn encrypt(data: &[u8], key: &[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
+pub fn encrypt(
+    data: &[u8],
+    key: &[u8]
+) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
     let mut iv = [0u8; 16];
     let mut f: Fortuna = SeedableRng::from_seed(data);
     f.fill_bytes(&mut iv);
@@ -40,9 +43,15 @@ pub fn encrypt(data: &[u8], key: &[u8]) -> Result<Vec<u8>, symmetriccipher::Symm
     let mut write_buffer = buffer::RefWriteBuffer::new(&mut buffer);
 
     loop {
-        let result = try!(encryptor.encrypt(&mut read_buffer, &mut write_buffer, true));
+        let result = try!(encryptor.encrypt(
+            &mut read_buffer,
+            &mut write_buffer,
+            true
+        ));
 
-        final_result.push_all(write_buffer.take_read_buffer().take_remaining());
+        final_result.push_all(
+            write_buffer.take_read_buffer().take_remaining()
+        );
 
         match result {
             BufferResult::BufferUnderflow => break,
@@ -53,7 +62,10 @@ pub fn encrypt(data: &[u8], key: &[u8]) -> Result<Vec<u8>, symmetriccipher::Symm
     Ok(final_result)
 }
 
-pub fn decrypt(encrypted_data: &[u8], key: &[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
+pub fn decrypt(
+    encrypted_data: &[u8],
+    key: &[u8]
+) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
     let iv = &encrypted_data[0..16];
 
     let mut decryptor = aes::cbc_decryptor(
@@ -68,8 +80,14 @@ pub fn decrypt(encrypted_data: &[u8], key: &[u8]) -> Result<Vec<u8>, symmetricci
     let mut write_buffer = buffer::RefWriteBuffer::new(&mut buffer);
 
     loop {
-        let result = try!(decryptor.decrypt(&mut read_buffer, &mut write_buffer, true));
-        final_result.push_all(write_buffer.take_read_buffer().take_remaining());
+        let result = try!(decryptor.decrypt(
+            &mut read_buffer,
+            &mut write_buffer,
+            true
+        ));
+        final_result.push_all(
+            write_buffer.take_read_buffer().take_remaining()
+        );
         match result {
             BufferResult::BufferUnderflow => break,
             BufferResult::BufferOverflow => {}
