@@ -73,7 +73,11 @@ pub mod c {
         extern {fn tcgetattr(fd: c_int, termios_p: *mut Termios) -> c_int;}
         unsafe {tcgetattr(fd, termios_p as *mut _)}
     }
-    pub fn tcsetattr(fd: c_int, optional_actions: c_int, termios_p: &Termios) -> c_int {
+    pub fn tcsetattr(
+        fd: c_int,
+        optional_actions: c_int,
+        termios_p: &Termios
+    ) -> c_int {
         extern {fn tcsetattr(fd: c_int, optional_actions: c_int,
                               termios_p: *const Termios) -> c_int;}
         unsafe {tcsetattr(fd, optional_actions, termios_p as *const _)}
@@ -197,7 +201,11 @@ pub fn get_yn_input() -> Result<bool, ThecaError> {
     Ok(answer)
 }
 
-pub fn pretty_line(bold: &str, plain: &String, tty: bool) -> Result<(), ThecaError> {
+pub fn pretty_line(
+    bold: &str,
+    plain: &String,
+    tty: bool
+) -> Result<(), ThecaError> {
     let mut t = match stdout() {
         Some(t) => t,
         None => specific_fail_str!("could not retrieve standard output.")
@@ -222,8 +230,10 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
         Some(t) => t,
         None => specific_fail_str!("could not retrieve standard output.")
     };
-    let column_seperator: String = repeat(' ').take(line_format.colsep).collect();
-    let header_seperator: String = repeat('-').take(line_format.line_width()).collect();
+    let column_seperator: String = repeat(' ').take(line_format.colsep)
+                                              .collect();
+    let header_seperator: String = repeat('-').take(line_format.line_width())
+                                              .collect();
     let tty = c::istty(STDOUT_FILENO);
     let status = match line_format.status_width == 0 {
         true => "".to_string(),
@@ -239,9 +249,17 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
                 "{1}{0}{2}{0}{3}{4}\n{5}\n",
                 column_seperator,
                 format_field(&"id".to_string(), line_format.id_width, false),
-                format_field(&"title".to_string(), line_format.title_width, false),
+                format_field(
+                    &"title".to_string(),
+                    line_format.title_width,
+                    false
+                ),
                 status,
-                format_field(&"last touched".to_string(), line_format.touched_width, false),
+                format_field(
+                    &"last touched".to_string(),
+                    line_format.touched_width,
+                    false
+                ),
                 header_seperator
             ));
     if tty {try!(t.reset());}
@@ -266,7 +284,10 @@ pub fn sorted_print(
         try!(print_header(&line_format));
     }
     if datesort {
-        notes.sort_by(|a, b| match cmp_last_touched(&*a.last_touched, &*b.last_touched) {
+        notes.sort_by(|a, b| match cmp_last_touched(
+            &*a.last_touched,
+            &*b.last_touched
+        ) {
             Ok(o) => o,
             Err(_) => a.last_touched.cmp(&b.last_touched) // FIXME(?)
             // Err(_) => Ordering::Equal                  // FIXME(?)
@@ -288,7 +309,9 @@ pub fn sorted_print(
     Ok(())
 }
 
-pub fn find_profile_folder(profile_folder: &String) -> Result<Path, ThecaError> {
+pub fn find_profile_folder(
+    profile_folder: &String
+) -> Result<Path, ThecaError> {
     if !profile_folder.is_empty() {
         Ok(Path::new(profile_folder.to_string()))
     } else {
