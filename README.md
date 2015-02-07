@@ -239,7 +239,10 @@ options can be used to alter the output style
 
 ### Search notes
 
-![search notes by title using regex](screenshots/search_note_regex.png)
+![searching notes](screenshots/search_notes.png)
+
+Notes can be search using either keyword or regex matching against note titles or bodies
+using `theca search`.
 
 	Search:
 	    --search-body                       Search the body of notes instead of
