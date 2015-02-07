@@ -880,129 +880,138 @@ pub fn parse_cmds(
     args: &mut Args,
     profile_fingerprint: &u64
 ) -> Result<(), ThecaError> {
-    // view
-    if !args.arg_id.is_empty() && !args.cmd_del && !args.cmd_edit
-       && !args.cmd_transfer && !args.cmd_import {
-        try!(profile.view_note(
-            args.arg_id[0],
-            args.flag_json,
-            args.flag_condensed
-        ));
-        return Ok(())
-    }
+    match [
+        args.cmd_add,
+        args.cmd_edit,
+        args.cmd_del,
+        args.cmd_transfer,
+        args.cmd_clear,
+        args.cmd_new_profile
+    ].iter().any(|c| c == &true) {
+        true => {
+            // add
+            if args.cmd_add {
+                try!(profile.add_note(
+                    &args.arg_title,
+                    &args.flag_body,
+                    args.flag_started,
+                    args.flag_urgent,
+                    args.cmd__,
+                    args.flag_editor,
+                    true
+                ));
+            }
 
-    // search
-    if args.cmd_search {
-        try!(profile.search_notes(
-            &args.arg_pattern,
-            args.flag_regex,
-            args.flag_limit,
-            args.flag_condensed,
-            args.flag_json,
-            args.flag_datesort,
-            args.flag_reverse,
-            args.flag_search_body
-        ));
-        return Ok(())
-    }
-
-    // stats
-    if args.cmd_info {
-        try!(profile.stats(&args.flag_profile));
-        return Ok(())
-    }
-
-    // misc
-    if args.flag_version {
-        println!("theca v{}", VERSION);
-        return Ok(())
-    }
-
-    // add
-    if args.cmd_add {
-        try!(profile.add_note(
-            &args.arg_title,
-            &args.flag_body,
-            args.flag_started,
-            args.flag_urgent,
-            args.cmd__,
-            args.flag_editor,
-            true
-        ));
-    }
-
-    // edit    
-    if args.cmd_edit {
-        try!(profile.edit_note(
-            args.arg_id[0],
-            &args.arg_title,
-            &args.flag_body,
-            args.flag_started,
-            args.flag_urgent,
-            args.flag_none,
-            args.cmd__,
-            args.flag_editor,
-            args.flag_encrypted,
-            args.flag_yes
-        ));
-    }
-    
-    // delete    
-    if args.cmd_del { profile.delete_note(&args.arg_id); }
-
-    // transfer
-    if args.cmd_transfer || args.cmd_import {
-        if args.cmd_transfer {
-            // transfer a note
-            try!(profile.transfer_note(args));
-        } else {
-            // reverse(?) transfer a note
-            let mut from_args = args.clone();
-            from_args.cmd_transfer = args.cmd_import;
-            from_args.cmd_import = false;
-            from_args.flag_profile = args.arg_name[0].clone();
-            from_args.arg_name[0] = args.flag_profile.clone();
+            // edit    
+            if args.cmd_edit {
+                try!(profile.edit_note(
+                    args.arg_id[0],
+                    &args.arg_title,
+                    &args.flag_body,
+                    args.flag_started,
+                    args.flag_urgent,
+                    args.flag_none,
+                    args.cmd__,
+                    args.flag_editor,
+                    args.flag_encrypted,
+                    args.flag_yes
+                ));
+            }
             
-            let (mut from_profile, from_fingerprint) = try!(ThecaProfile::new(
-                &from_args.flag_profile,
-                &from_args.flag_profile_folder,
-                &from_args.flag_key,
-                from_args.cmd_new_profile,
-                from_args.flag_encrypted,
-                from_args.flag_yes
-            ));
+            // delete    
+            if args.cmd_del { profile.delete_note(&args.arg_id); }
 
-            try!(parse_cmds(&mut from_profile, &mut from_args, &from_fingerprint));
-            return Ok(())
+            // transfer
+            if args.cmd_transfer {
+                // transfer a note
+                try!(profile.transfer_note(args));
+            }
+
+            // clear
+            if args.cmd_clear { try!(profile.clear(args.flag_yes)); }
+
+            if args.cmd_new_profile {
+                if args.cmd_new_profile && args.arg_name.is_empty() {
+                    args.arg_name.push("default".to_string())
+                }
+                println!("creating profile '{}'", args.arg_name[0]);
+            }
+
+            try!(profile.save_to_file(args, profile_fingerprint));
+        },
+        false => {
+            // view
+            if !args.arg_id.is_empty() {
+                try!(profile.view_note(
+                    args.arg_id[0],
+                    args.flag_json,
+                    args.flag_condensed
+                ));
+                return Ok(())
+            }
+
+            // search
+            if args.cmd_search {
+                try!(profile.search_notes(
+                    &args.arg_pattern,
+                    args.flag_regex,
+                    args.flag_limit,
+                    args.flag_condensed,
+                    args.flag_json,
+                    args.flag_datesort,
+                    args.flag_reverse,
+                    args.flag_search_body
+                ));
+                return Ok(())
+            }
+
+            // stats
+            if args.cmd_info {
+                try!(profile.stats(&args.flag_profile));
+                return Ok(())
+            }
+
+            // misc
+            if args.flag_version {
+                println!("theca v{}", VERSION);
+                return Ok(())
+            }
+
+            if args.cmd_import {
+                // reverse(?) transfer a note
+                let mut from_args = args.clone();
+                from_args.cmd_transfer = args.cmd_import;
+                from_args.cmd_import = false;
+                from_args.flag_profile = args.arg_name[0].clone();
+                from_args.arg_name[0] = args.flag_profile.clone();
+                
+                let (mut from_profile, from_fingerprint) = try!(ThecaProfile::new(
+                    &from_args.flag_profile,
+                    &from_args.flag_profile_folder,
+                    &from_args.flag_key,
+                    from_args.cmd_new_profile,
+                    from_args.flag_encrypted,
+                    from_args.flag_yes
+                ));
+
+                try!(parse_cmds(&mut from_profile, &mut from_args, &from_fingerprint));
+                return Ok(())
+            }
+            
+            // list
+            if args.arg_id.is_empty() {
+                try!(profile.list_notes(
+                    args.flag_limit,
+                    args.flag_condensed,
+                    args.flag_json,
+                    args.flag_datesort,
+                    args.flag_reverse,
+                    args.flag_search_body
+                ));
+                return Ok(())
+            }
         }
     }
-
-    // clear
-    if args.cmd_clear { try!(profile.clear(args.flag_yes)); }
-
-    // list
-    if args.arg_id.is_empty() && !args.cmd_add && !args.cmd_edit && !args.cmd_del &&
-       !args.cmd_transfer && !args.cmd_import && !args.cmd_clear && !args.cmd_new_profile {
-        try!(profile.list_notes(
-            args.flag_limit,
-            args.flag_condensed,
-            args.flag_json,
-            args.flag_datesort,
-            args.flag_reverse,
-            args.flag_search_body
-        ));
-        return Ok(())
-    }
-
-    if args.cmd_new_profile {
-        if args.cmd_new_profile && args.arg_name.is_empty() {
-            args.arg_name.push("default".to_string())
-        }
-        println!("creating profile '{}'", args.arg_name[0]);
-    }
-
-    // new-profile, add, edit, del, transfer, imort, clear
-    try!(profile.save_to_file(args, profile_fingerprint));
 
     Ok(())
 }
