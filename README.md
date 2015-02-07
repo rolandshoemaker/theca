@@ -44,6 +44,7 @@ a simple, fully featured, command line note taking tool written in
 		- [Encrypted profiles](#encrypted-profiles)
 			- [Encrypt a plaintext profile](#encrypt-a-plaintext-profile)
 			- [Decrypt a encrypted profile](#decrypt-a-encrypted-profile)
+			- [Changing the encryption key for an encrypted profile](#changing-the-encryption-key-for-an-encrypted-profile)
 		- [Synchronizing profiles](#synchronizing-profiles)
 	- [JSON output mode](#json-output-mode)
 - [Tab completion](#tab-completion)
@@ -283,6 +284,12 @@ profile to specify that the profile you want to use will need to be encrypted/de
 	                                        decryption, a prompt will be
 	                                        displayed if no key is provided.
 
+##### Decrypt a encrypted profile
+
+![decrypt a profile](screenshots/decrypt_profile.png)
+
+You can decrypt an encrypted profile in place using `theca decrypt-profile`.
+
 ##### Encrypt a plaintext profile
 
 ![encrypt a profile](screenshots/encrypt_profile.png)
@@ -295,11 +302,12 @@ isn't used you will be prompted for the encryption key to use to encrypt the pro
                                         a prompt will be displayed if no key
                                         is provided.
 
-##### Decrypt a encrypted profile
+##### Changing the encryption key for an encrypted profile
 
-![decrypt a profile](screenshots/decrypt_profile.png)
+![change encryption key](screenshots/change_key.png)
 
-You can decrypt an encrypted profile in place using `theca decrypt-profile`.
+You can also use `theca encrypt-profile --new-key KEY` to change the encryption key of an already encrypted profile which is pretty cool and avoids users having to encrypted with old key -> plaintext 
+-> encrypted with new key!
 
 #### Synchronizing profiles
 
