@@ -1,3 +1,5 @@
+#![feature(core)]
+
 extern crate theca;
 
 use theca::{ThecaItem};

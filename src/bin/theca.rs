@@ -97,7 +97,9 @@ fn theca_main() -> Result<(), ThecaError> {
         args.flag_encrypted,
         args.flag_yes
     ));
+
     try!(parse_cmds(&mut profile, &mut args, &profile_fingerprint));
+    
     Ok(())
 }
 
