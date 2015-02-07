@@ -252,7 +252,7 @@ using `theca search`.
 
 ### Non-default profiles
 
-![new encrypted profile](screenshots/new_second_profile.png)
+![new non default profile](screenshots/new_second_profile.png)
 
 New named profiles can be created with the `theca new-profile <name>` command and will be
 stored alongside `default.json` in either `~/.theca/` or in the folder specified by

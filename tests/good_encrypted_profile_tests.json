@@ -115,6 +115,47 @@
           }
         ]
       }
+    },{
+      "name": "decrypt a profile (key from args)",
+      "profile": "enc",
+      "cmds": [
+        ["new-profile", "enc", "-e", "-k", "DEBUG"],
+        ["add", "encrypted title", "-b", "super secret", "-k", "DEBUG"],
+        ["decrypt-profile", "-k", "DEBUG"]
+      ],
+      "result_path": "enc.json",
+      "result": {
+        "encrypted": false,
+        "notes": [
+          {
+            "id": 1,
+            "title": "encrypted title",
+            "status": "",
+            "body": "super secret"
+          }
+        ]
+      }
+    },{
+      "name": "encrypt a profile (new-key from args)",
+      "profile": "enc",
+      "cmds": [
+        ["new-profile", "enc"],
+        ["add", "encrypted title", "-b", "super secret"],
+        ["encrypt-profile", "--new-key", "DEBUG"]
+      ],
+      "result_path": "enc.json",
+      "result_passphrase": "DEBUG",
+      "result": {
+        "encrypted": true,
+        "notes": [
+          {
+            "id": 1,
+            "title": "encrypted title",
+            "status": "",
+            "body": "super secret"
+          }
+        ]
+      }
     }
   ]
 }
