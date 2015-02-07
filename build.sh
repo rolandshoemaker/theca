@@ -97,7 +97,7 @@ case "$1" in
             exit 1
         fi
 
-        # build the binary
+        # build the dev binary
         if ! cargo build; then
             echo $"# couldn't build the binary!"
             exit 1
@@ -108,22 +108,44 @@ case "$1" in
         else
             python="python3"
         fi
-        # should allow some way to set theca command by arg?
+
         python_cmd="$python tests/theca_test_harness.py -tc target/theca"
         # run the python tests
         echo $"# running python harness tests"
         if ! eval "$python_cmd -pt"; then
-            echo $"# profile tests did not pass!"
+            echo $"# dev profile tests did not pass!"
             exit 1
         fi
         if ! eval "$python_cmd -jt"; then
-            echo $"# json output tests did not pass!"
+            echo $"# dev json output tests did not pass!"
             exit 1
         fi
         if ! eval "$python_cmd -tt"; then
-            echo $"# text output tests did not pass!"
+            echo $"# dev text output tests did not pass!"
             exit 1
         fi
+
+        # # build the release binary
+        # if ! cargo build --release; then
+        #     echo $"# couldn't build the binary!"
+        #     exit 1
+        # fi
+
+        # python_cmd="$python tests/theca_test_harness.py -tc target/release/theca"
+        # # run the python tests
+        # echo $"# running python harness tests"
+        # if ! eval "$python_cmd -pt"; then
+        #     echo $"# release profile tests did not pass!"
+        #     exit 1
+        # fi
+        # if ! eval "$python_cmd -jt"; then
+        #     echo $"# release json output tests did not pass!"
+        #     exit 1
+        # fi
+        # if ! eval "$python_cmd -tt"; then
+        #     echo $"# release text output tests did not pass!"
+        #     exit 1
+        # fi
 
         echo $"# it seems like everything is ok..."
         ;;

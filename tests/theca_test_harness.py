@@ -219,6 +219,7 @@ def test_harness(tests):
                 for clean, dirty in zip(t["results"], results):
                     if t['result_type'] == "json":
                         if type(clean) == list:
+                            print(dirty)
                             dirty = json.loads(dirty)
                             if len(clean) != len(dirty):
                                 raise AssertionError()

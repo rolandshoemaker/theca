@@ -978,7 +978,6 @@ pub fn parse_cmds(
                     args.flag_json,
                     args.flag_condensed
                 ));
-                return Ok(())
             }
 
             // search
@@ -993,19 +992,16 @@ pub fn parse_cmds(
                     args.flag_reverse,
                     args.flag_search_body
                 ));
-                return Ok(())
             }
 
             // stats
             if args.cmd_info {
                 try!(profile.stats(&args.flag_profile));
-                return Ok(())
             }
 
             // misc
             if args.flag_version {
                 println!("theca v{}", VERSION);
-                return Ok(())
             }
 
             if args.cmd_import {
@@ -1026,7 +1022,6 @@ pub fn parse_cmds(
                 ));
 
                 try!(parse_cmds(&mut from_profile, &mut from_args, &from_fingerprint));
-                return Ok(())
             }
 
             // list
@@ -1039,7 +1034,6 @@ pub fn parse_cmds(
                     args.flag_reverse,
                     args.flag_search_body
                 ));
-                return Ok(())
             }
         }
     }

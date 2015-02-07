@@ -51,7 +51,7 @@ a simple, fully featured, command line note taking tool written in
 - [man page](#man-page)
 - [Contributing](#contributing)
 	- [Bugs](#bugs)
-	- [Todo](#todo)
+	- [TODO](#todo)
 - [Development](#development)
 	- [JSON profile format](#json-profile-format)
 	- [Cryptographic design](#cryptographic-design)
@@ -103,6 +103,8 @@ future.)
 
 	Usage:
 	    theca [options] new-profile [<name>]
+	    theca [options] encrypt-profile [--new-key KEY]
+	    theca [options] decrypt-profile
 	    theca [options] info
 	    theca [options] clear
 	    theca [options]
@@ -150,6 +152,10 @@ future.)
 	    -k KEY, --key KEY                   Encryption key to use for encryption/
 	                                        decryption, a prompt will be
 	                                        displayed if no key is provided.
+	    --new-key KEY                       Specifies the encryption key for a
+	                                        profile when using `encrypt-profile`,
+	                                        a prompt will be displayed if no key
+	                                        is provided.
 
 	Search:
 	    --search-body                       Search the body of notes instead of
@@ -374,20 +380,14 @@ Any and all pull requests will be considered and tremendously appreciated.
 necessary to fully cover the codebase. if you find one, please submit a issue explaining how to trigger
 the bug, and if you're really awesome a test case that exposes it.
 
-### Todo
+### TODO
 
-* `encrypt-profile` and `decrypt-profile` commands to convert from one to another.
-
-		can leverage how save_to_file and --profile works by just loading the profile
-		then switching the `encrypted` bool and letting save_to_file take its course.
-
-		If plain->enc need to set a key but that shouldn't be hard.
-
-* `ThecaError` in `src/theca/errors.rs` could definitely be cleaned up
 * `save_to_file` and `transfer_note` (and inherently the `import` logic) could use some
   work, specifically the profile changed stuff...
 * various large clean ups in argument passing (references could probably be used more
   in some places...)
+* probably the bold/plain line printing could be done cleaner... (macro perhaps?)
+* parse_cmds could use some attention
 
 ## Development
 
