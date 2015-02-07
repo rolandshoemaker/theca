@@ -947,7 +947,7 @@ pub fn parse_cmds(
             //        changed during execution
             if args.cmd_encrypt_profile {
                 // get the new key
-                if !args.flag_new_key.is_empty() {
+                if args.flag_new_key.is_empty() {
                     args.flag_new_key = try!(get_password());
                 }
 
