@@ -39,6 +39,9 @@ a simple, fully featured, command line note taking tool written in
 	- [View a single note](#view-a-single-note)
 	- [Search notes](#search-notes)
 	- [Non-default profiles](#non-default-profiles)
+		- [Setting the default profile](#setting-the-default-profile)
+		- [Setting the default profile folder](#setting-the-default-profile-folder)
+		- [List all profiles](#list-all-profiles)
 		- [Transfer a note to another profile](#transfer-a-note-to-another-profile)
 		- [Import a note from another profile](#import-a-note-from-another-profile)
 		- [Encrypted profiles](#encrypted-profiles)
@@ -263,6 +266,23 @@ using `theca search`.
 New named profiles can be created with the `theca new-profile <name>` command and will be
 stored alongside `default.json` in either `~/.theca/` or in the folder specified by
 `--profile-folder PATH`.
+
+#### Setting the default profile
+
+![setting the THECA_DEFAULT_PROFILE env var](screenshots/default_profile_env.png)
+
+The default profile that `theca` loads (normalled `default`) can be changed by setting the
+environment variable `THECA_DEFAULT_PROFILE`.
+
+#### Setting the default profile folder
+
+The default profile folder can also be set via a enviroment variable, `THECA_PROFILE_FOLDER`.
+
+#### List all profiles
+
+![list all profiles in the current profile folder](screenshots/list_all_profiles.png)
+
+All profiles in the current profile folder can be view using `theca list-profiles`.
 
 #### Transfer a note to another profile
 

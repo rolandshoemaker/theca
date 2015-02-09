@@ -361,7 +361,6 @@ pub fn validate_profile_from_path(profile_path: &Path) -> (bool, bool) {
                             // noooooop
                             Err(_) => return (false, false)
                         };
-                        // its a real prof
                     },
                     // possibly encrypted
                     Err(_) => return (true, true)
@@ -375,6 +374,7 @@ pub fn validate_profile_from_path(profile_path: &Path) -> (bool, bool) {
     };
 }
 
+// this is pretty gross
 pub fn path_to_profile_name(profile_path: &Path) -> Result<String, ThecaError> {
     let full_f = try!(String::from_utf8(profile_path.filename().unwrap().to_vec()));
     let ext = try!(String::from_utf8(profile_path.extension().unwrap().to_vec()));
