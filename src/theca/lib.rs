@@ -49,7 +49,8 @@ use lineformat::{LineFormat};
 use utils::c::{istty};
 use utils::{drop_to_editor, pretty_line, format_field,
             get_yn_input, sorted_print, localize_last_touched_string,
-            parse_last_touched, find_profile_folder, get_password};
+            parse_last_touched, find_profile_folder, get_password,
+            profiles_in_folder};
 use errors::{ThecaError, GenericError};
 use crypt::{encrypt, decrypt, password_to_key};
 
@@ -78,6 +79,7 @@ pub struct Args {
     pub cmd_encrypt_profile: bool,
     pub cmd_import: bool,
     pub cmd_info: bool,
+    pub cmd_list_profiles: bool,
     pub cmd_new_profile: bool,
     pub cmd_search: bool,
     pub cmd_transfer: bool,
@@ -237,6 +239,28 @@ impl ThecaProfile {
                             profile_path.display()
                         ));
                     } else {
+                        // FIXME
+                        // if profile_name == &"default".to_string() {
+                        //     println!(
+                        //         "{} does not exist, would you like to create it? (this will be the default profile)",
+                        //         profile_path.display()
+                        //     );
+                        //     match try!(get_yn_input()) {
+                        //         true => Ok((
+                        //             ThecaProfile {
+                        //                 encrypted: encrypted,
+                        //                 notes: vec![]
+                        //             }, 
+                        //             0u64
+                        //         )),
+                        //         false => specific_fail_str!("ok bye ♥")
+                        //     }
+                        // } else {
+                        //     specific_fail!(format!(
+                        //         "{} does not exist.",
+                        //         profile_path.display()
+                        //     ));
+                        // }
                         specific_fail!(format!(
                             "{} does not exist.",
                             profile_path.display()
@@ -978,6 +1002,7 @@ pub fn parse_cmds(
                     args.flag_json,
                     args.flag_condensed
                 ));
+                return Ok(())
             }
 
             // search
@@ -992,16 +1017,19 @@ pub fn parse_cmds(
                     args.flag_reverse,
                     args.flag_search_body
                 ));
+                return Ok(())
             }
 
             // stats
             if args.cmd_info {
                 try!(profile.stats(&args.flag_profile));
+                return Ok(())
             }
 
             // misc
             if args.flag_version {
                 println!("theca v{}", VERSION);
+                return Ok(())
             }
 
             if args.cmd_import {
@@ -1022,6 +1050,12 @@ pub fn parse_cmds(
                 ));
 
                 try!(parse_cmds(&mut from_profile, &mut from_args, &from_fingerprint));
+                return Ok(())
+            }
+
+            if args.cmd_list_profiles {
+                try!(profiles_in_folder(&try!(find_profile_folder(&args.flag_profile_folder))));
+                return Ok(())
             }
 
             // list
@@ -1034,6 +1068,7 @@ pub fn parse_cmds(
                     args.flag_reverse,
                     args.flag_search_body
                 ));
+                return Ok(())
             }
         }
     }

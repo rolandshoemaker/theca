@@ -16,8 +16,8 @@ _theca() {
 	COMPREPLY=()
 	cmd="${COMP_WORDS[1]}"
 	cur="${COMP_WORDS[COMP_CWORD]}"
-	commands="add edit del clear transfer transfer-from search info new-profile --help --version"
-	global_opts="--profile --profile-folder --encrypted"
+	commands="add edit del clear transfer transfer-from search info new-profile encrypt-profile decrypt-profile list-profiles --help --version"
+	global_opts="--profile --profile-folder --encrypted --key"
 
 	case "${cmd}" in
 		add)
@@ -39,6 +39,21 @@ _theca() {
 			COMPREPLY=( $(compgen -W \
         		"${global_opts} --yes" -- $cur) )
         	return 0
+			;;
+		encrypt-profile)
+			COMPREPLY=( $(compgen -W \
+				"${global_opts} --new-key"))
+			return 0
+			;;
+		list-profiles)
+			COMPREPLY=( $(compgen -W \
+				"--profile-folder"))
+			return 0
+			;;
+		decrypt-profile)
+			COMPREPLY=( $(compgen -W \
+				"${global_opts}"))
+			return 0
 			;;
 		info)
 			COMPREPLY=( $(compgen -W \

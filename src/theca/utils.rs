@@ -11,7 +11,8 @@
 
 use std::old_io::stdio::{stdin};
 use std::old_io::{File, Open, ReadWrite,
-              TempDir, Command, SeekSet};
+              TempDir, Command, SeekSet, Read};
+use std::old_io::fs::{readdir, PathExtensions};
 use time::{get_time};
 use std::env::{var_string, home_dir};
 use std::old_io::process::{InheritFd};
@@ -22,9 +23,9 @@ use std::os::errno;
 use std::cmp::{Ordering};
 use time::{strftime, strptime, at, Tm};
 use std::iter::{repeat};
-use rustc_serialize::json::{as_pretty_json};
+use rustc_serialize::json::{as_pretty_json, decode};
 
-use ::{DATEFMT, DATEFMT_SHORT, ThecaItem};
+use ::{DATEFMT, DATEFMT_SHORT, ThecaItem, ThecaProfile};
 use errors::{ThecaError, GenericError};
 use lineformat::{LineFormat};
 
@@ -335,4 +336,68 @@ pub fn cmp_last_touched(a: &str, b: &str) -> Result<Ordering, ThecaError> {
     let a_tm = try!(parse_last_touched(a));
     let b_tm = try!(parse_last_touched(b));
     Ok(a_tm.cmp(&b_tm))
+}
+
+pub fn validate_profile_from_path(profile_path: &Path) -> (bool, bool) {
+    // return (is_a_profile, encrypted(?))
+    match profile_path.extension().unwrap() == "json".as_bytes() {
+        true => match File::open_mode(
+            &profile_path,
+            Open,
+            Read
+        ) {
+            Ok(mut f) => {
+                let contents_buf = match f.read_to_end() {
+                    Ok(c) => c,
+                    // nopnopnopppppp
+                    Err(_) => return (false, false)
+                };
+                match String::from_utf8(contents_buf) {
+                    Ok(s) => {
+                        // well it's a .json and valid utf-8 at least
+                        match decode::<ThecaProfile>(&*s) {
+                            // yup
+                            Ok(_) => return (true, false),
+                            // noooooop
+                            Err(_) => return (false, false)
+                        };
+                        // its a real prof
+                    },
+                    // possibly encrypted
+                    Err(_) => return (true, true)
+                }
+            },
+            // nooppp
+            Err(_) => return (false, false)
+        },
+        // noooppp
+        false => return (false, false)
+    };
+}
+
+pub fn path_to_profile_name(profile_path: &Path) -> Result<String, ThecaError> {
+    let full_f = try!(String::from_utf8(profile_path.filename().unwrap().to_vec()));
+    let ext = try!(String::from_utf8(profile_path.extension().unwrap().to_vec()));
+    let just_f = full_f.replace(&(".".to_string()+&ext[])[], "");
+
+    Ok(just_f)
+}
+
+pub fn profiles_in_folder(folder: &Path) -> Result<(), ThecaError> {
+    if folder.is_dir() {
+        let mut contents = try!(readdir(folder));
+        contents.sort_by(|a, b| a.cmp(&b));
+        println!("# profiles in {}", folder.display());
+        for file_path in contents.iter() {
+            let is_prof = validate_profile_from_path(file_path);
+            if is_prof.0 {
+                let mut msg = try!(path_to_profile_name(file_path));
+                if is_prof.1 {
+                    msg = format!("{} [encrypted?]", msg);
+                }
+                println!("{}", msg);
+            }
+        }
+    }
+    Ok(())
 }

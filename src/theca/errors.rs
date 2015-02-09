@@ -112,7 +112,7 @@ impl FromError<FromUtf8Error> for ThecaError {
         ThecaError {
             kind: GenericError,
             desc: format!(
-                "error parsing utf-8, is profile encrypted? ({})",
+                "is this profile encrypted? ({})",
                 err
             ),
             detail: None

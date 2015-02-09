@@ -7,7 +7,7 @@
 #
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
-# zsh_complete.sh
+# _theca
 #   (minimal) zsh completion for the theca binary, this is really really
 #   super annoying
 
@@ -43,6 +43,7 @@ _theca() {
 						'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
 						'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
 						'(-e, --encrypted)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
+						'(-k, --key)'{-k,--key}'[specify a encryption key instead of waiting for a prompt]' \
 						'(-y, --yes)'{-y,--yes}'[say yes to all prompts]' \
 						'(-s, --started)'{-s,--started}'[set note status to Started]' \
 						'(-u, --urgent)'{-u,--urgent}'[set note status to Urgent]' \
@@ -55,6 +56,7 @@ _theca() {
 						'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
 						'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
 						'(-e, --encrypted)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
+						'(-k, --key)'{-k,--key}'[specify a encryption key instead of waiting for a prompt]' \
 						'--regex[search using a regex pattern]' \
 						'--search-body[search notes by body instead of title]' \
 						'(-l, --limit)'{-l,--limit}'[number of notes to limit list by]' \
@@ -68,13 +70,34 @@ _theca() {
 						'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
 						'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
 						'(-e, --encrypted)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
+						'(-k, --key)'{-k,--key}'[specify a encryption key instead of waiting for a prompt]' \
 						'(-y, --yes)'{-y,--yes}'[say yes to all prompts]' \
+					;;
+				encrypt-profile)
+					_arguments \
+						'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
+						'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
+						'(-e, --encrypted)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
+						'(-k, --key)'{-k,--key}'[specify a encryption key instead of waiting for a prompt]' \
+						'(--new-key)[new encryption key to use (for encrypt-profile)]' \
+					;;
+				decrypt-profile)
+					_arguments \
+						'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
+						'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
+						'(-e, --encrypted)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
+						'(-k, --key)'{-k,--key}'[specify a encryption key instead of waiting for a prompt]' \
+					;;
+				list-profiles)
+					_arguments \
+						'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
 					;;
 				info)
 					_arguments \
 						'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
 						'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
 						'(-e, --encrypted)'{-e,--encrypted}'[specify whether profile is encrypted or not]' \
+						'(-k, --key)'{-k,--key}'[specify a encryption key instead of waiting for a prompt]' \
 					;;
 			esac
 			;;
@@ -93,6 +116,9 @@ _theca_cmds(){
 		'search:search for notes in the current profile'
 		'info:print information about the current profile'
 		'new-profile:create a new profile'
+		'encrypt-profile:encrypt a plaintext profile or change the key for an encrypted profile'
+		'decrypt-profile:decrypt a encrypted profile'
+		'list-profiles:list all the profiles in the current profile folder'
 		'-h, --help:show the help message'
 		'-v, --version:show version information'
 	)

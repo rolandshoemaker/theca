@@ -318,18 +318,18 @@ isn't used you will be prompted for the encryption key to use to encrypt the pro
 
 ![change encryption key](screenshots/change_key.png)
 
-You can also use `theca encrypt-profile --new-key KEY` to change the encryption key of an already encrypted profile which is pretty cool and avoids users having to encrypted with old key -> plaintext 
--> encrypted with new key!
+You can also use `theca encrypt-profile --new-key KEY` to change the encryption key of an already encrypted profile which is pretty cool and avoids the user having to do `encrypted with old key -> plaintext 
+-> encrypted with new key`!
 
 #### Synchronizing profiles
 
 If you use a synchronization tool like Dropbox, ownCloud, BitTorrent Sync, or even some obscure
-`rsync` setup you can easily share your note profiles between machine by using
+`rsync` setup you can easily share your note profiles between machines by using
 `--profile-folder` to specify a folder for your profiles that is synced and your sync'r should
 do the rest for you. Since `theca` makes transactional*-ish* updates to the profile files it
-should be perfectly safe, unless you concurrently edit a profile, though `theca` will *attempt*
-to merge changes when this happens. You could even store a profle in a *git* repo if you really
-wanted to.
+should be perfectly safe, unless you concurrently edit a profile, *though* `theca` will *attempt*
+to merge changes when this happens. You could even store a profle in a *git* repository if you
+really wanted to.
 
 ### JSON output mode
 
@@ -354,7 +354,7 @@ This works with the standard limit formatting arguments like `-r`, `-d`, and `-l
 
 There are preliminary `bash` and `zsh` tab completion scripts in the `completion/` directory
 which can be installed manually or by using the `--bash-complete` or `--zsh-complete` flags with
-`sudo ./build.sh install` when installing the `theca` binary. They both need quite a bit of 
+`sudo ./build.sh install` when installing the `theca` binary or by default when using the binary `installer.sh`. They both need quite a bit of 
 work but are still relatively usable for the time being.
 
 ## man page
@@ -370,7 +370,7 @@ If you think I've left out some necessary feature feel free to open an issue or 
 project and work on a patch that introduces it.
 
 I'm pretty sure there are quite a few places where memory optimizations could be made, as well
-as various other speed and design improvements.
+as various other performance and (extensive) design improvements.
 
 Any and all pull requests will be considered and tremendously appreciated.
 

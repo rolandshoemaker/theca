@@ -128,7 +128,7 @@ case "$1" in
         # # build the release binary
         # if ! cargo build --release; then
         #     echo $"# couldn't build the binary!"
-        #     exit 1
+        #     exit 1pto
         # fi
 
         # python_cmd="$python tests/theca_test_harness.py -tc target/release/theca"
