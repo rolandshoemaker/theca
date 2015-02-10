@@ -19,7 +19,7 @@ if ! [[ -w "$INSTALL_PREFIX" ]]; then
 	exit 1
 fi
 
-if [[ -d $INSTALL_PREFIX ]]; then
+if [[ -e $INSTALL_PREFIX ]]; then
 	for f in `find $FOLDERS_TO_INSTALL`; do
 		if ! [[ -d "$f" ]]; then
 			cp --parents $f $INSTALL_PREFIX
