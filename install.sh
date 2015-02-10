@@ -20,6 +20,7 @@ if ! [[ -w "$INSTALL_PREFIX" ]]; then
 fi
 
 if [[ -e $INSTALL_PREFIX ]]; then
+	echo $"# installing theca"
 	for f in `find $FOLDERS_TO_INSTALL`; do
 		if ! [[ -d "$f" ]]; then
 			cp --parents $f $INSTALL_PREFIX
@@ -37,3 +38,32 @@ else
 fi
 
 echo $"# installed theca, yay!"
+
+echo $"# would you like to setup the default profile folder and profile for theca?"
+echo $"# this can also be done with 'theca new-profile'"
+select yn in "Yes" "No"; do
+	case $yn in
+		Yes)
+			mkdir $HOME/.theca
+			if [ "$?" -eq "0" ]; then
+				echo $"# created $HOME/.theca"
+			else
+				echo $"# ERROR: couldn't create $HOME/.theca"
+				exit 1
+			fi
+			theca new-profile
+			if [ "$?" -eq "0" ]; then
+				echo $"# created the default profile"
+				echo $"# HAVE A FUN TIME"
+			else
+				echo $"# ERROR: couldn't create the default profile"
+				exit 1
+			fi
+			break
+		;;
+		No)
+			echo $"# ok bye!"
+			exit
+		;;
+	esac
+done
