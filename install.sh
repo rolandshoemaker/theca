@@ -22,13 +22,14 @@ echo $"#  \__|_| |_|\___|\___\__,_|"
 echo $"#"
 
 if ! [[ -w "$INSTALL_PREFIX" ]]; then
-	# if you don't have priv to write here invoke 'sudo' before 'cp'!
+	# if you don't have priv to write to INSTALL_PREFIX invoke 'sudo' before 'cp'
 	PRIV_ESC="sudo"
 fi
 
+# copy all the stuff in FOLDERS_TO_INSTALL to INSTALL_PREFIX with parent directories
+# yuh yuh
 if [[ -e $INSTALL_PREFIX ]]; then
 	echo $"# installing theca"
-
 	for f in `find $FOLDERS_TO_INSTALL`; do
 		if ! [[ -d "$f" ]]; then
 			$PRIV_ESC cp --parents $f $INSTALL_PREFIX
@@ -49,8 +50,12 @@ echo $"#"
 echo $"# installed `theca --version`"
 echo $"#"
 
+# first run type stuff
 echo $"# would you like to setup the default profile folder and profile for theca?"
-echo $"# this can also be done with 'theca new-profile'"
+echo $"# this will create:"
+echo $"#   $HOME/.theca"
+echo $"#   $HOME/.theca/default.json"
+echo $"# which can also be done with 'theca new-profile'"
 select yn in "Yes" "No"; do
 	case $yn in
 		Yes)
