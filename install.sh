@@ -59,6 +59,7 @@ echo $"# which can also be done with 'theca new-profile'"
 select yn in "Yes" "No"; do
 	case $yn in
 		Yes)
+			echo $"#"
 			mkdir $HOME/.theca
 			if [ "$?" -eq "0" ]; then
 				echo $"# created $HOME/.theca"

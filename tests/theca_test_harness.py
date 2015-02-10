@@ -110,11 +110,14 @@ def validate_profile_contents(profile):
             raise AssertionError("there are duplicate IDs in 'notes'")
 
 def compare_notes(clean, dirty):
+    try:
         if not clean['id'] == dirty['id']: raise AssertionError()
         if not clean['title'] == dirty['title']: raise AssertionError()
         if not clean['status'] == dirty['status']: raise AssertionError()
         if not clean['body'] == dirty['body']: raise AssertionError()
         # uh leaving last_touched for now...
+    except AssertionError:
+        raise AssertionError("# EXPECTED #\n"+json.dumps(clean, indent=2)+"\n# GOT #\n"+json.dumps(dirty, indent=2))
 
 def compare_profile(clean, dirty):
     if not clean['encrypted'] == dirty['encrypted']: raise AssertionError()
@@ -221,17 +224,18 @@ def test_harness(tests):
                         if type(clean) == list:
                             dirty = json.loads(dirty)
                             if len(clean) != len(dirty):
-                                raise AssertionError()
+                                raise AssertionError("# EXPECTED #\n"+json.dumps(clean, indent=2)+"\n# GOT #\n"+json.dumps(dirty, indent=2))
                             for c, d in zip(clean, dirty):
                                 if not c == None: compare_notes(c, d)
                         else:
                             if not clean == None: compare_notes(clean, json.loads(dirty))
                     elif t['result_type'] == "text":
                         if not clean == None and not clean == dirty:
-                            raise AssertionError("expected and resulting output don't match")
+                            raise AssertionError("# EXPECTED #\n"+json.dumps(clean, indent=2)+"\n# GOT #\n"+json.dumps(dirty, indent=2))
             print(" [PASSED]")
         except (AssertionError, FileNotFoundError) as e:
             print("\033[91m"+" [FAILED]"+"\033[0m")
+            print(e)
             failed += 1
         for f_o in os.listdir(TMPDIR):
             f_o_p = os.path.join(TMPDIR, f_o)

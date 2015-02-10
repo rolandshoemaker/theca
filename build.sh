@@ -8,8 +8,7 @@
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
 # build.sh
-#   a (linux) tool to build/install the theca binary and man page and tab
-#   completion stuff etc
+#   a simple build script because i forget things
 
 INSTALL_DIR="/usr/local/bin"
 MAN_DIR="/usr/local/share/man/man1"
