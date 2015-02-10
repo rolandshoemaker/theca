@@ -11,7 +11,6 @@
 #   a (linux) tool to build/install the theca binary and man page and tab
 #   completion stuff etc
 
-# globals
 INSTALL_DIR="/usr/local/bin"
 MAN_DIR="/usr/local/share/man/man1"
 BASH_COMPLETE_DIR="/usr/local/etc/bash_completion.d"
@@ -19,7 +18,7 @@ ZSH_COMPLETE_DIR="/usr/local/share/zsh/site-functions"
 
 # check subcommand
 case "$1" in
-    # building the binary (just pass through to cargo then copy to .)
+    # building the binary (just pass through to cargo)
     build)
         if command -v cargo >/dev/null 2>&1; then
             BUILD_CMD="cargo build"
@@ -27,31 +26,29 @@ case "$1" in
             for arg in "$@"; do
                 BUILD_CMD="$BUILD_CMD $arg"
             done
-            cargo update
-            echo $"# dependencies udated"
             eval "$BUILD_CMD"
             if [ "$?" -eq "0" ]; then
-                if [[ $@ =~ "--release" ]]; then
+                if [[ "$@" =~ "--release" ]]; then
                     echo $"# built target/release/theca"
-                    cp target/release/theca .
-                    echo $"# copied target/release/theca to ."
                 else
                     echo $"# built target/theca"
-                    cp target/theca .
-                    echo $"# copied target/theca to ."
                 fi
             else
-                echo $"couldn't build target/theca"
+                if [[ "$@" =~ "--release" ]]; then
+                    echo $"# couldn't build target/release/theca"
+                    exit 1
+                else
+                    echo $"# couldn't build target/theca"
+                    exit 1
+                fi
             fi
         else
             echo $"cargo could not be found"
             exit 1
-            # there is a hard way to do this with just rustc but idk if
-            # i want to write that shell script right now
         fi
         ;;
 
-    # build the man page, i can never remember the name of this program
+    # build the man page, i can never remember the name of this thing
     build-man)
         if command -v md2man-roff >/dev/null 2>&1; then
             md2man-roff docs/THECA.1.md > docs/THECA.1
@@ -65,35 +62,48 @@ case "$1" in
     # install the binary in . so we don't have to bother about --dev/--release
     # binaries
     install)
-        if [ -e "theca" ]; then
-            cp theca $INSTALL_DIR/
-            echo $"# copied ./theca -> $INSTALL_DIR/theca"
-            if [[ $@ =~ "--bash-complete" ]]; then
-                cp completion/bash_complete.sh $BASH_COMPLETE_DIR/theca
-                echo $"# copied ./bash_complete.sh -> $BASH_COMPLETE_DIR/theca"
+        if [[ "$@" =~ "--release" ]]; then
+            if [ -e "target/release/theca"]; then
+                cp target/release/theca $INSTALL_DIR/
+                echo $"# copied target/release/theca -> $INSTALL_DIR/theca"
+            else
+                echo $"# target/release/theca doesn't exist (did you run ./build.sh build --release)"
+                exit 1
             fi
-            if [[ "$@" =~ "--zsh-complete" ]]; then
-                cp completion/_theca $ZSH_COMPLETE_DIR/_theca
-                echo $"# copied ./_theca -> $ZSH_COMPLETE_DIR/theca"
-            fi
-            if [[ $@ =~  "--man" ]]; then
-                if [ -e "docs/THECA.1" ]; then
-                    cp docs/THECA.1 $MAN_DIR/
-                    echo $"# copied docs/THECA.1 -> $MAN_DIR/THECA.1"
-                fi
-            fi
-            echo $"have fun :>"
         else
-            echo $"# there is no theca binary in . did you forget to run './build.sh build'?"
-            exit 1
+            if [ -e "target/theca" ]; then
+                cp target/theca $INSTALL_DIR/
+                echo $"# copied target/theca -> $INSTALL_DIR/theca"
+            else
+                echo $"# target/theca doesn't exist (did you run ./build.sh build)"
+                exit 1
+            fi
         fi
+        if [[ "$@" =~ "--bash-complete" ]]; then
+            cp completion/bash_complete.sh $BASH_COMPLETE_DIR/theca
+            echo $"# copied completion/bash_complete.sh -> $BASH_COMPLETE_DIR/theca"
+        fi
+        if [[ "$@" =~ "--zsh-complete" ]]; then
+            cp completion/_theca $ZSH_COMPLETE_DIR/_theca
+            echo $"# copied completion/_theca -> $ZSH_COMPLETE_DIR/theca"
+        fi
+        if [[ "$@" =~  "--man" ]]; then
+            if [ -e "docs/THECA.1" ]; then
+                cp docs/THECA.1 $MAN_DIR/
+                echo $"# copied docs/THECA.1 -> $MAN_DIR/THECA.1"
+            else
+                echo $"# docs/THECA.1 doesn't exist"
+                exit 1
+            fi
+        fi
+        echo $"have fun :>"
         ;;
 
     # run all the tests in one place
     test)
         # run the rust tests
         if ! cargo test; then
-            echo $"# rust tests did not pass!"
+            echo $"# rust tests did't pass!"
             exit 1
         fi
 
@@ -103,49 +113,34 @@ case "$1" in
             exit 1
         fi
 
-        if [[ $@ =~  "--travis" ]]; then
+        if [[ "$@" =~  "--travis" ]]; then
             python="python3.4"
         else
             python="python3"
         fi
 
-        python_cmd="$python tests/theca_test_harness.py -tc target/theca"
+        python_cmd="$python tests/theca_test_harness.py -tc"
+        if [[ "$@" =~ "--release" ]]; then
+            build_profile="release"
+            python_cmd="$python_cmd target/release/theca"
+        else
+            build_profile="dev"
+            python_cmd="$python_cmd target/theca"
+        fi
         # run the python tests
         echo $"# running python harness tests"
         if ! eval "$python_cmd -pt"; then
-            echo $"# dev profile tests did not pass!"
+            echo $"# [$build_profile] profile tests did not pass!"
             exit 1
         fi
         if ! eval "$python_cmd -jt"; then
-            echo $"# dev json output tests did not pass!"
+            echo $"# [$build_profile] json output tests did not pass!"
             exit 1
         fi
         if ! eval "$python_cmd -tt"; then
-            echo $"# dev text output tests did not pass!"
+            echo $"# [$build_profile] text output tests did not pass!"
             exit 1
         fi
-
-        # # build the release binary
-        # if ! cargo build --release; then
-        #     echo $"# couldn't build the binary!"
-        #     exit 1pto
-        # fi
-
-        # python_cmd="$python tests/theca_test_harness.py -tc target/release/theca"
-        # # run the python tests
-        # echo $"# running python harness tests"
-        # if ! eval "$python_cmd -pt"; then
-        #     echo $"# release profile tests did not pass!"
-        #     exit 1
-        # fi
-        # if ! eval "$python_cmd -jt"; then
-        #     echo $"# release json output tests did not pass!"
-        #     exit 1
-        # fi
-        # if ! eval "$python_cmd -tt"; then
-        #     echo $"# release text output tests did not pass!"
-        #     exit 1
-        # fi
 
         echo $"# it seems like everything is ok..."
         ;;
@@ -160,7 +155,7 @@ case "$1" in
             rm theca
             echo $"# deleted ./theca"
         fi
-        if [ -e "docs/THECA.1" ] && [[ $@ =~  "--man" ]]; then
+        if [ -e "docs/THECA.1" ] && [[ "$@" =~  "--man" ]]; then
             rm docs/THECA.1
             echo $"# deleted ./docs/THECA.1"
         fi
