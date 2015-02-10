@@ -14,16 +14,24 @@
 INSTALL_PREFIX="/usr"
 FOLDERS_TO_INSTALL="bin etc share"
 
+echo $"#  _   _                    "
+echo $"# | |_| |__   ___  ___ __ _ "
+echo $"# | __| '_ \ / _ \/ __/ _\` |"
+echo $"# | |_| | | |  __/ (_| (_| |"
+echo $"#  \__|_| |_|\___|\___\__,_|"
+echo $"#"
+
 if ! [[ -w "$INSTALL_PREFIX" ]]; then
-	echo $"# ERROR: $INSTALL_PREFIX is not writable by $USER (perhaps you need to use sudo?)"
-	exit 1
+	# if you don't have priv to write here invoke 'sudo' before 'cp'!
+	PRIV_ESC="sudo"
 fi
 
 if [[ -e $INSTALL_PREFIX ]]; then
 	echo $"# installing theca"
+
 	for f in `find $FOLDERS_TO_INSTALL`; do
 		if ! [[ -d "$f" ]]; then
-			cp --parents $f $INSTALL_PREFIX
+			$PRIV_ESC cp --parents $f $INSTALL_PREFIX
 			if [ "$?" -eq "0" ]; then
 				echo $"# copied $f -> $INSTALL_PREFIX/$f"
 			else
@@ -37,7 +45,9 @@ else
 	exit 1
 fi
 
-echo $"# installed theca, yay!"
+echo $"#"
+echo $"# installed `theca --version`"
+echo $"#"
 
 echo $"# would you like to setup the default profile folder and profile for theca?"
 echo $"# this can also be done with 'theca new-profile'"
@@ -54,6 +64,7 @@ select yn in "Yes" "No"; do
 			theca new-profile
 			if [ "$?" -eq "0" ]; then
 				echo $"# created the default profile"
+				echo $"#"
 				echo $"# HAVE A FUN TIME"
 			else
 				echo $"# ERROR: couldn't create the default profile"
@@ -62,6 +73,7 @@ select yn in "Yes" "No"; do
 			break
 		;;
 		No)
+			echo $"#"
 			echo $"# ok bye!"
 			exit
 		;;
