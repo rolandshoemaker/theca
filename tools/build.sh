@@ -15,6 +15,22 @@ MAN_DIR="/usr/local/share/man/man1"
 BASH_COMPLETE_DIR="/usr/local/etc/bash_completion.d"
 ZSH_COMPLETE_DIR="/usr/local/share/zsh/site-functions"
 
+# sh functions
+p() {
+	echo $"# $1"
+}
+
+err() {
+	p "ERROR: $1"
+	exit 1
+}
+
+ok() {
+	if [ $? != 0 ]; then
+		err "$1"
+	fi
+}
+
 # check subcommand
 case "$1" in
     # building the binary (just pass through to cargo)
@@ -26,24 +42,14 @@ case "$1" in
                 BUILD_CMD="$BUILD_CMD $arg"
             done
             eval "$BUILD_CMD"
-            if [ "$?" -eq "0" ]; then
-                if [[ "$@" =~ "--release" ]]; then
-                    echo $"# built target/release/theca"
-                else
-                    echo $"# built target/theca"
-                fi
+            ok "$BUILD_CMD failed"
+            if [[ "$@" =~ "--release" ]]; then
+                p "built target/release/theca"
             else
-                if [[ "$@" =~ "--release" ]]; then
-                    echo $"# couldn't build target/release/theca"
-                    exit 1
-                else
-                    echo $"# couldn't build target/theca"
-                    exit 1
-                fi
+                p "built target/theca"
             fi
         else
-            echo $"cargo could not be found"
-            exit 1
+            err "cargo could not be found"
         fi
         ;;
 
@@ -51,10 +57,9 @@ case "$1" in
     build-man)
         if command -v md2man-roff >/dev/null 2>&1; then
             md2man-roff docs/THECA.1.md > docs/THECA.1
-            echo $"# built THECA.1 man page"
+            p "built THECA.1 man page"
         else
-            echo $"# md2man-roff could not be found"
-            exit 1
+            err "md2man-roff could not be found"
         fi
         ;;
 
@@ -64,52 +69,47 @@ case "$1" in
         if [[ "$@" =~ "--release" ]]; then
             if [ -e "target/release/theca"]; then
                 cp target/release/theca $INSTALL_DIR/
-                echo $"# copied target/release/theca -> $INSTALL_DIR/theca"
+                p "copied target/release/theca -> $INSTALL_DIR/theca"
             else
-                echo $"# target/release/theca doesn't exist (did you run ./build.sh build --release)"
-                exit 1
+                err "target/release/theca doesn't exist (did you run ./build.sh build --release)"
             fi
         else
             if [ -e "target/theca" ]; then
                 cp target/theca $INSTALL_DIR/
-                echo $"# copied target/theca -> $INSTALL_DIR/theca"
+                p "copied target/theca -> $INSTALL_DIR/theca"
             else
-                echo $"# target/theca doesn't exist (did you run ./build.sh build)"
-                exit 1
+                err "target/theca doesn't exist (did you run ./build.sh build)"
             fi
         fi
         if [[ "$@" =~ "--bash-complete" ]]; then
             cp completion/bash_complete.sh $BASH_COMPLETE_DIR/theca
-            echo $"# copied completion/bash_complete.sh -> $BASH_COMPLETE_DIR/theca"
+            p "copied completion/bash_complete.sh -> $BASH_COMPLETE_DIR/theca"
         fi
         if [[ "$@" =~ "--zsh-complete" ]]; then
             cp completion/_theca $ZSH_COMPLETE_DIR/_theca
-            echo $"# copied completion/_theca -> $ZSH_COMPLETE_DIR/theca"
+            p "copied completion/_theca -> $ZSH_COMPLETE_DIR/theca"
         fi
         if [[ "$@" =~  "--man" ]]; then
             if [ -e "docs/THECA.1" ]; then
                 cp docs/THECA.1 $MAN_DIR/
-                echo $"# copied docs/THECA.1 -> $MAN_DIR/THECA.1"
+                p "copied docs/THECA.1 -> $MAN_DIR/THECA.1"
             else
-                echo $"# docs/THECA.1 doesn't exist"
-                exit 1
+                err "docs/THECA.1 doesn't exist"
             fi
         fi
-        echo $"have fun :>"
+        p "have fun :>"
         ;;
 
     # run all the tests in one place
     test)
         # run the rust tests
         if ! cargo test; then
-            echo $"# rust tests did't pass!"
-            exit 1
+            err "rust tests did't pass!"
         fi
 
         # build the dev binary
         if ! cargo build; then
-            echo $"# couldn't build the binary!"
-            exit 1
+            err "couldn't build the binary!"
         fi
 
         if [[ "$@" =~  "--travis" ]]; then
@@ -127,42 +127,38 @@ case "$1" in
             python_cmd="$python_cmd target/theca"
         fi
         # run the python tests
-        echo $"# running python harness tests"
+        p "running python harness tests"
         if ! eval "$python_cmd -pt"; then
-            echo $"# [$build_profile] profile tests did not pass!"
-            exit 1
+            err "[$build_profile] profile tests did not pass!"
         fi
         if ! eval "$python_cmd -jt"; then
-            echo $"# [$build_profile] json output tests did not pass!"
-            exit 1
+            err "[$build_profile] json output tests did not pass!"
         fi
         if ! eval "$python_cmd -tt"; then
-            echo $"# [$build_profile] text output tests did not pass!"
-            exit 1
+            err "[$build_profile] text output tests did not pass!"
         fi
 
-        echo $"# it seems like everything is ok..."
+        p "it seems like everything is ok..."
         ;;
 
     # delete the target/ dir, the binary in . and the man page (if --man is used)
     clean)
         if [ -d "target" ]; then
             rm -r target
-            echo $"# deleted ./target/"
+            p "deleted ./target/"
         fi
         if [ -e "theca" ]; then
             rm theca
-            echo $"# deleted ./theca"
+            p "deleted ./theca"
         fi
         if [ -e "docs/THECA.1" ] && [[ "$@" =~  "--man" ]]; then
             rm docs/THECA.1
-            echo $"# deleted ./docs/THECA.1"
+            p "deleted ./docs/THECA.1"
         fi
         ;;
 
     # print the help
     *)
-        echo $"Usage: $0 {build|build-man|test|install|clean}"
-        exit 1
+        err "Usage: $0 {build|build-man|test|install|clean}"
         ;;
 esac
