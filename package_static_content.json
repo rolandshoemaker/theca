@@ -1,8 +1,8 @@
 {
 	"package_description": {
-		"install.sh": "install.sh",
 		"README.md": "README.md",
 		"LICENSE": "LICENSE",
+		"tools/install.sh": "install.sh",
 		"target/release/theca": "bin/theca",
 		"docs/THECA.1": "share/man/man1/theca.1",
 		"completion/bash_complete.sh": "etc/bash_completion.d/theca",
