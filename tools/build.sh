@@ -118,7 +118,7 @@ case "$1" in
             python="python3"
         fi
 
-        python_cmd="$python tools/theca_test_harness.py -tc"
+        python_cmd="$python tools/theca_test_harness.py --condensed -tc"
         if [[ "$@" =~ "--release" ]]; then
             build_profile="release"
             python_cmd="$python_cmd target/release/theca"
