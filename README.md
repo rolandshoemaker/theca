@@ -32,12 +32,12 @@ a simple, fully featured, command line note taking tool written in
 	- [Binaries](#binaries)
 - [Usage](#usage)
 	- [First run](#first-run)
-	- [Add a note](#add-a-note)
-	- [Edit a note](#edit-a-note)
-	- [Delete a note](#delete-a-note)
+	- [Adding notes](#adding-notes)
+	- [Editing notes](#editing-notes)
+	- [Deleting notes](#deleting-notes)
 	- [List all notes](#list-all-notes)
 	- [View a single note](#view-a-single-note)
-	- [Search notes](#search-notes)
+	- [Searching notes](#searching-notes)
 	- [Non-default profiles](#non-default-profiles)
 		- [Setting the default profile](#setting-the-default-profile)
 		- [Setting the default profile folder](#setting-the-default-profile-folder)
@@ -59,22 +59,38 @@ a simple, fully featured, command line note taking tool written in
 	- [JSON profile format](#json-profile-format)
 	- [Cryptographic design](#cryptographic-design)
 		- [Basic Python implementation](#basic-python-implementation)
-	- [`build.sh`](#buildsh)
-	- [`theca_test_harness.py`](#theca_test_harnesspy)
+	- [`tools/build.sh`](#buildsh)
+	- [`tools/theca_test_harness.py`](#theca_test_harnesspy)
 		- [Test suite file format](#test-suite-file-format)
 			- [Test formats](#test-formats)
 - [License](#license)
 
 ## Installation
 
+### Binaries
+
+I've built a simple multi-(platform/arch) binary package builder (`tools/theca-packer.py`)
+based on [Fabric](http://www.fabfile.org/) so I can provide both `x86_64` and `i686` packages
+for `unknown-linux-gnu` and `apple-darwin`. I need to setup my website (i'm lazy...) but once
+I actually host the packages and stuff it'll be as simple as running
+
+:warning: this doesn't work at the moment :warning:
+
+
+	curl -s https://static.bracewel.net/theca/get_theca.sh | sh
+
+to install `theca`. If you want to uninstall you just need to add the `--uninstall` flag like so
+
+	curl -s https://static.bracewel.net/theca/get_theca.sh | sh -- --uninstall
+
 ### From source
 
 All that's needed to build theca is a copy of the `rustc` compiler and the `cargo` packaging tool which can
 be downloaded directly from the [Rust website](http://www.rust-lang.org/install.html) or by running
 
-	$ curl -s https://static.rust-lang.org/rustup.sh | sudo sh
+	$ curl -s https://static.rust-lang.org/rustup.sh | sh
 
-to get the nightly binaries, once those have finished building we can clone and build `theca`
+to get the nightly `rustc` and `cargo` binaries, once those have finished building we can clone and build `theca`
 
 	$ git clone https://github.com/rolandshoemaker/theca.git
 	...
@@ -83,21 +99,13 @@ to get the nightly binaries, once those have finished building we can clone and 
 	$ cargo build [--release]
 	...
 
-	$ sudo ./build.sh install [--man, --bash-complete, --zsh-complete]
+	$ sudo bash tools/build.sh install [--release, --man, --bash-complete, --zsh-complete]
 
 The `cargo` flag `--release` enables `rustc` optimizations. F
 The `cargo` flag `--release` enables `rustc` optimizations.or the `install` the flag `--man`
 will additionally install the man page and `--bash-complete` and `--zsh-complete` will
 additionally install the `bash` or `zsh` tab completion scripts. `cargo` will automatically
 download and compile `theca`s dependencies for you.
-
-### Binaries
-
-At some point i'll provide pre-built binaries for linux (32 and 64 bit) ad os x (64 bit) but for now
-it is up to you to build them for yourself. (i'm currently building a really simple multi-platform
-builder/packager called *build-a-tron* that you can find
-[here](https://github.com/rolandshoemaker/build-a-tron) which will hopefully preform this task in the
-future.)
 
 ## Usage
 
@@ -178,7 +186,7 @@ future.)
 note profile in `~/.theca/default.json`. If you would like to use a non-standard
 profile folder you can use `--profile-folder PATH`.
 
-### Add a note
+### Adding notes
 
 ![adding a basic note](screenshots/add_simple_note.png)
 
@@ -194,7 +202,7 @@ These flags can be used to add a note with a status and/or a body
 	    -t, --editor                        Drop to $EDITOR to set/edit note body.
 	    -                                   Set body of the note from STDIN.
 
-### Edit a note
+### Editing notes
 
 ![editing a notes status](screenshots/edit_notes.png)
 
@@ -210,7 +218,7 @@ These flags can be used to add a note with a status and/or a body
 	    -t, --editor                        Drop to $EDITOR to set/edit note body.
 	    -                                   Set body of the note from STDIN.
 
-### Delete a note
+### Deleting notes
 
 ![deleting some notes](screenshots/delete_note.png)
 
@@ -246,7 +254,7 @@ options can be used to alter the output style
 	    -c, --condensed                     Use the condensed printing format.
 	    -j, --json                          Print list output as a JSON object.
 
-### Search notes
+### Searching notes
 
 ![searching notes](screenshots/search_notes.png)
 
@@ -374,7 +382,7 @@ This works with the standard limit formatting arguments like `-r`, `-d`, and `-l
 
 There are preliminary `bash` and `zsh` tab completion scripts in the `completion/` directory
 which can be installed manually or by using the `--bash-complete` or `--zsh-complete` flags with
-`sudo ./build.sh install` when installing the `theca` binary or by default when using the binary `installer.sh`. They both need quite a bit of 
+`sudo bash tools/build.sh install` when installing the `theca` binary or by default when using the binary `installer.sh`. They both need quite a bit of 
 work but are still relatively usable for the time being.
 
 ## man page
@@ -472,15 +480,15 @@ and the ciphertext can be decrypted using the AES implementation from `pycrypto`
     # remove any padding from the end of the final block
     plaintext = plaintext[:-plaintext[-1]].decode("utf-8")
 
-### `build.sh`
+### `tools/build.sh`
 
 `build.sh` is a pretty simple `bash` holdall in lieu of a `Makefile` (ew) that really exists
 because I have a bad memory and forget some of the commands i'm supposed to remember.
 
 Usage is pretty simple
 
-	$ ./build.sh
-	Usage: ./build.sh {build|build-man|test|install|clean}
+	$ bash tools/build.sh
+	Usage: build.sh {build|build-man|test|install|clean}
 
 * `build` passes through any argument to `cargo build` so things like `--release` and
   `--verbose` should work fine, it then copies the resulting binary to `.` so `install`
@@ -494,7 +502,7 @@ Usage is pretty simple
 * `clean` deletes the binary in `.`, the `target/` folder, and the man page in `docs/`
   if they exist
 
-### `theca_test_harness.py`
+### `tools/theca_test_harness.py`
 
 `theca_test_harness.py` is a *relatively* simple python3 test harness for the compiled `theca` binary.
 It reads in JSON files which describe test cases and executes them, providing relatively simple
@@ -507,7 +515,7 @@ The harness can preform three different output checks, against
 
 The python script has a number of arguments that may or may not be helpful
 
-	$ python3 tests/theca_test_harness.py -h
+	$ python3 tools/theca_test_harness.py -h
 	usage: theca_test_harness.py [-h] [-tc THECA_COMMAND] [-tf TEST_FILE] [-pt]
 	                             [-jt] [-tt]
 
