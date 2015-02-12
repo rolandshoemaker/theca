@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 #  _   _                    
 # | |_| |__   ___  ___ __ _ 
 # | __| '_ \ / _ \/ __/ _` |
@@ -37,7 +39,7 @@ def _run_mkdir(path):
 
 def _where(command):
     with settings(warn_only=True):
-        with hide("warnings"):
+        with hide("warnings", "output", "running"):
             if run("which %s" % (command)).return_code != 0:
                 return False
             else:
@@ -52,12 +54,43 @@ def _setup_toolchain(toolchain):
         run("multirust update %s --installer %s" % (toolchain, toolchain_installer_url))
 
 @parallel
+def check_ability():
+    puts("# host ability")
+    
+    git = _where("git")
+    with hide("output"):
+        puts("#   has git: %s" % (git))
+
+    multirust = _where("multirust")
+    with hide("output"):
+        puts("#   has multirust: %s" % (multirust))
+
+    if not multirust and _where("rustc") and _where("cargo"):
+        puts("#     - does have (multirust incompatible) native rust toolchain")
+    else:
+        rustc = _where("rustc")
+        cargo = _where("cargo")
+        puts("#   has rustc: %s" % (rustc))
+        puts("#   has cargo: %s" % (cargo))
+
+    tar = _where("tar")
+    puts("#   has tar: %s" % (tar))
+
+    if multirust:
+        puts("# available toolchains")
+        with hide("output", "running"):
+            toolchains = run("multirust list-toolchains")
+            for l in toolchains.split("\n"):
+                puts("#   %s" % (l))
+    puts("# I'M DONE \(◕ ◡ ◕\)")
+
+@parallel
 def install_toolchains(rust_channel, target_arch=None):
     with settings(warn_only=True):
         puts("# check if multirust is installed")
         if not _where("multirust"):
             puts("# nop, install multirust")
-            # should check if rust/cargo is and run traditional uninstaller before this...?
+            # should check if rust/cargo is and run traditional uninstaller before this idk...?
             run(MULTIRUST_INSTALL_CMD)
         puts("# got it!")
         puts("# guessing host os")
@@ -71,9 +104,10 @@ def install_toolchains(rust_channel, target_arch=None):
         if type(targets) == str:
             targets = [targets]
         puts("# setup toolchains for targets %s" % (targets))
-        for t_a in TARGET_ARCHS:
+        for t_a in targets:
             current_toolchain = "-".join([rust_channel, t_a, host_os])
             _setup_toolchain(current_toolchain)
+    puts("# I'M DONE \(◕ ◡ ◕\)")
 
 @parallel
 def default_toolchain():
@@ -146,11 +180,13 @@ def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channe
     #     start_toolchain = run("multirust show-default").split("\n")[0].split(": ")[-1]
 
     # build package in package_dir for arch + return to master
-    # if target_arch:
-    #     TARGET_ARCHS = [target_arch]
-    for t_a in TARGET_ARCHS:
+    targets = target_arch or TARGET_ARCHS
+    if type(targets) == str:
+        targets = [targets]
+    puts("# starting packager for arches %s" % (targets))
+    for t_a in targets:
         current_toolchain = "-".join([rust_channel, t_a, host_os])
-        puts("# %s-%s: started packager" % (package_prefix, current_toolchain))
+        puts("# %s-%s: started" % (package_prefix, current_toolchain))
 
         # make sure toolchain is up to date?
         # _setup_toolchain(current_toolchain)
@@ -193,8 +229,8 @@ def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channe
         # generate sha hash
         puts("# generating sha256 sum: %s" % (package_name+".sha256"))
         with open(os.path.join(output_dir, package_name+".sha256"), "w") as out_file:
-        	with open(os.path.join(output_dir, package_name), "rb") as in_file:
-		        out_file.write("  ".join([sha256(in_file.read()).hexdigest(), package_name])+"\n")
+            with open(os.path.join(output_dir, package_name), "rb") as in_file:
+                out_file.write("  ".join([sha256(in_file.read()).hexdigest(), package_name])+"\n")
 
         # delete arch binary and package
         puts("# %s-%s: deleting %s binary and package" % (package_prefix, current_toolchain, current_toolchain))
@@ -211,11 +247,6 @@ def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channe
     with hide("output"):
         run("rm -rf %s" % (host_tmp_dir))
 
-    # write build report for host triple + mb write out hashes?
+    # write build report?
 
-    # reset multirust toolchain, this seems to crash stuff... idk?
-    # puts("# reset toolchain to default")
-    # with hide("output"):
-    #     run("multirust default %s" % (start_toolchain))
-
-    puts("# DONE")
+    puts("# I'M DONE \(◕ ◡ ◕\)")
