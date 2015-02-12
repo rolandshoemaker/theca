@@ -28,8 +28,8 @@ a simple, fully featured, command line note taking tool written in
 ## Contents
 
 - [Installation](#installation)
-	- [From source](#from-source)
 	- [Binaries](#binaries)
+	- [From source](#from-source)
 - [Usage](#usage)
 	- [First run](#first-run)
 	- [Adding notes](#adding-notes)
