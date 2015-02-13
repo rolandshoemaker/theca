@@ -14,7 +14,7 @@ use std::old_io::{File, Open, ReadWrite,
               TempDir, Command, SeekSet, Read};
 use std::old_io::fs::{readdir, PathExtensions};
 use time::{get_time};
-use std::env::{var_string, home_dir};
+use std::env::{var, home_dir};
 use std::old_io::process::{InheritFd};
 use term::{stdout};
 use term::attr::Attr::{Bold};
@@ -132,9 +132,9 @@ pub fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
     let tmppath = tmpdir.path().join(get_time().sec.to_string());
     let mut tmpfile = try!(File::open_mode(&tmppath, Open, ReadWrite));
     try!(tmpfile.write_line(&contents[]));
-    let editor = match var_string("VISUAL") {
+    let editor = match var("VISUAL") {
         Ok(v) => v,
-        Err(_) => match var_string("EDITOR") {
+        Err(_) => match var("EDITOR") {
             Ok(v) => v,
             Err(_) => specific_fail_str!("neither $VISUAL nor $EDITOR is set.")
         }

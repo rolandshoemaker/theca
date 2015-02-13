@@ -2,7 +2,7 @@
 name = "theca"
 version = "1.0.0-dev"
 dependencies = [
- "docopt 0.6.36 (registry+https://github.com/rust-lang/crates.io-index)",
+ "docopt 0.6.37 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex_macros 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -13,7 +13,7 @@ dependencies = [
 
 [[package]]
 name = "docopt"
-version = "0.6.36"
+version = "0.6.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "regex 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -18,6 +18,7 @@
 #![feature(io)]
 #![feature(rustc_private)]
 #![feature(env)]
+#![feature(os)]
 
 //! Definitions of ThecaItem and ThecaProfile and their implementations
 
@@ -32,10 +33,10 @@ extern crate term;
 extern crate rand;
 
 // std lib imports
-use std::env::{var_string};
-use std::old_io::fs::{PathExtensions, mkdir};
+use std::env::{var};
 use std::old_io::{File, Truncate, Write, Read, Open,
               stdin, USER_RWX};
+use std::old_io::fs::{PathExtensions, mkdir};
 use std::iter::{repeat};
 
 // random things
@@ -509,7 +510,7 @@ impl ThecaProfile {
                     }
                 }
             },
-            true => try!(stdin().lock().read_to_string())
+            true => { try!(stdin().read_to_string()) }
         };
 
         let new_id = match self.notes.last() {
@@ -568,7 +569,7 @@ impl ThecaProfile {
             match title.replace("\n", "") == "-" {
                 true => match !use_stdin {
                     true => self.notes[item_pos].body = try!(
-                        stdin().lock().read_to_string()
+                        stdin().read_to_string()
                     ),
                     false => self.notes[item_pos].title = title.replace("\n", "")
                                                                .to_string()
@@ -592,7 +593,7 @@ impl ThecaProfile {
         if !body.is_empty() || use_editor || use_stdin {
             // change body
             self.notes[item_pos].body = match use_stdin {
-                true => try!(stdin().lock().read_to_string()),
+                true => try!(stdin().read_to_string()),
                 false => match use_editor {
                     true => {
                         match istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
@@ -865,7 +866,7 @@ impl ThecaProfile {
 }
 
 pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
-    match var_string("THECA_DEFAULT_PROFILE") {
+    match var("THECA_DEFAULT_PROFILE") {
         Ok(val) => {
             if args.flag_profile.is_empty() && !val.is_empty() {
                 args.flag_profile = val;
@@ -874,7 +875,7 @@ pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
         Err(_) => ()
     };
 
-    match var_string("THECA_PROFILE_FOLDER") {
+    match var("THECA_PROFILE_FOLDER") {
         Ok(val) => {
             if args.flag_profile_folder.is_empty() && !val.is_empty() {
                 args.flag_profile_folder = val;
