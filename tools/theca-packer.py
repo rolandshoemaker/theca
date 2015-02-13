@@ -17,8 +17,11 @@ from __future__ import with_statement, print_function
 from fabric.api import *
 from fabric.utils import puts
 
+from fabric.contrib.files import exists
+
 import os, uuid
 from hashlib import sha256
+from datetime import datetime
 
 GIT_REPO = "https://github.com/rolandshoemaker/theca"
 BUILD_CMD = "cargo build --release --verbose"
@@ -34,8 +37,10 @@ TARGET_ARCHS = ["x86_64", "i686"]
 
 MULTIRUST_INSTALL_CMD = "curl -sf https://raw.githubusercontent.com/brson/multirust/master/blastoff.sh | sh"
 
+SERVER_STATIC_DIR="/var/www/static/theca/dist"
+
 def _run_mkdir(path):
-    run("mkdir -p %s" % (path))
+    return run("mkdir -p %s" % (path))
 
 def _where(command):
     with settings(warn_only=True):
@@ -137,22 +142,24 @@ def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channe
     elif host_string == "Darwin":
         host_os = "apple-darwin"
 
+    s_log = ""
+
     # clone git repo
     puts("# cloning repo")
     clone_dir = os.path.join(host_tmp_dir, package_prefix+"_build")
-    _run_mkdir(clone_dir)
+    s_log += _run_mkdir(clone_dir)
     with cd(clone_dir):
         with hide("output"):
-            run("git clone --depth=%d %s" % (clone_depth, GIT_REPO))
+            s_log += run("git clone --depth=%d %s" % (clone_depth, GIT_REPO))
     git_dir = os.path.join(clone_dir, GIT_REPO.split("/")[-1])
     with cd(git_dir):
         with hide("output"):
-            run("git checkout -qf %s" % (commit_hash))
+            s_log += run("git checkout -qf %s" % (commit_hash))
 
     # make package dir
     puts("# building static package")
     package_dir = os.path.join(host_tmp_dir, package_prefix)
-    _run_mkdir(package_dir)
+    s_log += _run_mkdir(package_dir)
 
     # build dir structure + copy static content
     for from_path, to_path in PACKAGE_STATIC_CONTENT.items():
@@ -161,27 +168,25 @@ def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channe
         rel_to_path = os.path.join(package_dir, to_path)
         # if folder tree doesnt exist make it
         if not os.path.exists(os.path.split(rel_to_path)[0]):
-            _run_mkdir(os.path.split(rel_to_path)[0])
+            s_log += _run_mkdir(os.path.split(rel_to_path)[0])
         # copy file from->to
         with hide("output"):
-            run("cp %s %s" % (rel_from_path, rel_to_path))
+            s_log += run("cp %s %s" % (rel_from_path, rel_to_path))
 
     # make binary folder
     puts("# make binary folder")
     binary_dir = os.path.join(package_dir, "bin")
-    _run_mkdir(binary_dir)
-
-    # find the current default multirust toolchain so we can reset at the end
-    # puts("# retrieving default toolchain")
-    # with hide("output"):
-    #     start_toolchain = run("multirust show-default").split("\n")[0].split(": ")[-1]
+    s_log += _run_mkdir(binary_dir)
 
     # build package in package_dir for arch + return to master
     targets = target_arch or TARGET_ARCHS
     if type(targets) == str:
         targets = [targets]
+    packages = []
     puts("# starting packager for arches %s" % (targets))
     for t_a in targets:
+        p_log = ""
+        p_started = time.time()
         current_toolchain = "-".join([rust_channel, t_a, host_os])
         puts("# %s-%s: started" % (package_prefix, current_toolchain))
 
@@ -192,21 +197,21 @@ def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channe
         puts("# %s-%s: setting toolchain to %s" % (package_prefix, current_toolchain, current_toolchain))
         with cd(git_dir):
             with hide("output"):
-                run("multirust override %s" % (current_toolchain))
+                p_log += run("multirust override %s" % (current_toolchain))
 
         # build package
         puts("# %s-%s: building binary with '%s'" % (package_prefix, current_toolchain, BUILD_CMD))
         with cd(git_dir):
             with hide("output"):
-                build_output = run(BUILD_CMD)
-                run("multirust remove-override")
+                p_log += run(BUILD_CMD)
+                p_log += run("multirust remove-override")
 
         # copy binary to binary_dir
         puts("# %s-%s: copying binary to package directory" % (package_prefix, current_toolchain))
         cargo_release_target = os.path.join(git_dir, "target", "release", "theca")
         package_binary_path = os.path.join(binary_dir, "theca")
         with hide("output"):
-            run("cp %s %s" % (cargo_release_target, package_binary_path))
+            p_log += run("cp %s %s" % (cargo_release_target, package_binary_path))
 
         # piece together package_name and create tarball in OUTPUT_DIR
         package_dir_name = "-".join([package_prefix, t_a, host_os])
@@ -217,7 +222,7 @@ def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channe
         puts("# %s-%s: creating tarball '%s'" % (package_prefix, current_toolchain, package_name))
         with cd(host_tmp_dir):
             with hide("output"):
-                run("tar -czf %s %s --transform 's,^%s,%s,'" % (package_name, package_prefix, package_prefix, package_dir_name))
+                p_log += run("tar -czf %s %s --transform 's,^%s,%s,'" % (package_name, package_prefix, package_prefix, package_dir_name))
 
         # get tarball from remote
         puts("# %s-%s: copying tarball '%s' to master" % (package_prefix, current_toolchain, package_name))
@@ -227,23 +232,70 @@ def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channe
         puts("# generating sha256 sum: %s" % (package_name+".sha256"))
         with open(os.path.join(output_dir, package_name+".sha256"), "w") as out_file:
             with open(os.path.join(output_dir, package_name), "rb") as in_file:
-                out_file.write("  ".join([sha256(in_file.read()).hexdigest(), package_name])+"\n")
+                package_hash = sha256(in_file.read()).hexdigest()
+                out_file.write("  ".join([package_hash, package_name])+"\n")
 
         # delete arch binary and package
         puts("# %s-%s: deleting %s binary and package" % (package_prefix, current_toolchain, current_toolchain))
         with hide("output"):
-            run("rm %s" % (package_binary_path))
-            run("rm %s" % (package_tarball_path))
+            p_log += run("rm %s" % (package_binary_path))
+            p_log += run("rm %s" % (package_tarball_path))
 
         puts("# %s-%s: finished packager" % (package_prefix, current_toolchain))
+
+	package.append({
+            "package_name": package_name,
+            "package_sha256": package_hash,
+            "toolchain_used": current_toolchain,
+            "packer_log": p_log,
+            "packing_took": time.time()-p_started
+        })
 
     puts("# finished packaging")
 
     # teardown tmpdir
     puts("# deleting temporary directory")
     with hide("output"):
-        run("rm -rf %s" % (host_tmp_dir))
+        t_log = run("rm -rf %s" % (host_tmp_dir))
 
     # write build report?
+    package_report = {
+        "packer_platform": platform.platform(),
+	"packages" = packages,
+	"setup_log": s_log,
+	"teardown_log": t_log
+    }
 
-    puts("# %s IS DONE \(◕ ◡ ◕\)" % (env.host))
+    puts("# %s BUILDING IS DONE \(◕ ◡ ◕\)" % (env.host))
+
+@runs_once
+def run_packager(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channel="nightly", target_arch=None):
+	report_name = "%s_build_report.json" % (package_prefix)
+	packager_reports = execute(package, package_prefix, commit_hash, output_dir, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)
+	full_report = {
+		"package_prefix": package_prefix,
+		"git_commit": commit_hash,
+		"rust_channel": rust_channel,
+		"packed_at_utc": datetime.now().isoformat(),
+		"packer_reports": packager_reports
+	}
+
+	with open(os.path.join(output_dir, report_name), "w") as f:
+		json.dump(full_report, f)
+
+def upload_to_static(build_report, update_installer=False):
+	to_upload = [r["package_name"] for p in build_report["packer_reports"] for r in p["packages"]]
+	to_upload.append("%s_build_report.json" % (build_report['package_prefix'])
+
+	if exists(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix'])):
+		# move the current stuff to -> package_prefix-DD-MM-YY/
+		# FIXME: this is wrong, it uses the just built packed_at
+		dated_dir = "%s-%s" % (build_report["package_prefix"], build_report["packed_at_utc"][:10])
+		_run_mkdir(os.path.join(SERVER_STATIC_DIR, dated_dir))
+		for existing_upload in to_upload:
+			run("mv %s %s" % (os.path.join(SERVER_STATIC_DIR, existing_upload), os.path.join(SERVER_STATIC_DIR, dated_dir, existing_upload)))
+	for upload in to_upload:
+		put(os.path.join(output_dir, upload), os.path.join(SERVER_STATIC_DIR, upload))
+
+def package_and_upload():
+	pass

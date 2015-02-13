@@ -77,11 +77,11 @@ I actually host the packages and stuff it'll be as simple as running
 :warning: this doesn't work at the moment :warning:
 
 
-	curl -s https://static.bracewel.net/theca/get_theca.sh | sh
+	$ curl -s https://static.bracewel.net/theca/get_theca.sh | sh
 
 to install `theca`. If you want to uninstall you just need to add the `--uninstall` flag like so
 
-	curl -s https://static.bracewel.net/theca/get_theca.sh | sh -- --uninstall
+	$ curl -s https://static.bracewel.net/theca/get_theca.sh | sh -- --uninstall
 
 ### From source
 

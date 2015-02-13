@@ -94,18 +94,21 @@ run() {
 	require bash
 
 	local INSTALL_PREFIX="/usr/local"
+	local release_channel="nightly"
 
 	for arg in "$@"; do
 		case "$arg" in
 			--uninstall)
 				UNINSTALL=true
 			;;
+			--nightly)
+				release_channel="nightly"
+			;;
 		esac
 	done
 	if [ ! -z "$UNINSTALL" ]; then
 		uninstall_theca INSTALL_PREFIX
 	else
-		local release_channel="nightly"
 		local hosttriple=$( get_host )
 		local tmpdir=$(mktemp -d 2>/dev/null || mktemp -d -t 'theca-installer-tmp')
 
