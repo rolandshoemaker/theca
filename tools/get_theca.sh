@@ -20,8 +20,17 @@ err() {
 	exit 1
 }
 
+has() {
+	if command -v $1 > /dev/null 2>&1; then
+		return 1
+	else
+		return 0
+	fi
+}
+
 require() {
-	if ! command -v $1 > /dev/null 2>&1; then
+	do_you=$(has $1)
+	if ! [ "$do_you" != "1" ]; then
 		err "$1 is required"
 	fi
 }
@@ -73,8 +82,11 @@ get_from_bracewel() {
 	cd "theca-$1-$2"
 	ok "couldn't enter package directory theca-$1-$2/"
 
-	bash ./install.sh <&0
-	ok "couldn't execute the package installer"
+	has_bash=$( has "bash" )
+	if [ "$has_bash" != "1" ]; then
+		bash ./install.sh <&0
+	fi
+	ok "package installer exited badly"
 }
 
 uninstall_theca() {
@@ -91,7 +103,6 @@ run() {
 	require mkdir
 	require curl
 	require tar
-	require bash
 
 	local INSTALL_PREFIX="/usr/local"
 	local release_channel="nightly"
