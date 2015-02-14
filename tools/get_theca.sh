@@ -73,7 +73,7 @@ get_from_bracewel() {
 	cd "theca-$1-$2"
 	ok "couldn't enter package directory theca-$1-$2/"
 
-	bash ./install.sh
+	bash ./install.sh <&0
 	ok "couldn't execute the package installer"
 }
 

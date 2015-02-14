@@ -19,7 +19,7 @@ from fabric.utils import puts
 
 from fabric.contrib.files import exists
 
-import os, uuid
+import os, uuid, time, platform, json
 from hashlib import sha256
 from datetime import datetime
 
@@ -28,7 +28,7 @@ BUILD_CMD = "cargo build --release --verbose"
 PACKAGE_STATIC_CONTENT = {
     "README.md": "README.md",
     "LICENSE": "LICENSE",
-    "tools/install.sh": "install.sh",
+    "tools/package-installer.sh": "install.sh",
     "docs/THECA.1": "share/man/man1/theca.1",
     "completion/bash_complete.sh": "etc/bash_completion.d/theca",
     "completion/_theca": "share/zsh/site-functions/_theca"
@@ -243,7 +243,7 @@ def _packager(package_prefix, commit_hash, output_dir, clone_depth=50, rust_chan
 
         puts("# %s-%s: finished packager" % (package_prefix, current_toolchain))
 
-	package.append({
+	packages.append({
             "package_name": package_name,
             "package_sha256": package_hash,
             "toolchain_used": current_toolchain,
@@ -258,15 +258,14 @@ def _packager(package_prefix, commit_hash, output_dir, clone_depth=50, rust_chan
     with hide("output"):
         t_log = run("rm -rf %s" % (host_tmp_dir))
 
-    # write build report?
-    package_report = {
-        "packer_platform": platform.platform(),
-	"packages" = packages,
-	"setup_log": s_log,
-	"teardown_log": t_log
-    }
-
     puts("# %s BUILDING IS DONE \(◕ ◡ ◕\)" % (env.host))
+
+    # write build report?
+    return {
+        "packer_platform": platform.platform(),
+	"packages": packages,
+	"setup_and_teardown_log": "%s\n[BUILDING+PACKAGING]\n%s" % (s_log, t_log),
+    }
 
 @runs_once
 def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channel="nightly", target_arch=None):
@@ -281,17 +280,17 @@ def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channe
 	}
 
 	with open(os.path.join(output_dir, report_name), "w") as f:
-		json.dump(full_report, f)
+		json.dump(full_report, f, indent=2)
 
 	return full_report
 
 def upload_to_static(build_report, update_installer=False):
 	to_upload = [r["package_name"] for p in build_report["packer_reports"] for r in p["packages"]]
-	to_upload.append("%s_build_report.json" % (build_report['package_prefix'])
+	to_upload.append("%s_build_report.json" % (build_report['package_prefix']))
 
-	if exists(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix'])):
+	if exists(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))):
 		# move the current stuff to -> package_prefix-DD-MM-YY/
-		with open(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))as old:
+		with open(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))) as old:
 			old_report = json.load(old)
 			dated_dir = "%s-%s" % (old_report["package_prefix"], old_report["packed_at_utc"][:10])
 		_run_mkdir(os.path.join(SERVER_STATIC_DIR, dated_dir))

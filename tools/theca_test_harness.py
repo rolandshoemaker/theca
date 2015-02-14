@@ -186,7 +186,8 @@ def test_harness(tests, cond=False):
     failed = 0
 
     print("# {}\n#    {}".format(tests['title'], tests['desc']))
-    print("#\n# running {} tests.\n".format(len(tests['tests'])))
+    if not cond:
+        print("#\n# running {} tests.\n".format(len(tests['tests'])))
     for t in tests['tests']:
         if not cond:
             print("  test: "+t['name'], end="")

@@ -86,7 +86,8 @@ select yn in "Yes" "No"; do
 		;;
 		No)
 			p "#"
-			p "# ok bye!"
+			p "# ok, we are done!"
+			p "# have fun!"
 			exit
 		;;
 	esac
