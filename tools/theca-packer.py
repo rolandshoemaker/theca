@@ -122,7 +122,7 @@ def all_toolchains():
             puts("#   %s" % (l))
 
 @parallel
-def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channel="nightly", target_arch=None):
+def _packager(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channel="nightly", target_arch=None):
     puts("# STARTED")
 
     # linux / os x agnostic tmpdir
@@ -269,9 +269,9 @@ def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channe
     puts("# %s BUILDING IS DONE \(◕ ◡ ◕\)" % (env.host))
 
 @runs_once
-def run_packager(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channel="nightly", target_arch=None):
+def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channel="nightly", target_arch=None):
 	report_name = "%s_build_report.json" % (package_prefix)
-	packager_reports = execute(package, package_prefix, commit_hash, output_dir, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)
+	packager_reports = execute(_packager, package_prefix, commit_hash, output_dir, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)
 	full_report = {
 		"package_prefix": package_prefix,
 		"git_commit": commit_hash,
@@ -283,14 +283,17 @@ def run_packager(package_prefix, commit_hash, output_dir, clone_depth=50, rust_c
 	with open(os.path.join(output_dir, report_name), "w") as f:
 		json.dump(full_report, f)
 
+	return full_report
+
 def upload_to_static(build_report, update_installer=False):
 	to_upload = [r["package_name"] for p in build_report["packer_reports"] for r in p["packages"]]
 	to_upload.append("%s_build_report.json" % (build_report['package_prefix'])
 
 	if exists(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix'])):
 		# move the current stuff to -> package_prefix-DD-MM-YY/
-		# FIXME: this is wrong, it uses the just built packed_at
-		dated_dir = "%s-%s" % (build_report["package_prefix"], build_report["packed_at_utc"][:10])
+		with open(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))as old:
+			old_report = json.load(old)
+			dated_dir = "%s-%s" % (old_report["package_prefix"], old_report["packed_at_utc"][:10])
 		_run_mkdir(os.path.join(SERVER_STATIC_DIR, dated_dir))
 		for existing_upload in to_upload:
 			run("mv %s %s" % (os.path.join(SERVER_STATIC_DIR, existing_upload), os.path.join(SERVER_STATIC_DIR, dated_dir, existing_upload)))

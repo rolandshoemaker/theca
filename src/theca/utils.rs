@@ -393,7 +393,7 @@ pub fn profiles_in_folder(folder: &Path) -> Result<(), ThecaError> {
             if is_prof.0 {
                 let mut msg = try!(path_to_profile_name(file_path));
                 if is_prof.1 {
-                    msg = format!("{} [encrypted?]", msg);
+                    msg = format!("{} [encrypted]", msg);
                 }
                 println!("{}", msg);
             }
