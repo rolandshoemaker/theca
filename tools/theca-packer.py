@@ -366,10 +366,3 @@ def package_and_upload(package_prefix, commit_hash=None, clone_depth=50, rust_ch
     # delete staging directory
     if not yes and confirm("would you like to delete the staging directory? [%s]" % (staging)):
         local("rm -rf %s" % staging)
-
-def test(a=False):
-    puts("whoop")
-    if a:
-        puts("yo yoooo")
-        exit(1)
-    puts("hrmmm")
