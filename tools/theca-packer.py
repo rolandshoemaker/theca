@@ -243,7 +243,7 @@ def _packager(package_prefix, commit_hash, output_dir, clone_depth=50, rust_chan
 
         puts("# %s-%s: finished packager" % (package_prefix, current_toolchain))
 
-	packages.append({
+    packages.append({
             "package_name": package_name,
             "package_sha256": package_hash,
             "toolchain_used": current_toolchain,
@@ -262,42 +262,42 @@ def _packager(package_prefix, commit_hash, output_dir, clone_depth=50, rust_chan
 
     # write build report?
     return {
-        "packer_platform": platform.platform(),
-	"packages": packages,
-	"setup_and_teardown_log": "%s\n[BUILDING+PACKAGING]\n%s" % (s_log, t_log),
+        "packer_platform": run("uname -a"),
+        "packages": packages,
+        "setup_and_teardown_log": "%s\n[BUILDING+PACKAGING]\n%s" % (s_log, t_log),
     }
 
 @runs_once
 def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channel="nightly", target_arch=None):
-	report_name = "%s_build_report.json" % (package_prefix)
-	packager_reports = execute(_packager, package_prefix, commit_hash, output_dir, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)
-	full_report = {
-		"package_prefix": package_prefix,
-		"git_commit": commit_hash,
-		"rust_channel": rust_channel,
-		"packed_at_utc": datetime.now().isoformat(),
-		"packer_reports": packager_reports
-	}
+    report_name = "%s_build_report.json" % (package_prefix)
+    packager_reports = execute(_packager, package_prefix, commit_hash, output_dir, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)
+    full_report = {
+        "package_prefix": package_prefix,
+        "git_commit": commit_hash,
+        "rust_channel": rust_channel,
+        "packed_at_utc": datetime.now().isoformat(),
+        "packer_reports": packager_reports
+    }
 
-	with open(os.path.join(output_dir, report_name), "w") as f:
-		json.dump(full_report, f, indent=2)
+    with open(os.path.join(output_dir, report_name), "w") as f:
+        json.dump(full_report, f, indent=2)
 
-	return full_report
+    return full_report
 
 def upload_to_static(build_report, update_installer=False):
-	to_upload = [r["package_name"] for p in build_report["packer_reports"] for r in p["packages"]]
-	to_upload.append("%s_build_report.json" % (build_report['package_prefix']))
+    to_upload = [r["package_name"] for p in build_report["packer_reports"] for r in p["packages"]]
+    to_upload.append("%s_build_report.json" % (build_report['package_prefix']))
 
-	if exists(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))):
-		# move the current stuff to -> package_prefix-DD-MM-YY/
-		with open(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))) as old:
-			old_report = json.load(old)
-			dated_dir = "%s-%s" % (old_report["package_prefix"], old_report["packed_at_utc"][:10])
-		_run_mkdir(os.path.join(SERVER_STATIC_DIR, dated_dir))
-		for existing_upload in to_upload:
-			run("mv %s %s" % (os.path.join(SERVER_STATIC_DIR, existing_upload), os.path.join(SERVER_STATIC_DIR, dated_dir, existing_upload)))
-	for upload in to_upload:
-		put(os.path.join(output_dir, upload), os.path.join(SERVER_STATIC_DIR, upload))
+    if exists(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))):
+        # move the current stuff to -> package_prefix-DD-MM-YY/
+        with open(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))) as old:
+            old_report = json.load(old)
+            dated_dir = "%s-%s" % (old_report["package_prefix"], old_report["packed_at_utc"][:10])
+        _run_mkdir(os.path.join(SERVER_STATIC_DIR, dated_dir))
+        for existing_upload in to_upload:
+            run("mv %s %s" % (os.path.join(SERVER_STATIC_DIR, existing_upload), os.path.join(SERVER_STATIC_DIR, dated_dir, existing_upload)))
+    for upload in to_upload:
+        put(os.path.join(output_dir, upload), os.path.join(SERVER_STATIC_DIR, upload))
 
 def package_and_upload():
-	pass
+    pass
