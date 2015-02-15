@@ -18,6 +18,7 @@ from fabric.api import *
 from fabric.utils import puts
 
 from fabric.contrib.files import exists
+from fabric.contrib.console import confirm
 
 import os, uuid, time, platform, json
 from hashlib import sha256
@@ -35,9 +36,14 @@ PACKAGE_STATIC_CONTENT = {
 }
 TARGET_ARCHS = ["x86_64", "i686"]
 
+RUST_CHANNEL = "nightly"
+
 MULTIRUST_INSTALL_CMD = "curl -sf https://raw.githubusercontent.com/brson/multirust/master/blastoff.sh | sh"
 
 SERVER_STATIC_DIR="/var/www/static/theca/dist"
+
+BUIDLERS = ["", ""]
+STATIC_HOST = ""
 
 def _run_mkdir(path):
     return run("mkdir -p %s" % (path))
@@ -122,7 +128,7 @@ def all_toolchains():
             puts("#   %s" % (l))
 
 @parallel
-def _packager(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channel="nightly", target_arch=None):
+def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust_channel=RUST_CHANNEL, target_arch=None):
     puts("# STARTED")
 
     # linux / os x agnostic tmpdir
@@ -148,13 +154,17 @@ def _packager(package_prefix, commit_hash, output_dir, clone_depth=50, rust_chan
     puts("# cloning repo")
     clone_dir = os.path.join(host_tmp_dir, package_prefix+"_build")
     s_log += _run_mkdir(clone_dir)
+
     with cd(clone_dir):
         with hide("output"):
             s_log += run("git clone --depth=%d %s" % (clone_depth, GIT_REPO))
     git_dir = os.path.join(clone_dir, GIT_REPO.split("/")[-1])
-    with cd(git_dir):
-        with hide("output"):
-            s_log += run("git checkout -qf %s" % (commit_hash))
+
+    if commit_hash:
+        # if commit_hash is set then checkout that commit, otherwise just use whats at master
+        with cd(git_dir):
+            with hide("output"):
+                s_log += run("git checkout -qf %s" % (commit_hash))
 
     # make package dir
     puts("# building static package")
@@ -260,17 +270,16 @@ def _packager(package_prefix, commit_hash, output_dir, clone_depth=50, rust_chan
 
     puts("# %s BUILDING IS DONE \(◕ ◡ ◕\)" % (env.host))
 
-    # write build report?
     return {
         "packer_platform": run("uname -a"),
         "packages": packages,
-        "setup_and_teardown_log": "%s\n[BUILDING+PACKAGING]\n%s" % (s_log, t_log),
+        "setup_and_teardown_log": "%s\n[BUILDING+PACKAGING...]\n%s" % (s_log, t_log),
     }
 
 @runs_once
-def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channel="nightly", target_arch=None):
+def package(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust_channel=RUST_CHANNEL, target_arch=None):
     report_name = "%s_build_report.json" % (package_prefix)
-    packager_reports = execute(_packager, package_prefix, commit_hash, output_dir, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)
+    packager_reports = execute(_packager, package_prefix, commit_hash=commit_hash, output_dir, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)
     full_report = {
         "package_prefix": package_prefix,
         "git_commit": commit_hash,
@@ -284,20 +293,52 @@ def package(package_prefix, commit_hash, output_dir, clone_depth=50, rust_channe
 
     return full_report
 
-def upload_to_static(build_report, update_installer=False):
+def update_installer(commit=None):
+    # set the part of github to curl from
+    installer_url = "https://raw.githubusercontent.com/rolandshoemaker/theca/%s/tools/get_theca.sh" % (commit or "master")
+    with cd("/var/www/static/theca"):
+        # download dat installer yo
+        run("curl -O %s" % (installer_url))
+
+def upload_to_static(build_report, staging_dir, update_installer=False, installer_commit=None):
+    # collapse package file list and add the build report
     to_upload = [r["package_name"] for p in build_report["packer_reports"] for r in p["packages"]]
     to_upload.append("%s_build_report.json" % (build_report['package_prefix']))
 
+    # check if package with this prefix already exists in dist/ root
+    # by looking for a build report
     if exists(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))):
-        # move the current stuff to -> package_prefix-DD-MM-YY/
+        # move the old stuff to -> package_prefix-DD-MM-YY/
         with open(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))) as old:
             old_report = json.load(old)
             dated_dir = "%s-%s" % (old_report["package_prefix"], old_report["packed_at_utc"][:10])
+
+        # create dated_dir and copy the old files 
         _run_mkdir(os.path.join(SERVER_STATIC_DIR, dated_dir))
         for existing_upload in to_upload:
             run("mv %s %s" % (os.path.join(SERVER_STATIC_DIR, existing_upload), os.path.join(SERVER_STATIC_DIR, dated_dir, existing_upload)))
-    for upload in to_upload:
-        put(os.path.join(output_dir, upload), os.path.join(SERVER_STATIC_DIR, upload))
 
-def package_and_upload():
-    pass
+    # transfer the files!
+    for upload in to_upload:
+        put(os.path.join(staging_dir, upload), os.path.join(SERVER_STATIC_DIR, upload))
+
+    if update_installer:
+        execute(update_installer, commit=installer_commit, hosts=STATIC_HOST)
+
+@runs_once
+def package_and_upload(package_prefix, commit_hash=None, clone_depth=50, rust_channel=RUST_CHANNEL, target_arch=None, staging=None, update_installer=False, yes=False):
+    if not staging:
+        # if staging isn't set manually just make a tempdir
+        staging = local("mktemp -d 2>/dev/null || mktemp -d -t 'theca-packer-staging'")
+
+    # run the packager
+    report = execute(package, package_prefix, commit_hash=commit_hash, staging, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch, hosts=BUIDLERS)
+
+    # IF: report indicates success
+    # upload stuff to static
+    execute(upload_to_static, report, staging, update_installer=update_installer, hosts=STATIC_HOST)
+
+    # IF: upload is good and user wants to delete staging
+    # delete staging directory
+    if not yes and confirm("would you like to delete the staging directory? [%s]" % (staging)):
+        local("rm -rf %s" % staging)
