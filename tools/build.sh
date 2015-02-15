@@ -7,7 +7,7 @@
 #
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
-# build.sh
+# build.sh - v0.9.0
 #   a simple build script because i forget things
 
 INSTALL_DIR="/usr/local/bin"

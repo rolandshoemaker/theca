@@ -7,7 +7,7 @@
 #
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
-# get_theca.sh
+# get_theca.sh - v0.9.0
 #   super simple binary package downloader woot, won't
 #   work until i setup bracewel.net but w/e for now...
 

@@ -8,7 +8,7 @@
 #
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
-# theca-packer.py
+# theca-packer.py - v0.9.0
 #   fabric based tool to package multiple different target arch/platform
 #   combinations (only tested on x86_64/i686-linux/darwin combinations)
 #   using multirust to manage rust toolchains (kinda hacky tbh...)
@@ -72,6 +72,7 @@ def _setup_toolchain(toolchain):
         run("multirust update %s --installer %s" % (toolchain, toolchain_installer_url))
 
 @parallel
+@hosts(BUIDLERS)
 def check_ability():
     git = _where("git")
     multirust = _where("multirust")
@@ -102,12 +103,13 @@ def check_ability():
                 puts("#   %s" % (l))
 
 @parallel
+@hosts(BUIDLERS)
 def install_toolchains(rust_channel, target_arch=None):
     with settings(warn_only=True):
         puts("# check if multirust is installed")
         if not _where("multirust"):
             puts("# nop, install multirust")
-            # should check if rust/cargo is and run traditional uninstaller before this idk...?
+            # should check if rust/cargo is already installed and run traditional uninstaller before this idk...?
             run(MULTIRUST_INSTALL_CMD)
         puts("# got it!")
         with hide("output", "running"):
@@ -127,6 +129,7 @@ def install_toolchains(rust_channel, target_arch=None):
     puts("# %s IS DONE \(◕ ◡ ◕\)" % (env.host))
 
 @parallel
+@hosts(BUIDLERS)
 def all_toolchains():
     with hide("output", "running"):
         toolchains = run("multirust list-toolchains")
@@ -135,6 +138,7 @@ def all_toolchains():
             puts("#   %s" % (l))
 
 @parallel
+@hosts(BUIDLERS)
 def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust_channel=RUST_CHANNEL, target_arch=None):
     puts("# STARTED")
 
@@ -142,9 +146,9 @@ def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust
     puts("# creating temporary directory")
     with hide("output"):
         host_tmp_dir = run("mktemp -d 2>/dev/null || mktemp -d -t 'theca-packer-tmp'")
-        if host_tmp_dir in ["", "/", ""]:
+        if host_tmp_dir in ["", "/", "."]:
             # just making sure...
-            exit(1) # ?
+            abort("this is no temporary directory! [%s]" % (host_tmp_dir))
 
     # get host triple stuff
     puts("# geuessing host os")
@@ -312,6 +316,7 @@ def package(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust_c
 
     return full_report
 
+@hosts([STATIC_HOST])
 def update_installer(commit=None):
     # set the part of github to curl from
     installer_url = "https://raw.githubusercontent.com/rolandshoemaker/theca/%s/tools/get_theca.sh" % (commit or "master")
@@ -319,13 +324,14 @@ def update_installer(commit=None):
         # download dat installer yo
         run("curl -O %s" % (installer_url))
 
+@hosts([STATIC_HOST])
 def upload_to_static(build_report, staging_dir, update_installer=False, installer_commit=None):
     # collapse package file list and add the build report
     to_upload = [r["package_name"] for p in build_report["packer_reports"] for r in p["packages"]]
     to_upload.append("%s_build_report.json" % (build_report['package_prefix']))
 
     # check if package with this prefix already exists in dist/ root
-    # by looking for a build report
+    # by looking for a corresponding build report
     if exists(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))):
         # move the old stuff to -> package_prefix-DD-MM-YY/
         with open(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))) as old:
@@ -345,13 +351,13 @@ def upload_to_static(build_report, staging_dir, update_installer=False, installe
         execute(update_installer, commit=installer_commit, hosts=STATIC_HOST)
 
 @runs_once
-def package_and_upload(package_prefix, commit_hash=None, clone_depth=50, rust_channel=RUST_CHANNEL, target_arch=None, staging=None, update_installer=False, yes=False):
+def package_and_upload(package_prefix, commit_hash=None, clone_depth=50, rust_channel=RUST_CHANNEL, target_arch=None, staging=None, update_installer=False, installer_commit=None, yes=False):
     if not staging:
         # if staging isn't set manually just make a tempdir
         staging = local("mktemp -d 2>/dev/null || mktemp -d -t 'theca-packer-staging'")
 
     # run the packager
-    report = execute(package, package_prefix, staging, commit_hash=commit_hash, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch, hosts=BUIDLERS)
+    report = execute(package, package_prefix, staging, commit_hash=commit_hash, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)
 
     # check for failures
     any_packer_fail = any(b["packer_status"] == "errored" for p in report["packer_reports"] for b in p["packages"])
@@ -360,7 +366,7 @@ def package_and_upload(package_prefix, commit_hash=None, clone_depth=50, rust_ch
 
     # IF: report indicates success
     # upload stuff to static
-    execute(upload_to_static, report, staging, update_installer=update_installer, hosts=STATIC_HOST)
+    execute(upload_to_static, report, staging, update_installer=update_installer, installer_commit=installer_commit, hosts=STATIC_HOST)
 
     # IF: upload is good and user wants to delete staging
     # delete staging directory

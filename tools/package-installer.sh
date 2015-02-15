@@ -7,7 +7,7 @@
 #
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
-# install.sh
+# install.sh - v0.9.0
 #   simple bash script to install binaries, man page, bash+zsh completion
 #   etc and run the first time stuff for the binary packages
 

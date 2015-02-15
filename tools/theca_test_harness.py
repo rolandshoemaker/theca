@@ -7,7 +7,7 @@
 #
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
-# theca_test_harness.py
+# theca_test_harness.py - v0.9.0
 #   external python testing harness for testing the theca cli binary.
 
 from jsonschema import validate as validate_schema
