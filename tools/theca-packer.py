@@ -15,7 +15,7 @@
 
 from __future__ import with_statement, print_function
 from fabric.api import *
-from fabric.utils import puts
+from fabric.utils import puts, abort
 
 from fabric.contrib.files import exists
 from fabric.contrib.console import confirm
@@ -45,8 +45,15 @@ SERVER_STATIC_DIR="/var/www/static/theca/dist"
 BUIDLERS = ["", ""]
 STATIC_HOST = ""
 
+def _log_run(command, warn_only=False):
+    output = run(command, warn_only=warn_only)
+    if warn_only:
+        return (output.return_code, "%s\n%s\n" % (output.command, output))
+    else:
+        return "%s\n%s\n" % (output.command, output)
+
 def _run_mkdir(path):
-    return run("mkdir -p %s" % (path))
+    return _log_run("mkdir -p %s" % (path))
 
 def _where(command):
     with settings(warn_only=True):
@@ -157,14 +164,14 @@ def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust
 
     with cd(clone_dir):
         with hide("output"):
-            s_log += run("git clone --depth=%d %s" % (clone_depth, GIT_REPO))
+            s_log += _log_run("git clone --depth=%d %s" % (clone_depth, GIT_REPO))
     git_dir = os.path.join(clone_dir, GIT_REPO.split("/")[-1])
 
     if commit_hash:
         # if commit_hash is set then checkout that commit, otherwise just use whats at master
         with cd(git_dir):
             with hide("output"):
-                s_log += run("git checkout -qf %s" % (commit_hash))
+                s_log += _log_run("git checkout -qf %s" % (commit_hash))
 
     # make package dir
     puts("# building static package")
@@ -181,7 +188,7 @@ def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust
             s_log += _run_mkdir(os.path.split(rel_to_path)[0])
         # copy file from->to
         with hide("output"):
-            s_log += run("cp %s %s" % (rel_from_path, rel_to_path))
+            s_log += _log_run("cp %s %s" % (rel_from_path, rel_to_path))
 
     # make binary folder
     puts("# make binary folder")
@@ -207,21 +214,32 @@ def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust
         puts("# %s-%s: setting toolchain to %s" % (package_prefix, current_toolchain, current_toolchain))
         with cd(git_dir):
             with hide("output"):
-                p_log += run("multirust override %s" % (current_toolchain))
+                p_log += _log_run("multirust override %s" % (current_toolchain))
 
         # build package
         puts("# %s-%s: building binary with '%s'" % (package_prefix, current_toolchain, BUILD_CMD))
         with cd(git_dir):
             with hide("output"):
-                p_log += run(BUILD_CMD)
-                p_log += run("multirust remove-override")
+                b_code, b_log = _log_run(BUILD_CMD, warn_only=True)
+                p_log += b_log
+                if not b_code == 0:
+                    packages.append({
+                        "packer_status": "errored",
+                        "error_code": b_code,
+                        "packer_log": p_log,
+                        "toolchain_used": current_toolchain,
+                        "packing_took": time.time()-p_started
+                    })
+                    continue
+                p_log += _log_run("multirust remove-override")
+
 
         # copy binary to binary_dir
         puts("# %s-%s: copying binary to package directory" % (package_prefix, current_toolchain))
         cargo_release_target = os.path.join(git_dir, "target", "release", "theca")
         package_binary_path = os.path.join(binary_dir, "theca")
         with hide("output"):
-            p_log += run("cp %s %s" % (cargo_release_target, package_binary_path))
+            p_log += _log_run("cp %s %s" % (cargo_release_target, package_binary_path))
 
         # piece together package_name and create tarball in OUTPUT_DIR
         package_dir_name = "-".join([package_prefix, t_a, host_os])
@@ -232,7 +250,7 @@ def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust
         puts("# %s-%s: creating tarball '%s'" % (package_prefix, current_toolchain, package_name))
         with cd(host_tmp_dir):
             with hide("output"):
-                p_log += run("tar -czf %s %s --transform 's,^%s,%s,'" % (package_name, package_prefix, package_prefix, package_dir_name))
+                p_log += _log_run("tar -czf %s %s --transform 's,^%s,%s,'" % (package_name, package_prefix, package_prefix, package_dir_name))
 
         # get tarball from remote
         puts("# %s-%s: copying tarball '%s' to master" % (package_prefix, current_toolchain, package_name))
@@ -248,12 +266,13 @@ def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust
         # delete arch binary and package
         puts("# %s-%s: deleting %s binary and package" % (package_prefix, current_toolchain, current_toolchain))
         with hide("output"):
-            p_log += run("rm %s" % (package_binary_path))
-            p_log += run("rm %s" % (package_tarball_path))
+            p_log += _log_run("rm %s" % (package_binary_path))
+            p_log += _log_run("rm %s" % (package_tarball_path))
 
         puts("# %s-%s: finished packager" % (package_prefix, current_toolchain))
 
-    packages.append({
+        packages.append({
+            "packer_status": "success",
             "package_name": package_name,
             "package_sha256": package_hash,
             "toolchain_used": current_toolchain,
@@ -266,7 +285,7 @@ def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust
     # teardown tmpdir
     puts("# deleting temporary directory")
     with hide("output"):
-        t_log = run("rm -rf %s" % (host_tmp_dir))
+        t_log = _log_run("rm -rf %s" % (host_tmp_dir))
 
     puts("# %s BUILDING IS DONE \(◕ ◡ ◕\)" % (env.host))
 
@@ -279,7 +298,7 @@ def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust
 @runs_once
 def package(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust_channel=RUST_CHANNEL, target_arch=None):
     report_name = "%s_build_report.json" % (package_prefix)
-    packager_reports = execute(_packager, package_prefix, commit_hash=commit_hash, output_dir, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)
+    packager_reports = execute(_packager, package_prefix, output_dir, commit_hash=commit_hash, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)
     full_report = {
         "package_prefix": package_prefix,
         "git_commit": commit_hash,
@@ -332,7 +351,12 @@ def package_and_upload(package_prefix, commit_hash=None, clone_depth=50, rust_ch
         staging = local("mktemp -d 2>/dev/null || mktemp -d -t 'theca-packer-staging'")
 
     # run the packager
-    report = execute(package, package_prefix, commit_hash=commit_hash, staging, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch, hosts=BUIDLERS)
+    report = execute(package, package_prefix, staging, commit_hash=commit_hash, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch, hosts=BUIDLERS)
+
+    # check for failures
+    any_packer_fail = any(b["packer_status"] == "errored" for p in report["packer_reports"] for b in p["packages"])
+    if  any_packer_fail:
+        abort("# BAAAAAADBADBADBAD, you should probably checkout the build report [%s]" % (os.path.join(staging, package_prefix+"_build_report.json")))
 
     # IF: report indicates success
     # upload stuff to static
@@ -342,3 +366,10 @@ def package_and_upload(package_prefix, commit_hash=None, clone_depth=50, rust_ch
     # delete staging directory
     if not yes and confirm("would you like to delete the staging directory? [%s]" % (staging)):
         local("rm -rf %s" % staging)
+
+def test(a=False):
+    puts("whoop")
+    if a:
+        puts("yo yoooo")
+        exit(1)
+    puts("hrmmm")
