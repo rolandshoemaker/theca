@@ -25,7 +25,7 @@ from hashlib import sha256
 from datetime import datetime
 
 GIT_REPO = "https://github.com/rolandshoemaker/theca"
-BUILD_CMD = "cargo build --release --verbose"
+BUILD_CMD = "bash tools/build.sh --release --verbose"
 PACKAGE_STATIC_CONTENT = {
     "README.md": "README.md",
     "LICENSE": "LICENSE",
@@ -258,7 +258,7 @@ def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust
 
         # get tarball from remote
         puts("# %s-%s: copying tarball '%s' to master" % (package_prefix, current_toolchain, package_name))
-        get(package_tarball_path, os.path.join(output_dir, package_name))
+        get(package_tarball_path, os.path.join(output_dir, os.path.join(output_dir, package_name)))
 
         # generate sha hash
         puts("# generating sha256 sum: %s" % (package_name+".sha256"))
@@ -293,8 +293,10 @@ def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust
 
     puts("# %s BUILDING IS DONE \(◕ ◡ ◕\)" % (env.host))
 
+    with hide("output", "running"):
+        packer_platform = run("uname -a")
     return {
-        "packer_platform": run("uname -a"),
+        "packer_platform": packer_platform,
         "packages": packages,
         "setup_and_teardown_log": "%s\n[BUILDING+PACKAGING...]\n%s" % (s_log, t_log),
     }
@@ -325,18 +327,19 @@ def update_installer(commit=None):
         run("curl -sO %s" % (installer_url))
 
 @hosts([STATIC_HOST])
-def upload_to_static(build_report, staging_dir, update_installer=False, installer_commit=None):
+def upload_to_static(build_report, staging_dir, update_inst=False, installer_commit=None):
     # collapse package file list and add the build report
-    to_upload = [r["package_name"] for p in build_report["packer_reports"] for r in p["packages"]]
+    to_upload = [r["package_name"] for p in build_report["packer_reports"].values() for r in p["packages"]]
+    to_upload += [r["package_name"]+".sha256" for p in build_report["packer_reports"].values() for r in p["packages"]]
     to_upload.append("%s_build_report.json" % (build_report['package_prefix']))
 
     # check if package with this prefix already exists in dist/ root
     # by looking for a corresponding build report
     if exists(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))):
         # move the old stuff to -> package_prefix-DD-MM-YY/
-        with open(os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))) as old:
-            old_report = json.load(old)
-            dated_dir = "%s-%s" % (old_report["package_prefix"], old_report["packed_at_utc"][:10])
+        old_file = run("cat %s" % (os.path.join(SERVER_STATIC_DIR, "%s_build_report.json" % (build_report['package_prefix']))))
+        old_report = json.loads(old_file)
+        dated_dir = "%s-%s" % (old_report["package_prefix"], old_report["packed_at_utc"][:10])
 
         # create dated_dir and copy the old files 
         _run_mkdir(os.path.join(SERVER_STATIC_DIR, dated_dir))
@@ -347,26 +350,26 @@ def upload_to_static(build_report, staging_dir, update_installer=False, installe
     for upload in to_upload:
         put(os.path.join(staging_dir, upload), os.path.join(SERVER_STATIC_DIR, upload))
 
-    if update_installer:
-        execute(update_installer, commit=installer_commit, hosts=STATIC_HOST)
+    if update_inst:
+        execute(update_installer, commit=installer_commit)
 
 @runs_once
-def package_and_upload(package_prefix, commit_hash=None, clone_depth=50, rust_channel=RUST_CHANNEL, target_arch=None, staging=None, update_installer=False, installer_commit=None, yes=False):
+def package_and_upload(package_prefix, commit_hash=None, clone_depth=50, rust_channel=RUST_CHANNEL, target_arch=None, staging=None, update_inst=False, installer_commit=None, yes=False):
     if not staging:
         # if staging isn't set manually just make a tempdir
-        staging = local("mktemp -d 2>/dev/null || mktemp -d -t 'theca-packer-staging'")
+        staging = local("mktemp -d 2>/dev/null || mktemp -d -t 'theca-packer-staging'", capture=True)
 
     # run the packager
-    report = execute(package, package_prefix, staging, commit_hash=commit_hash, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)
+    report = execute(package, package_prefix, staging, commit_hash=commit_hash, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)["<local-only>"]
 
     # check for failures
-    any_packer_fail = any(b["packer_status"] == "errored" for p in report["packer_reports"] for b in p["packages"])
+    any_packer_fail = any(b["packer_status"] == "errored" for p in report["packer_reports"].values() for b in p["packages"])
     if  any_packer_fail:
         abort("# BAAAAAADBADBADBAD, you should probably checkout the build report [%s]" % (os.path.join(staging, package_prefix+"_build_report.json")))
 
     # IF: report indicates success
     # upload stuff to static
-    execute(upload_to_static, report, staging, update_installer=update_installer, installer_commit=installer_commit, hosts=STATIC_HOST)
+    execute(upload_to_static, report, staging, update_inst=update_inst, installer_commit=installer_commit)
 
     # IF: upload is good and user wants to delete staging
     # delete staging directory

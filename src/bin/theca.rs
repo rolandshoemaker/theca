@@ -16,7 +16,7 @@ extern crate theca;
 extern crate docopt;
 
 use docopt::Docopt;
-use theca::{Args, ThecaProfile, setup_args, parse_cmds};
+use theca::{Args, ThecaProfile, setup_args, parse_cmds, version};
 use theca::errors::{ThecaError};
 use std::env::{set_exit_status};
 
@@ -93,8 +93,9 @@ Miscellaneous:
 ";
 
 fn theca_main() -> Result<(), ThecaError> {
-    let mut args: Args = try!(Docopt::new(USAGE)
-                            .and_then(|d| d.decode()));
+    let mut args: Args = try!(Docopt::new(USAGE).unwrap()
+                                                .version(Some(version()))
+                                                .decode());
     try!(setup_args(&mut args));
 
     let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(

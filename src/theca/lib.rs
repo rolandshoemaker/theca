@@ -67,7 +67,9 @@ pub mod utils;
 pub mod crypt;
 
 /// Current version of theca
-static VERSION:  &'static str = "1.0.0-dev";
+pub fn version() -> String {
+    format!("theca {}", option_env!("THECA_BUILD_VER").unwrap_or(""))
+}
 
 /// theca docopt argument struct
 #[derive(RustcDecodable, Clone)]
@@ -1024,12 +1026,6 @@ pub fn parse_cmds(
             // stats
             if args.cmd_info {
                 try!(profile.stats(&args.flag_profile));
-                return Ok(())
-            }
-
-            // misc
-            if args.flag_version {
-                println!("theca v{}", VERSION);
                 return Ok(())
             }
 
