@@ -7,7 +7,7 @@
 #
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
-# get_theca.sh - v0.9.1
+# get_theca.sh - v0.9.2
 #   super simple binary package downloader that invokes
 #   the install.sh installer script, pretty much ready
 #   for action now
