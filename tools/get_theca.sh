@@ -7,31 +7,31 @@
 #
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
-# get_theca.sh - v0.9.0
-#   super simple binary package downloader woot, won't
-#   work until i setup bracewel.net but w/e for now...
+# get_theca.sh - v0.9.1
+#   super simple binary package downloader that invokes
+#   the install.sh installer script, pretty much ready
+#   for action now
 
 p() {
 	echo "get_theca: $1"
 }
 
 err() {
-	echo "ERROR $1"
+	p "ERROR $1" >&2
 	exit 1
 }
 
 has() {
 	if command -v $1 > /dev/null 2>&1; then
-		return 1
-	else
 		return 0
+	else
+		return 1
 	fi
 }
 
 require() {
-	do_you=$(has $1)
-	if ! [ "$do_you" != "1" ]; then
-		err "$1 is required"
+	if ! has $1; then
+		err "$1 is required for this script!"
 	fi
 }
 
@@ -43,7 +43,7 @@ ok() {
 
 delete() {
 	if ! [ -f "$1" ]; then
-		rm -Rf "$1"
+		rm -rf "$1"
 		ok "couldn't delete $1"
 	fi
 }
@@ -82,9 +82,8 @@ get_from_bracewel() {
 	cd "theca-$1-$2"
 	ok "couldn't enter package directory theca-$1-$2/"
 
-	has_bash=$( has "bash" )
-	if [ "$has_bash" != "1" ]; then
-		bash ./install.sh <&0
+	if has bash; then
+		bash ./install.sh <&1
 	fi
 	ok "package installer exited badly"
 }
