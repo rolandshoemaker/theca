@@ -42,8 +42,8 @@ MULTIRUST_INSTALL_CMD = "curl -sf https://raw.githubusercontent.com/brson/multir
 
 SERVER_STATIC_DIR="/var/www/static/theca/dist"
 
-BUIDLERS = ["", ""]
-STATIC_HOST = ""
+BUIDLERS = ["roland@10.0.0.31", "roland@10.0.0.30"]
+STATIC_HOST = "rolands@192.168.1.181"
 
 def _log_run(command, warn_only=False):
     output = run(command, warn_only=warn_only)
