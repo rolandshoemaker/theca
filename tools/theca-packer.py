@@ -42,8 +42,9 @@ MULTIRUST_INSTALL_CMD = "curl -sf https://raw.githubusercontent.com/brson/multir
 
 SERVER_STATIC_DIR="/var/www/static/theca/dist"
 
-BUIDLERS = ["roland@10.0.0.31", "roland@10.0.0.30"]
-STATIC_HOST = "rolands@192.168.1.181"
+# get from envvars, should be in format user@host i guess
+BUIDLERS = os.getenv("TPACKER_BUILDERS").split(" ")
+STATIC_HOST = os.getenv("TPACKER_STATIC")
 
 def _log_run(command, warn_only=False):
     output = run(command, warn_only=warn_only)

@@ -64,7 +64,7 @@ p "#"
 p "# installed `theca --version`"
 p "#"
 
-if [ ! -d "$home/.theca" ]; then
+if [ ! -d "$HOME/.theca" ]; then
 	# first run type stuff
 	p "# would you like to setup the default profile folder and profile for theca?"
 	p "# this will create:"
