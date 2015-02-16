@@ -7,7 +7,7 @@
 #
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
-# get_theca.sh - v0.9.3
+# get_theca.sh - v0.9.4
 #   super simple binary package downloader that invokes
 #   the install.sh installer script, pretty much ready
 #   for action now
@@ -42,9 +42,13 @@ ok() {
 }
 
 delete() {
-	if ! [ -f "$1" ]; then
-		rm -rf "$1"
+	if [ -e "$1" ]; then
+		if  ! [ -w "$1" ]; then
+			exec_prefix=sudo
+		fi
+		$exec_prefix rm -rf "$1"
 		ok "couldn't delete $1"
+		p "deleted: $1"
 	fi
 }
 
@@ -153,7 +157,7 @@ run() {
 		esac
 	done
 	if [ ! -z "$UNINSTALL" ]; then
-		uninstall_theca INSTALL_PREFIX
+		uninstall_theca "$INSTALL_PREFIX"
 	else
 		local hosttriple=$( get_host )
 		local tmpdir=$(mktemp -d 2>/dev/null || mktemp -d -t 'theca-installer-tmp')
@@ -167,6 +171,7 @@ run() {
 		cd "$startdir"
 		ok "failed to return to $startdir"
 		delete "$tmpdir"
+		p "get_theca.sh is done!"
 	fi
 }
 
