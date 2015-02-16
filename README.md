@@ -81,7 +81,7 @@ I actually host the packages and stuff it'll be as simple as running
 
 to install `theca`. If you want to uninstall you just need to add the `--uninstall` flag like so
 
-	$ curl -s https://static.bracewel.net/theca/get_theca.sh | sh -- --uninstall
+	$ curl -s https://static.bracewel.net/theca/get_theca.sh | sh -s -- --uninstall
 
 ### From source
 
