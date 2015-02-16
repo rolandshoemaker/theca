@@ -322,7 +322,7 @@ def update_installer(commit=None):
     installer_url = "https://raw.githubusercontent.com/rolandshoemaker/theca/%s/tools/get_theca.sh" % (commit or "master")
     with cd("/var/www/static/theca"):
         # download dat installer yo
-        run("curl -O %s" % (installer_url))
+        run("curl -sO %s" % (installer_url))
 
 @hosts([STATIC_HOST])
 def upload_to_static(build_report, staging_dir, update_installer=False, installer_commit=None):

@@ -64,31 +64,33 @@ p "#"
 p "# installed `theca --version`"
 p "#"
 
-# first run type stuff
-p "# would you like to setup the default profile folder and profile for theca?"
-p "# this will create:"
-p "#   $HOME/.theca"
-p "#   $HOME/.theca/default.json"
-p "# which can also be done with 'theca new-profile'"
-select yn in "Yes" "No"; do
-	case $yn in
-		Yes)
-			p "#"
-			mkdir $HOME/.theca
-			ok "couldn't create $HOME/.theca"
-			p "# created $HOME/.theca"
-			theca new-profile
-			ok "couldn't create default profile, this seems bad..."
-			p "# created the default profile"
-			p "#"
-			p "# HAVE A FUN TIME"
-			break
-		;;
-		No)
-			p "#"
-			p "# ok, we are done!"
-			p "# have fun!"
-			exit
-		;;
-	esac
-done
+if [ ! -d "$home/.theca" ]; then
+	# first run type stuff
+	p "# would you like to setup the default profile folder and profile for theca?"
+	p "# this will create:"
+	p "#   $HOME/.theca"
+	p "#   $HOME/.theca/default.json"
+	p "# which can also be done with 'theca new-profile'"
+	select yn in "Yes" "No"; do
+		case $yn in
+			Yes)
+				p "#"
+				mkdir $HOME/.theca
+				ok "couldn't create $HOME/.theca"
+				p "# created $HOME/.theca"
+				theca new-profile
+				ok "couldn't create default profile, this seems bad..."
+				p "# created the default profile"
+				p "#"
+				p "# HAVE A FUN TIME"
+				break
+			;;
+			No)
+				p "#"
+				p "# ok, we are done!"
+				p "# have fun!"
+				exit
+			;;
+		esac
+	done
+fi
