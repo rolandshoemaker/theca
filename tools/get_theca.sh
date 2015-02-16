@@ -48,6 +48,40 @@ delete() {
 	fi
 }
 
+get_yn() {
+	local prompt
+	local resp
+	local default
+	local question="$1"
+	if [ "$#" -eq "2" ]; then
+		if [ ! -z "$2" ]; then
+			prompt="Y/n"
+			default=0
+		else
+			prompt="y/N"
+			default=1
+		fi
+	else
+		prompt="y/n"
+	fi
+	while true; do
+	    read -p "$question [$prompt]: " yn
+	    case $yn in
+	        [yY]*) resp=0; break;;
+	        [nN]*) resp=1; break;;
+			"")
+				if [ "$#" -eq "2" ]; then
+					resp=$default; break
+				else
+					p "Please enter y or n."
+				fi
+			;;
+	        *) p "Please enter y or n.";;
+	    esac
+	done
+	return $resp
+}
+
 get_host() {
 	local arch_uname=`uname -m`
 	ok "couldn't use uname"
@@ -89,12 +123,14 @@ get_from_bracewel() {
 }
 
 uninstall_theca() {
-	p "uninstalling theca!"
-	delete "$1/bin/theca"
-	delete "$1/share/man/man1/theca.1"
-	delete "$1/share/zsh/site-functions/_theca"
-	delete "$1/etc/bash_completion.d/theca"
-	p "byebye ._."
+	if get_yn "are you sure you want to uninstall?"; then
+		p "uninstalling theca!"
+		delete "$1/bin/theca"
+		delete "$1/share/man/man1/theca.1"
+		delete "$1/share/zsh/site-functions/_theca"
+		delete "$1/etc/bash_completion.d/theca"
+		p "byebye ._."
+	fi
 }
 
 run() {
