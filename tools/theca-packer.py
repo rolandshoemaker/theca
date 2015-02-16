@@ -25,7 +25,7 @@ from hashlib import sha256
 from datetime import datetime
 
 GIT_REPO = "https://github.com/rolandshoemaker/theca"
-BUILD_CMD = "bash tools/build.sh --release --verbose"
+BUILD_CMD = "bash tools/build.sh build --release --verbose"
 PACKAGE_STATIC_CONTENT = {
     "README.md": "README.md",
     "LICENSE": "LICENSE",
