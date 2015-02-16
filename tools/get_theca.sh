@@ -65,7 +65,7 @@ get_yn() {
 		prompt="y/n"
 	fi
 	while true; do
-	    read -p "$question [$prompt]: " yn
+	    read -p "$question [$prompt]: " yn <&1
 	    case $yn in
 	        [yY]*) resp=0; break;;
 	        [nN]*) resp=1; break;;
