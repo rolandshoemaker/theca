@@ -41,13 +41,20 @@ if ! [[ -w "$INSTALL_PREFIX" ]]; then
 	PRIV_ESC="sudo"
 fi
 
+host=`uname -s`
+if [[ "$host" -eq "Linux" ]]; then
+	COPIER="cp --parents"
+elif [[ "$host" -eq "Darwin" ]]; then
+	COPIER="ditto"
+fi
+
 # copy all the stuff in FOLDERS_TO_INSTALL to INSTALL_PREFIX with parent directories
 # yuh yuh
 if [[ -e $INSTALL_PREFIX ]]; then
 	p "# installing theca"
 	for f in `find $FOLDERS_TO_INSTALL`; do
 		if ! [[ -d "$f" ]]; then
-			$PRIV_ESC cp --parents $f $INSTALL_PREFIX
+			$PRIV_ESC $COPIER $f $INSTALL_PREFIX
 			ok "couldn't copy $f -> $INSTALL_PREFIX/$f"
 			p "# copied $f -> $INSTALL_PREFIX/$f"
 		fi
