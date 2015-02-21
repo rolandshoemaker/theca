@@ -14,8 +14,8 @@
 #![feature(core)]
 #![feature(libc)]
 #![feature(collections)]
-#![feature(path)]
-#![feature(io)]
+#![feature(old_path)]
+#![feature(old_io)]
 #![feature(rustc_private)]
 #![feature(env)]
 #![feature(os)]
@@ -281,7 +281,7 @@ impl ThecaProfile {
                     let contents = match encrypted {
                         false => try!(String::from_utf8(contents_buf)),
                         true => {
-                            let key = password_to_key(&key[]);
+                            let key = password_to_key(&key[..]);
                                 try!(String::from_utf8(try!(decrypt(
                                     &*contents_buf,
                                     &*key
@@ -829,7 +829,7 @@ impl ThecaProfile {
     ) -> Result<(), ThecaError> {
         let notes: Vec<ThecaItem> = match regex {
             true => {
-                let re = match Regex::new(&pattern[]) {
+                let re = match Regex::new(&pattern[..]) {
                     Ok(r) => r,
                     Err(e) => specific_fail!(
                         format!("regex error: {}.", e.msg)
@@ -842,8 +842,8 @@ impl ThecaProfile {
             },
             false => {
                 self.notes.iter().filter(|n| match search_body {
-                    true => n.body.contains(&pattern[]),
-                    false => n.title.contains(&pattern[])
+                    true => n.body.contains(&pattern[..]),
+                    false => n.title.contains(&pattern[..])
                 }).map(|n| n.clone()).collect()
             }
         };

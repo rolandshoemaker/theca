@@ -61,7 +61,7 @@ macro_rules! try_errno {
                 return Err(
                     ::std::error::FromError::from_error(
                         IoError::from_errno(
-                            errno() as usize,
+                            errno() as i32,
                             true
                         )
                     )

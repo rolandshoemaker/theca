@@ -61,7 +61,7 @@ pub mod c {
         pub c_cflag: c_uint,
         pub c_lflag: c_uint,
         pub c_line: c_uchar,
-        pub c_cc: [c_uchar; 32us],
+        pub c_cc: [c_uchar; 32usize],
         pub c_ispeed: c_uint,
         pub c_ospeed: c_uint,
     }
@@ -131,7 +131,7 @@ pub fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
     // setup temporary file to write/read
     let tmppath = tmpdir.path().join(get_time().sec.to_string());
     let mut tmpfile = try!(File::open_mode(&tmppath, Open, ReadWrite));
-    try!(tmpfile.write_line(&contents[]));
+    try!(tmpfile.write_line(&contents[..]));
     let editor = match var("VISUAL") {
         Ok(v) => v,
         Err(_) => match var("EDITOR") {
@@ -182,13 +182,13 @@ pub fn get_yn_input() -> Result<bool, ThecaError> {
         print!("[y/n]# ");
         let mut input = try!(stdin.read_line());
         input = input.trim().to_string();
-        match yes.iter().any(|n| &n[] == input) {
+        match yes.iter().any(|n| &n[..] == input) {
             true => {
                 answer = true;
                 break;
             },
             false => {
-                match no.iter().any(|n| &n[] == input) {
+                match no.iter().any(|n| &n[..] == input) {
                     true => {
                         answer = false;
                         break;
@@ -378,7 +378,7 @@ pub fn validate_profile_from_path(profile_path: &Path) -> (bool, bool) {
 pub fn path_to_profile_name(profile_path: &Path) -> Result<String, ThecaError> {
     let full_f = try!(String::from_utf8(profile_path.filename().unwrap().to_vec()));
     let ext = try!(String::from_utf8(profile_path.extension().unwrap().to_vec()));
-    let just_f = full_f.replace(&format!(".{}", ext)[], "");
+    let just_f = full_f.replace(&format!(".{}", ext)[..], "");
 
     Ok(just_f)
 }
