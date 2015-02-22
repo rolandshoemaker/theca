@@ -21,7 +21,7 @@ p() {
 }
 
 err() {
-	p "ERROR: $1"
+	p "ERROR: $1" >&2
 	exit 1
 }
 
@@ -49,7 +49,7 @@ case "$1" in
                 BUILD_CMD="$BUILD_CMD $arg"
             done
             set_version_var
-            eval "$BUILD_CMD"
+            $BUILD_CMD
             ok "$BUILD_CMD failed"
             if [[ "$@" =~ "--release" ]]; then
                 p "built target/release/theca"

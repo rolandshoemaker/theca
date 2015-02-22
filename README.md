@@ -20,10 +20,10 @@ a simple, fully featured, command line note taking tool written in
 * *JSON* profile format for easy scripting/integration
 * Traditional and condensed printing modes
 * Add/edit/delete notes
-* Add/edit note body using command line arguments, `STDIN`, or using the editor set in `$EDITOR`
-  or `$VISUAL`
-* Note transfer between profiles
-* Note searching (title or body using keyword or regex pattern)
+* Add/edit note body using command line arguments, `STDIN`, or using the editor set via `$VISUAL`
+  or `$EDITOR`
+* Transfer notes between profiles
+* Search notes (title or body using keyword or regex pattern)
 
 ## Contents
 
@@ -415,7 +415,6 @@ the bug, and if you're really awesome a test case that exposes it.
 * various large clean ups in argument passing (references could probably be used more
   in some places...)
 * probably the bold/plain line printing could be done cleaner... (macro perhaps?)
-* parse_cmds could use some attention
 
 ## Development
 
@@ -445,16 +444,14 @@ As described much more verbosely in `docs/schema.json`, this is what a note prof
 
 ### Cryptographic design
 
-`theca` uses the AES CBC mode symmetric cipher with a 256-bit key to encrypt/decrypt
-profile files. The key is derived using *pbkdf2* (using the sha-256 prf) with 2056 rounds
-salted with the sha-256 hash of the password used for the key derivation (probably not
-the best idea).
+`theca` uses the AES CBC mode symmetric cipher (implementation provided by [*rust-crypto*](https://github.com/DaGenix/rust-crypto)) with a 256-bit key to encrypt/decrypt
+profile files. The key is derived using *pbkdf2* (using the sha-256 *PRF*, again from *rust-crypto*) with 2056 rounds
+salted with the sha256 hash of the password used for the key derivation (probably not the best idea).
 
 #### Basic Python implementation
 
 During development it can be quite useful to encrypt/decrypt profiles using a scripting
-language like Python. A key can be derived quite quickly using
-`hashlib` and `passlib`
+language like Python. A key can be derived quite quickly using `hashlib` and `passlib`
 
 	from hashlib import sha256
 	from passlib.utils.pbkdf2 import pbkdf2
@@ -483,7 +480,8 @@ and the ciphertext can be decrypted using the AES implementation from `pycrypto`
 ### `tools/build.sh`
 
 `build.sh` is a pretty simple `bash` holdall in lieu of a `Makefile` (ew) that really exists
-because I have a bad memory and forget some of the commands i'm supposed to remember.
+because I have a bad memory and forget some of the commands i'm supposed to remember. It will also
+set the build version environment variable (`THECA_BUILD_VER`).
 
 Usage is pretty simple
 
