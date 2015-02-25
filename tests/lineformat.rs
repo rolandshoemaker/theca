@@ -1,5 +1,3 @@
-#![feature(core)]
-
 extern crate theca;
 
 use theca::{ThecaItem};
@@ -84,7 +82,7 @@ fn test_new_line_format_basic() {
         }
     ];
 
-    test_formatter(&basic_tests[]);
+    test_formatter(&basic_tests[..]);
 }
 
 #[test]
@@ -173,7 +171,7 @@ fn test_new_line_format_statuses() {
         }
     ];
 
-    test_formatter(&status_tests[]);
+    test_formatter(&status_tests[..]);
 }
 
 #[test]
@@ -289,7 +287,7 @@ fn test_new_line_format_body() {
         }
     ];
 
-    test_formatter(&body_tests[]);
+    test_formatter(&body_tests[..]);
 }
 
 #[test]
@@ -405,5 +403,5 @@ fn test_new_line_format_full() {
         }
     ];
 
-    test_formatter(&body_tests[]);
+    test_formatter(&body_tests[..]);
 }

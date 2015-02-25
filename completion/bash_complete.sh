@@ -6,7 +6,7 @@
 #
 # licensed under the MIT license <http://opensource.org/licenses/MIT>
 #
-# bash_complete.sh
+# bash_complete.sh - v0.9.0
 #   (minimal) bash completion for the theca binary
 
 _theca() {
