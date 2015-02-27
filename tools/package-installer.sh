@@ -42,9 +42,9 @@ if ! [[ -w "$INSTALL_PREFIX" ]]; then
 fi
 
 host=`uname -s`
-if [[ "$host" -eq "Linux" ]]; then
+if [[ "$host" = "Linux" ]]; then
 	COPIER="cp --parents"
-elif [[ "$host" -eq "Darwin" ]]; then
+elif [[ "$host" = "Darwin" ]]; then
 	COPIER="ditto"
 fi
 
