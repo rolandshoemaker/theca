@@ -9,10 +9,13 @@
 // util.rs
 //   various utility functions for doings things we need to do.
 
+use std::path::{Path, PathBuf};
+use std::fs::{PathExt, read_dir};
+use std::old_path;
 use std::old_io::stdio::{stdin};
 use std::old_io::{File, Open, ReadWrite,
               TempDir, Command, SeekSet, Read};
-use std::old_io::fs::{readdir, PathExtensions};
+use std::old_io::fs::{PathExtensions};
 use time::{get_time};
 use std::env::{var, home_dir};
 use std::old_io::process::{InheritFd};
@@ -312,9 +315,9 @@ pub fn sorted_print(
 
 pub fn find_profile_folder(
     profile_folder: &String
-) -> Result<Path, ThecaError> {
+) -> Result<PathBuf, ThecaError> {
     if !profile_folder.is_empty() {
-        Ok(Path::new(profile_folder.to_string()))
+        Ok(PathBuf::new(profile_folder))
     } else {
         match home_dir() {
             Some(ref p) => Ok(p.join(".theca")),
@@ -338,11 +341,11 @@ pub fn cmp_last_touched(a: &str, b: &str) -> Result<Ordering, ThecaError> {
     Ok(a_tm.cmp(&b_tm))
 }
 
-pub fn validate_profile_from_path(profile_path: &Path) -> (bool, bool) {
+pub fn validate_profile_from_path(profile_path: &PathBuf) -> (bool, bool) {
     // return (is_a_profile, encrypted(?))
-    match profile_path.extension().unwrap() == "json".as_bytes() {
+    match profile_path.extension().unwrap() == "json" {
         true => match File::open_mode(
-            &profile_path,
+            &(old_path::Path::new(profile_path.to_str().unwrap())),
             Open,
             Read
         ) {
@@ -375,23 +378,26 @@ pub fn validate_profile_from_path(profile_path: &Path) -> (bool, bool) {
 }
 
 // this is pretty gross
-pub fn path_to_profile_name(profile_path: &Path) -> Result<String, ThecaError> {
-    let full_f = try!(String::from_utf8(profile_path.filename().unwrap().to_vec()));
-    let ext = try!(String::from_utf8(profile_path.extension().unwrap().to_vec()));
-    let just_f = full_f.replace(&format!(".{}", ext)[..], "");
+pub fn path_to_profile_name(profile_path: &PathBuf) -> Result<String, ThecaError> {
+    // let full_f = try!(String::from_utf8(profile_path.filename().unwrap().to_vec()));
+    // let ext = try!(String::from_utf8(profile_path.extension().unwrap().to_vec()));
+    // let just_f = full_f.replace(&format!(".{}", ext)[..], "");
 
-    Ok(just_f)
+    let just_f = profile_path.file_stem().unwrap();
+
+    Ok(just_f.to_str().unwrap().to_string())
 }
 
 pub fn profiles_in_folder(folder: &Path) -> Result<(), ThecaError> {
     if folder.is_dir() {
-        let mut contents = try!(readdir(folder));
-        contents.sort_by(|a, b| a.cmp(&b));
+        // let mut contents = try!(read_dir(folder)); // FIXME
+        // contents.sort_by(|a, b| a.cmp(&b));
         println!("# profiles in {}", folder.display());
-        for file_path in contents.iter() {
-            let is_prof = validate_profile_from_path(file_path);
+        for file in try!(read_dir(folder)) {
+            let file = try!(file);
+            let is_prof = validate_profile_from_path(&file.path());
             if is_prof.0 {
-                let mut msg = try!(path_to_profile_name(file_path));
+                let mut msg = try!(path_to_profile_name(&file.path()));
                 if is_prof.1 {
                     msg = format!("{} [encrypted]", msg);
                 }

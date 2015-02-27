@@ -19,6 +19,9 @@
 #![feature(rustc_private)]
 #![feature(env)]
 #![feature(os)]
+#![feature(io)]
+#![feature(fs)]
+#![feature(path)]
 
 //! Definitions of ThecaItem and ThecaProfile and their implementations
 
@@ -38,6 +41,9 @@ use std::old_io::{File, Truncate, Write, Read, Open,
               stdin, USER_RWX};
 use std::old_io::fs::{PathExtensions, mkdir};
 use std::iter::{repeat};
+use std::path::Path;
+use std::old_path;
+use std::fs::{PathExt};
 
 // random things
 use regex::{Regex};
@@ -208,7 +214,8 @@ impl ThecaProfile {
         yes: bool
     ) -> Result<(ThecaProfile, u64), ThecaError> {
         if new_profile {
-            let profile_path = try!(find_profile_folder(profile_folder));
+            let profile_pathbuf = try!(find_profile_folder(profile_folder));
+            let profile_path: &Path = &profile_pathbuf;
             // if the folder doesn't exist, make it yo!
             if !profile_path.exists() {
                 if !yes {
@@ -220,7 +227,7 @@ impl ThecaProfile {
                         specific_fail_str!("ok bye ♥");
                     }
                 }
-                try!(mkdir(&profile_path, USER_RWX));
+                try!(mkdir(&(old_path::Path::new(profile_path.to_str().unwrap())), USER_RWX)); // FIXME: bridging old<->new path stuff...
             }
             Ok((ThecaProfile {
                 encrypted: encrypted,
@@ -228,10 +235,11 @@ impl ThecaProfile {
             }, 0u64))
         } else {
             // set profile folder
-            let mut profile_path = try!(find_profile_folder(profile_folder));
+            let mut profile_pathbuf = try!(find_profile_folder(profile_folder));
 
             // set profile name
-            profile_path.push(profile_name.to_string() + ".json");
+            profile_pathbuf.push(&(profile_name.to_string() + ".json"));
+            let profile_path: &Path = &profile_pathbuf;
             
             // attempt to read profile
             match profile_path.is_file() {
@@ -272,7 +280,7 @@ impl ThecaProfile {
                 }
                 true => {
                     let mut file = try!(File::open_mode(
-                        &profile_path,
+                        &(old_path::Path::new(profile_path.to_str().unwrap())), // FIXME
                         Open,
                         Read
                     ));
@@ -295,7 +303,7 @@ impl ThecaProfile {
                             profile_path.display()
                         ))
                     };
-                    Ok((decoded, try!(profile_path.stat()).modified))
+                    Ok((decoded, try!(profile_path.metadata()).modified()))
                 }
             }
         }
@@ -321,15 +329,17 @@ impl ThecaProfile {
         fingerprint: &u64
     ) -> Result<(), ThecaError> {
         // set profile folder
-        let mut profile_path = try!(
+        let mut profile_pathbuf = try!(
             find_profile_folder(&args.flag_profile_folder)
         );
 
         // set file name
         match args.cmd_new_profile {
-            true => profile_path.push(args.arg_name[0].to_string() + ".json"),
-            false => profile_path.push(args.flag_profile.to_string() + ".json")
+            true => profile_pathbuf.push(&(args.arg_name[0].to_string() + ".json")),
+            false => profile_pathbuf.push(&(args.flag_profile.to_string() + ".json"))
         };
+
+        let profile_path: &Path = &profile_pathbuf;
 
         if args.cmd_new_profile && profile_path.exists() && !args.flag_yes {
             println!(
@@ -342,7 +352,7 @@ impl ThecaProfile {
         }
 
         if fingerprint > &0u64 {
-            let new_fingerprint = try!(profile_path.stat()).modified;
+            let new_fingerprint = try!(profile_path.metadata()).modified();
             if &new_fingerprint != fingerprint && !args.flag_yes {
                 println!(
                     "changes have been made to the profile '{}' on disk since it was loaded, would you like to attempt to merge them?",
@@ -380,7 +390,7 @@ impl ThecaProfile {
         }
 
         // open file
-        let mut file = try!(File::open_mode(&profile_path, Truncate, Write));
+        let mut file = try!(File::open_mode(&(old_path::Path::new(profile_path.to_str().unwrap())), Truncate, Write)); // FIXME
 
         // encode to buffer
         let mut json_prof = String::new();
@@ -1051,7 +1061,9 @@ pub fn parse_cmds(
             }
 
             if args.cmd_list_profiles {
-                try!(profiles_in_folder(&try!(find_profile_folder(&args.flag_profile_folder))));
+                let profile_pathbuf = try!(find_profile_folder(&args.flag_profile_folder));
+                let profile_folder: &Path = &profile_pathbuf;
+                try!(profiles_in_folder(profile_folder));
                 return Ok(())
             }
 

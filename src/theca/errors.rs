@@ -14,6 +14,7 @@ use core::{fmt};
 use core::error::{Error};
 use std::error::{FromError};
 use std::old_io::{IoError};
+use std::io;
 use std::string::{FromUtf8Error};
 use time::{ParseError};
 use crypto::symmetriccipher::{SymmetricCipherError};
@@ -141,6 +142,16 @@ impl FromError<fmt::Error> for ThecaError {
         ThecaError {
             kind: GenericError,
             desc: "formatting error".to_string(),
+            detail: None
+        }
+    }
+}
+
+impl FromError<io::Error> for ThecaError {
+    fn from_error(_: io::Error) -> ThecaError {
+        ThecaError {
+            kind: GenericError,
+            desc: "IO error!".to_string(),
             detail: None
         }
     }
