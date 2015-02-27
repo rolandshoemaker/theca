@@ -32,7 +32,12 @@ ok() {
 }
 
 set_version_var() {
-    local CARGO_VER=$( grep "version" Cargo.toml | sed -rn 's/.*"(.*)"/\1/p' )
+    if [[ $( uname -s ) = "Darwin" ]]; then
+        local sed_opts="-En"
+    else
+        local sed_opts="-rn"
+    fi
+    local CARGO_VER=$( grep "version" Cargo.toml | sed $sed_opts 's/.*"(.*)"/\1/p' )
     local COMMIT=$( git rev-parse --short HEAD )
     local BUILD_DATE=$( date +%d-%m-%Y )
     export THECA_BUILD_VER="$CARGO_VER ($COMMIT, built $BUILD_DATE)"

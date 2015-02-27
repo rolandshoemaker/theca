@@ -45,7 +45,7 @@ host=`uname -s`
 if [[ "$host" = "Linux" ]]; then
 	COPIER="cp --parents"
 elif [[ "$host" = "Darwin" ]]; then
-	COPIER="ditto"
+	COPIER="rsync -R"
 fi
 
 # copy all the stuff in FOLDERS_TO_INSTALL to INSTALL_PREFIX with parent directories
