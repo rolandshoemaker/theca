@@ -17,11 +17,11 @@
 #![feature(old_path)]
 #![feature(old_io)]
 #![feature(rustc_private)]
-#![feature(env)]
 #![feature(os)]
 #![feature(io)]
 #![feature(fs)]
 #![feature(path)]
+
 
 //! Definitions of ThecaItem and ThecaProfile and their implementations
 

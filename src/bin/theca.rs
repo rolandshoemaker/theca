@@ -10,7 +10,7 @@
 //   the theca binary, we finish error unwinding in here and set
 //   the exit status if there was an error.
 
-#![feature(env)]
+#![feature(exit_status)]
 
 extern crate theca;
 extern crate docopt;
