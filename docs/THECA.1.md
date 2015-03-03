@@ -21,6 +21,8 @@ SYNOPSIS
 
 `theca` [`options`] new-profile [<`name`>]
 
+`theca` [`options`] list-profiles
+
 `theca` [`options`] encrypt-profile [`--new-key` *KEY*]
 
 `theca` [`options`] decrypt-profile
