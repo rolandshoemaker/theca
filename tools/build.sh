@@ -86,11 +86,11 @@ case "$1" in
     # install the binary from bin/theca so we don't have to bother about --dev/--release
     # binaries
     install)
-        if [ -e "bin/theca"]; then
+        if [ -e "bin/theca" ]; then
             cp bin/theca $INSTALL_DIR/
             p "copied bin/theca -> $INSTALL_DIR/theca"
         else
-            err "bin/theca doesn't exist (did you run ./build.sh build [--release] ?)"
+            err "bin/theca doesn't exist (did you run ./build.sh build [--release]?)"
         fi
         if [[ "$@" =~ "--bash-complete" ]]; then
             cp completion/bash_complete.sh $BASH_COMPLETE_DIR/theca
