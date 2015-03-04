@@ -379,10 +379,6 @@ pub fn validate_profile_from_path(profile_path: &PathBuf) -> (bool, bool) {
 
 // this is pretty gross
 pub fn path_to_profile_name(profile_path: &PathBuf) -> Result<String, ThecaError> {
-    // let full_f = try!(String::from_utf8(profile_path.filename().unwrap().to_vec()));
-    // let ext = try!(String::from_utf8(profile_path.extension().unwrap().to_vec()));
-    // let just_f = full_f.replace(&format!(".{}", ext)[..], "");
-
     let just_f = profile_path.file_stem().unwrap();
 
     Ok(just_f.to_str().unwrap().to_string())
@@ -390,8 +386,6 @@ pub fn path_to_profile_name(profile_path: &PathBuf) -> Result<String, ThecaError
 
 pub fn profiles_in_folder(folder: &Path) -> Result<(), ThecaError> {
     if folder.is_dir() {
-        // let mut contents = try!(read_dir(folder)); // FIXME
-        // contents.sort_by(|a, b| a.cmp(&b));
         println!("# profiles in {}", folder.display());
         for file in try!(read_dir(folder)) {
             let file = try!(file);
@@ -401,7 +395,7 @@ pub fn profiles_in_folder(folder: &Path) -> Result<(), ThecaError> {
                 if is_prof.1 {
                     msg = format!("{} [encrypted]", msg);
                 }
-                println!("{}", msg);
+                println!("    {}", msg);
             }
         }
     }

@@ -614,9 +614,9 @@ impl ThecaProfile {
                                     println!(
                                         "{0}\n\n{1}\n{2}\n\n{0}\n{3}\n",
                                         "## [WARNING] ##",
-                                        "this will write the body of the decrypted note to file,",
-                                        "increasing the possibilty it could be recovered later.",
-                                        "are you sure you want to continue?"
+                                        "continuing will write the body of the decrypted note to a temporary",
+                                        "file, increasing the possibilty it could be recovered later.",
+                                        "Are you sure you want to continue?"
                                     );
                                     if !try!(get_yn_input()) {specific_fail_str!("ok bye ♥");}
                                 }
