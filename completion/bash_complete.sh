@@ -16,7 +16,7 @@ _theca() {
 	COMPREPLY=()
 	cmd="${COMP_WORDS[1]}"
 	cur="${COMP_WORDS[COMP_CWORD]}"
-	commands="add edit del clear transfer transfer-from search info new-profile encrypt-profile decrypt-profile list-profiles --help --version"
+	commands="add edit del clear transfer import search info new-profile encrypt-profile decrypt-profile list-profiles --help --version"
 	global_opts="--profile --profile-folder --encrypted --key"
 
 	case "${cmd}" in
@@ -35,7 +35,7 @@ _theca() {
         		"${global_opts} --search-body --regex --limit --reverse --datesort --json --condensed" -- $cur) )
         	return 0
 			;;
-		del|clear|transfer|transfer-from|new-profile)
+		del|clear|transfer|import|new-profile)
 			COMPREPLY=( $(compgen -W \
         		"${global_opts} --yes" -- $cur) )
         	return 0

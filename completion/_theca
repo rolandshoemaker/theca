@@ -65,7 +65,7 @@ _theca() {
 						'(-j, --json)'{-j,--json}'[output note lists as JSON]' \
 						'(-c, --condensed)'{-c,--condensed}'[use the condensed printing style]' \
 					;;
-				del|clear|transfer|transfer-from|new-profile)
+				del|clear|transfer|import|new-profile)
 					_arguments \
 						'(-p, --profile)'{-p,--profile}'[name of the profile to load]' \
 						'(-f, --profile-folder)'{-f,--profile-folder}'[path of the profile folder]' \
@@ -111,8 +111,8 @@ _theca_cmds(){
 		'add:add a new note'
 		'edit:edit a existing note'
 		'del:delete a existing note'
-		'transfer:transfer a note from the current profile to another'
-		'transfer-from:transfer a note from a different profile to the current'
+		'transfer:transfer a note from the current profile to another profile'
+		'import:transfer a note from a different profile to the current profile'
 		'search:search for notes in the current profile'
 		'info:print information about the current profile'
 		'new-profile:create a new profile'
