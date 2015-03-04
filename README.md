@@ -410,11 +410,17 @@ the bug, and if you're really awesome a test case that exposes it.
 
 ### TODO
 
+* clean-ups/optimizations pretty much everywhere
+* `ThecaProfile` and `ThecaItem` and assosiated functions should be moved out of `src/theca/lib.rs`
+  to their own file
+* `list-profiles` should be alphabetic
+* `bash_complete.sh` could use a lot of improvement, `_theca` also, but less...
 * `save_to_file` and `transfer_note` (and inherently the `import` logic) could use some
-  work, specifically the profile changed stuff...
-* various large clean ups in argument passing (references could probably be used more
-  in some places...)
+  work, specifically the profile changed stuff... <-- because of that we have pass pretty
+  much all of the `Args` struct
 * probably the bold/plain line printing could be done cleaner... (macro perhaps?)
+* (long term) `remote` encrypted storage (some kind of super simple standalone REST API to hold
+  encrypted profile blobs + client integrated into `theca` to retrieve them)
 
 ## Development
 
@@ -481,7 +487,7 @@ and the ciphertext can be decrypted using the AES implementation from `pycrypto`
 
 `build.sh` is a pretty simple `bash` holdall in lieu of a `Makefile` (ew) that really exists
 because I have a bad memory and forget some of the commands i'm supposed to remember. It will also
-set the build version environment variable (`THECA_BUILD_VER`).
+set the build version environment variable (`THECA_BUILD_VER`) which is used to set the verson `theca -v`.
 
 Usage is pretty simple
 
@@ -489,14 +495,13 @@ Usage is pretty simple
 	Usage: build.sh {build|build-man|test|install|clean}
 
 * `build` passes through any argument to `cargo build` so things like `--release` and
-  `--verbose` should work fine, it then copies the resulting binary to `.` so `install`
-  doesn't have to guess which profile you built (`--release` or `--dev` etc)
+  `--verbose` work fine
 * `build-man` requires the `md2man-roff` tool to convert the Markdown man page to the
   roff man page format
 * `test` runs both all the Rust tests (`cargo test`) and all the Python harness tests
 * `install` copies the binary to `/usr/local/bin`. It can also be used with `--man`,
   `--bash-complete`, or `--zsh-complete` to install the man page, `bash` completion script,
-  or the `zsh` completion script manually
+  or the `zsh` completion script manually.
 * `clean` deletes the binary in `.`, the `target/` folder, and the man page in `docs/`
   if they exist
 

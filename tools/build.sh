@@ -56,11 +56,18 @@ case "$1" in
             set_version_var
             $BUILD_CMD
             ok "$BUILD_CMD failed"
-            if [[ "$@" =~ "--release" ]]; then
-                p "built target/release/theca"
-            else
-                p "built target/theca"
+            if [[ ! -d "bin" ]]; then
+                mkdir bin
             fi
+            local bin_loc
+            if [[ "$@" =~ "--release" ]]; then
+                bin_loc="target/release/theca"
+            else
+                bin_loc="target/theca"
+            fi
+            p "built $bin_loc"
+            cp "$bin_loc" bin/theca
+            p "copied $bin_loc -> bin/theca"
         else
             err "cargo could not be found"
         fi
@@ -76,23 +83,14 @@ case "$1" in
         fi
         ;;
 
-    # install the binary in . so we don't have to bother about --dev/--release
+    # install the binary from bin/theca so we don't have to bother about --dev/--release
     # binaries
     install)
-        if [[ "$@" =~ "--release" ]]; then
-            if [ -e "target/release/theca"]; then
-                cp target/release/theca $INSTALL_DIR/
-                p "copied target/release/theca -> $INSTALL_DIR/theca"
-            else
-                err "target/release/theca doesn't exist (did you run ./build.sh build --release)"
-            fi
+        if [ -e "bin/theca"]; then
+            cp bin/theca $INSTALL_DIR/
+            p "copied bin/theca -> $INSTALL_DIR/theca"
         else
-            if [ -e "target/theca" ]; then
-                cp target/theca $INSTALL_DIR/
-                p "copied target/theca -> $INSTALL_DIR/theca"
-            else
-                err "target/theca doesn't exist (did you run ./build.sh build)"
-            fi
+            err "bin/theca doesn't exist (did you run ./build.sh build [--release] ?)"
         fi
         if [[ "$@" =~ "--bash-complete" ]]; then
             cp completion/bash_complete.sh $BASH_COMPLETE_DIR/theca
@@ -160,9 +158,9 @@ case "$1" in
             rm -r target
             p "deleted ./target/"
         fi
-        if [ -e "theca" ]; then
-            rm theca
-            p "deleted ./theca"
+        if [ d "bin" ]; then
+            rm -r bin
+            p "deleted ./bin/"
         fi
         if [ -e "docs/THECA.1" ] && [[ "$@" =~  "--man" ]]; then
             rm docs/THECA.1
