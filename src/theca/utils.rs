@@ -9,25 +9,35 @@
 // util.rs
 //   various utility functions for doings things we need to do.
 
+// std imports
+use std::fs::{PathExt, read_dir, File};
+use std::io::{Write, Read};
+use std::os::errno;
 use std::path::{Path, PathBuf};
-use std::fs::{PathExt, read_dir};
-use std::old_path;
-use std::old_io::stdio::{stdin};
-use std::old_io::{File, Open, ReadWrite,
-              TempDir, Command, SeekSet, Read};
-use std::old_io::fs::{PathExtensions};
-use time::{get_time};
+use std::process::{Command, Stdio};
 use std::env::{var, home_dir};
-use std::old_io::process::{InheritFd};
+use std::cmp::{Ordering};
+use std::iter::{repeat};
+
+// time imports
+use time::{get_time};
+use time::{strftime, strptime, at, Tm};
+
+// term imports
 use term::{stdout};
 use term::attr::Attr::{Bold};
-use std::old_io::{IoError};
-use std::os::errno;
-use std::cmp::{Ordering};
-use time::{strftime, strptime, at, Tm};
-use std::iter::{repeat};
+
+// json imports
 use rustc_serialize::json::{as_pretty_json, decode};
 
+// tempdir imports
+use tempdir::{TempDir};
+
+// old imports
+use std::old_io::stdio::{stdin};
+use std::old_io::{IoError};
+
+// theca imports
 use ::{DATEFMT, DATEFMT_SHORT, ThecaItem, ThecaProfile};
 use errors::{ThecaError, GenericError};
 use lineformat::{LineFormat};
@@ -132,9 +142,10 @@ pub fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
     // setup temporary directory
     let tmpdir = try!(TempDir::new("theca"));
     // setup temporary file to write/read
-    let tmppath = tmpdir.path().join(get_time().sec.to_string());
-    let mut tmpfile = try!(File::open_mode(&tmppath, Open, ReadWrite));
-    try!(tmpfile.write_line(&contents[..]));
+    let tmppath = tmpdir.path().join(&format!("{}", get_time().sec)[..]);
+    let mut tmpfile = try!(File::create(&tmppath));
+    // let mut tmpfile = try!(File::open_mode(&tmppath, Open, ReadWrite));
+    try!(tmpfile.write_all(contents.as_bytes()));
     let editor = match var("VISUAL") {
         Ok(v) => v,
         Err(_) => match var("EDITOR") {
@@ -145,18 +156,19 @@ pub fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
     // lets start `editor` and edit the file at `tmppath`
     // first we need to set STDIN, STDOUT, and STDERR to those that theca is
     // currently using so we can display the editor
-    let mut editor_command = Command::new(editor);
-    editor_command.arg(tmppath.display().to_string());
-    editor_command.stdin(InheritFd(STDIN_FILENO));
-    editor_command.stdout(InheritFd(STDOUT_FILENO));
-    editor_command.stderr(InheritFd(STDERR_FILENO));
+    let mut editor_command = Command::new(&editor);
+    editor_command.arg(&tmppath.display().to_string());
+    editor_command.stdin(Stdio::inherit());
+    editor_command.stdout(Stdio::inherit());
+    editor_command.stderr(Stdio::inherit());
     let editor_proc = editor_command.spawn();
     match try!(editor_proc).wait().is_ok() {
         true => {
             // finished editing, time to read `tmpfile` for the final output
-            // seek to start of `tmpfile`
-            try!(tmpfile.seek(0, SeekSet));
-            Ok(try!(tmpfile.read_to_string()).trim().to_string())
+            let mut tmpfile = try!(File::open(&tmppath));
+            let mut content = String::new();
+            try!(tmpfile.read_to_string(&mut content));
+            Ok(content)
         }
         false => specific_fail_str!("the editor broke... I think")
     }
@@ -344,13 +356,10 @@ pub fn cmp_last_touched(a: &str, b: &str) -> Result<Ordering, ThecaError> {
 pub fn validate_profile_from_path(profile_path: &PathBuf) -> (bool, bool) {
     // return (is_a_profile, encrypted(?))
     match profile_path.extension().unwrap() == "json" {
-        true => match File::open_mode(
-            &(old_path::Path::new(profile_path.to_str().unwrap())),
-            Open,
-            Read
-        ) {
+        true => match File::open(profile_path) {
             Ok(mut f) => {
-                let contents_buf = match f.read_to_end() {
+                let mut contents_buf: Vec<u8> = vec![];
+                match f.read_to_end(&mut contents_buf) {
                     Ok(c) => c,
                     // nopnopnopppppp
                     Err(_) => return (false, false)

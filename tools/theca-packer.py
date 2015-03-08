@@ -24,6 +24,8 @@ import os, uuid, time, platform, json
 from hashlib import sha256
 from datetime import datetime
 
+import requests
+
 GIT_REPO = "https://github.com/rolandshoemaker/theca"
 BUILD_CMD = "bash tools/build.sh build --release --verbose"
 PACKAGE_STATIC_CONTENT = {
@@ -306,6 +308,9 @@ def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust
 def package(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust_channel=RUST_CHANNEL, target_arch=None):
     report_name = "%s_build_report.json" % (package_prefix)
     packager_reports = execute(_packager, package_prefix, output_dir, commit_hash=commit_hash, clone_depth=clone_depth, rust_channel=rust_channel, target_arch=target_arch)
+    if commit_hash == None:
+        c_data = requests.get("%s/commits?per_page=1" % (GIT_REPO.replace("https://github.com", "https://api.github.com/repos")))
+        commit_hash = c_data.json()[0]["sha"]
     full_report = {
         "package_prefix": package_prefix,
         "git_commit": commit_hash,

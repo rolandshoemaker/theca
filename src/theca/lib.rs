@@ -14,13 +14,13 @@
 #![feature(core)]
 #![feature(libc)]
 #![feature(collections)]
-#![feature(old_path)]
 #![feature(old_io)]
 #![feature(rustc_private)]
 #![feature(os)]
 #![feature(io)]
-#![feature(fs)]
+#![feature(fs_time)]
 #![feature(path)]
+#![feature(path_ext)]
 
 
 //! Definitions of ThecaItem and ThecaProfile and their implementations
@@ -34,16 +34,15 @@ extern crate regex;
 extern crate crypto;
 extern crate term;
 extern crate rand;
+extern crate tempdir;
 
 // std lib imports
 use std::env::{var};
-use std::old_io::{File, Truncate, Write, Read, Open,
-              stdin, USER_RWX};
-use std::old_io::fs::{PathExtensions, mkdir};
+use std::old_io::{stdin};
+use std::io::{Read, Write};
 use std::iter::{repeat};
 use std::path::Path;
-use std::old_path;
-use std::fs::{PathExt};
+use std::fs::{File, PathExt, create_dir};
 
 // random things
 use regex::{Regex};
@@ -51,7 +50,7 @@ use rustc_serialize::{Encodable};
 use rustc_serialize::json::{decode, as_pretty_json, Encoder};
 use time::{now, strftime};
 
-// crypto imports
+// theca imports
 use lineformat::{LineFormat};
 use utils::c::{istty};
 use utils::{drop_to_editor, pretty_line, format_field,
@@ -227,7 +226,7 @@ impl ThecaProfile {
                         specific_fail_str!("ok bye ♥");
                     }
                 }
-                try!(mkdir(&(old_path::Path::new(profile_path.to_str().unwrap())), USER_RWX)); // FIXME: bridging old<->new path stuff...
+                try!(create_dir(&profile_path)); // FIXME: bridging old<->new path stuff...
             }
             Ok((ThecaProfile {
                 encrypted: encrypted,
@@ -279,13 +278,9 @@ impl ThecaProfile {
                     }
                 }
                 true => {
-                    let mut file = try!(File::open_mode(
-                        &(old_path::Path::new(profile_path.to_str().unwrap())), // FIXME
-                        Open,
-                        Read
-                    ));
-                    let contents_buf = try!(file.read_to_end());
-                    // decrypt the file if flag_encrypted
+                    let mut file = try!(File::open(profile_path));
+                    let mut contents_buf: Vec<u8> = vec![];
+                    try!(file.read_to_end(&mut contents_buf));
                     let contents = match encrypted {
                         false => try!(String::from_utf8(contents_buf)),
                         true => {
@@ -390,7 +385,7 @@ impl ThecaProfile {
         }
 
         // open file
-        let mut file = try!(File::open_mode(&(old_path::Path::new(profile_path.to_str().unwrap())), Truncate, Write)); // FIXME
+        let mut file = try!(File::create(profile_path));
 
         // encode to buffer
         let mut json_prof = String::new();

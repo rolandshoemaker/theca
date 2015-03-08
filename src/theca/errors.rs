@@ -148,10 +148,10 @@ impl FromError<fmt::Error> for ThecaError {
 }
 
 impl FromError<io::Error> for ThecaError {
-    fn from_error(_: io::Error) -> ThecaError {
+    fn from_error(err: io::Error) -> ThecaError {
         ThecaError {
             kind: GenericError,
-            desc: "IO error!".to_string(),
+            desc: format!("{:?}", err),
             detail: None
         }
     }
