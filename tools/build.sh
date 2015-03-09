@@ -59,7 +59,6 @@ case "$1" in
             if [[ ! -d "bin" ]]; then
                 mkdir bin
             fi
-            local bin_loc
             if [[ "$@" =~ "--release" ]]; then
                 bin_loc="target/release/theca"
             else
@@ -173,3 +172,4 @@ case "$1" in
         err "Usage: $0 {build|build-man|test|install|clean}"
         ;;
 esac
+
