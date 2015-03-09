@@ -147,11 +147,18 @@ def _packager(package_prefix, output_dir, commit_hash=None, clone_depth=50, rust
 
     # linux / os x agnostic tmpdir
     puts("# creating temporary directory")
-    with hide("output"):
-        host_tmp_dir = run("mktemp -d 2>/dev/null || mktemp -d -t 'theca-packer-tmp'")
-        if host_tmp_dir in ["", "/", "."]:
-            # just making sure...
-            abort("this is no temporary directory! [%s]" % (host_tmp_dir))
+    # currently causes rust ICE due to happening on a tmpfs...
+    # with hide("output"):
+    #    host_tmp_dir = run("mktemp -d 2>/dev/null || mktemp -d -t 'theca-packer-tmp'")
+    #    if host_tmp_dir in ["", "/", "."]:
+    #        # just making sure...
+    #        abort("this is no temporary directory! [%s]" % (host_tmp_dir))
+
+    # TEMP // FIXME
+    # should be able to use that old one once ICE bug #23140 is fixed (https://github.com/rust-lang/rust/issues/23140)
+    with cd("~"):
+        host_tmp_dir = run("echo $HOME")+"/.theca_builder_temp"
+    puts(host_tmp_dir)
 
     # get host triple stuff
     puts("# geuessing host os")
