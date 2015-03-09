@@ -71,15 +71,13 @@ a simple, fully featured, command line note taking tool written in
 
 I've built a simple multi-(platform/arch) binary package builder (`tools/theca-packer.py`)
 based on [Fabric](http://www.fabfile.org/) so I can provide both `x86_64` and `i686` packages
-for `unknown-linux-gnu` and `apple-darwin`. I need to setup my website (i'm lazy...) but once
-I actually host the packages and stuff it'll be as simple as running
-
-:warning: this doesn't work at the moment :warning:
+for `unknown-linux-gnu` and `apple-darwin`. You can either download the binary packages and install
+them using the packaged `install.sh` script, or you can use `curl` to install `theca` like so
 
 
 	$ curl -s https://static.bracewel.net/theca/get_theca.sh | sh
 
-to install `theca`. If you want to uninstall you just need to add the `--uninstall` flag like so
+If you want to uninstall you just need to add the `--uninstall` flag like so
 
 	$ curl -s https://static.bracewel.net/theca/get_theca.sh | sh -s -- --uninstall
 
