@@ -9,7 +9,7 @@ theca - minimal cli note taking tool
 SYNOPSIS
 --------
 
-`theca` [`options`]
+`theca` [`options`] [`-s`|`-u`|`-n`]
 
 `theca` [`options`] <`id`>
 
@@ -31,7 +31,7 @@ SYNOPSIS
 
 `theca` [`options`] clear
 
-`theca` [`options`] search [`--regex`, `--search-body`] <`pattern`>
+`theca` [`options`] search [`--regex`, `--search-body`] [`-s`|`-u`|`-n`] <`pattern`>
 
 `theca` [`options`] transfer <`id`> to <`name`>
 

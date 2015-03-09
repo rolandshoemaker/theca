@@ -38,6 +38,7 @@ a simple, fully featured, command line note taking tool written in
 	- [List all notes](#list-all-notes)
 	- [View a single note](#view-a-single-note)
 	- [Searching notes](#searching-notes)
+	- [A quick note on *statuses*](#a-quick-note-on-statuses)
 	- [Non-default profiles](#non-default-profiles)
 		- [Setting the default profile](#setting-the-default-profile)
 		- [Setting the default profile folder](#setting-the-default-profile-folder)
@@ -257,13 +258,29 @@ options can be used to alter the output style
 ![searching notes](screenshots/search_notes.png)
 
 Notes can be search using either keyword or regex matching against note titles or bodies
-using `theca search`.
+using `theca search`. `theca` doesn't support any kind of tagging (beyond the two basic
+statuses) but you can implement this quite simply by just appending or prepending a *tag*
+of sorts to the note title or body, e.g. `"(THECA) something about theca"`, and then 
+do a keyword search for `"(THECA)"` to get all notes *tagged* as such.
 
 	Search:
 	    --search-body                       Search the body of notes instead of
 	                                        the title.
 	    --regex                             Set search pattern to regex (default
 	                                        is keyword).
+
+### A quick note on *statuses*
+
+During initial development of `theca` I spent quite a bit of time trying to figure out
+what statuses I should include (or if I should allow completely custom statuses) and after
+playing with quite a few I ended up realising I only ever used three (well... two, if that).
+
+* No status at all (`-n` or `--none`)
+* `Started` (`-s` or `--started`)
+* `Urgent` (`-u` or `--urgent`)
+
+These flags can be used when adding notes, editing notes, searching notes, and listing events
+to either specify the note status or filter lists by status.
 
 ### Non-default profiles
 

@@ -30,9 +30,9 @@ Usage:
     theca [options] list-profiles
     theca [options] info
     theca [options] clear
-    theca [options]
+    theca [options] [-s|-u|-n]
     theca [options] <id>
-    theca [options] search [--regex, --search-body] <pattern>
+    theca [options] search [--regex, --search-body] [-s|-u|-n] <pattern>
     theca [options] transfer <id> to <name>
     theca [options] import <id> from <name>
     theca [options] add <title> [-s|-u] [-b BODY|-t|-]

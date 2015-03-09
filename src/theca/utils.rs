@@ -289,16 +289,22 @@ pub fn sorted_print(
     json: bool,
     datesort: bool,
     reverse: bool,
-    search_body: bool
+    search_body: bool,
+    no_status: bool,
+    started_status: bool,
+    urgent_status: bool
 ) -> Result<(), ThecaError> {
-    let line_format = try!(LineFormat::new(notes, condensed, search_body));
+    if no_status {
+        notes.retain(|n| n.status == "");
+    } else if started_status {
+        notes.retain(|n| n.status == "Started");
+    } else if urgent_status {
+        notes.retain(|n| n.status == "Urgent");
+    }
     let limit = match limit != 0 && notes.len() >= limit {
         true => limit,
         false => notes.len()
     };
-    if !condensed && !json {
-        try!(print_header(&line_format));
-    }
     if datesort {
         notes.sort_by(|a, b| match cmp_last_touched(
             &*a.last_touched,
@@ -309,9 +315,14 @@ pub fn sorted_print(
             // Err(_) => Ordering::Equal                  // FIXME(?)
         });
     }
+
     match json {
         false => {
             if reverse {notes.reverse();}
+            let line_format = try!(LineFormat::new(&notes[0..limit].to_vec(), condensed, search_body));
+            if !condensed && !json {
+                try!(print_header(&line_format));
+            }
             for n in notes[0..limit].iter() {
                 try!(n.print(&line_format, search_body));
             }

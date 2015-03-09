@@ -799,7 +799,10 @@ impl ThecaProfile {
         json: bool,
         datesort: bool,
         reverse: bool,
-        search_body: bool
+        search_body: bool,
+        no_status: bool,
+        started_status: bool,
+        urgent_status:bool
     ) -> Result<(), ThecaError> {
         if self.notes.len() > 0 {
             try!(sorted_print(
@@ -809,7 +812,9 @@ impl ThecaProfile {
                 json,
                 datesort,
                 reverse,
-                search_body
+                search_body,no_status,
+                started_status,
+                urgent_status
             ));
         } else {
             match json {
@@ -830,7 +835,10 @@ impl ThecaProfile {
         json: bool,
         datesort: bool,
         reverse: bool,
-        search_body: bool
+        search_body: bool,
+        no_status: bool,
+        started_status: bool,
+        urgent_status:bool
     ) -> Result<(), ThecaError> {
         let notes: Vec<ThecaItem> = match regex {
             true => {
@@ -860,7 +868,10 @@ impl ThecaProfile {
                 json,
                 datesort,
                 reverse,
-                search_body
+                search_body,
+                no_status,
+                started_status,
+                urgent_status
             ));
         } else {
             match json {
@@ -1023,7 +1034,10 @@ pub fn parse_cmds(
                     args.flag_json,
                     args.flag_datesort,
                     args.flag_reverse,
-                    args.flag_search_body
+                    args.flag_search_body,
+                    args.flag_none,
+                    args.flag_started,
+                    args.flag_urgent
                 ));
                 return Ok(())
             }
@@ -1070,7 +1084,10 @@ pub fn parse_cmds(
                     args.flag_json,
                     args.flag_datesort,
                     args.flag_reverse,
-                    args.flag_search_body
+                    args.flag_search_body,
+                    args.flag_none,
+                    args.flag_started,
+                    args.flag_urgent
                 ));
                 return Ok(())
             }
