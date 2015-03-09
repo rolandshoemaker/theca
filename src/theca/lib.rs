@@ -226,7 +226,7 @@ impl ThecaProfile {
                         specific_fail_str!("ok bye ♥");
                     }
                 }
-                try!(create_dir(&profile_path)); // FIXME: bridging old<->new path stuff...
+                try!(create_dir(&profile_path));
             }
             Ok((ThecaProfile {
                 encrypted: encrypted,
@@ -648,7 +648,7 @@ impl ThecaProfile {
         let min = match self.notes.iter()
                             .min_by(|n| match parse_last_touched(&*n.last_touched) {
             Ok(o) => o,
-            Err(_) => now() // FIXME
+            Err(_) => now()
         }) {
             Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
             None => specific_fail_str!(
@@ -658,7 +658,7 @@ impl ThecaProfile {
         let max = match self.notes.iter()
                             .max_by(|n| match parse_last_touched(&*n.last_touched) {
             Ok(o) => o,
-            Err(_) => now() // FIXME
+            Err(_) => now()
         }) {
             Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
             None => specific_fail_str!(

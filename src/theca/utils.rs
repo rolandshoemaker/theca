@@ -311,8 +311,7 @@ pub fn sorted_print(
             &*b.last_touched
         ) {
             Ok(o) => o,
-            Err(_) => a.last_touched.cmp(&b.last_touched) // FIXME(?)
-            // Err(_) => Ordering::Equal                  // FIXME(?)
+            Err(_) => a.last_touched.cmp(&b.last_touched)
         });
     }
 
