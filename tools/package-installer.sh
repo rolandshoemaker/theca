@@ -29,6 +29,41 @@ ok() {
 	fi
 }
 
+get_yn() {
+        local prompt
+        local resp
+        local default
+        local question="$1"
+        if [ "$#" -eq "2" ]; then
+                if [ ! -z "$2" ]; then
+                        prompt="Y/n"
+                        default=0
+                else
+                        prompt="y/N"
+                        default=1
+                fi
+        else
+                prompt="y/n"
+        fi
+        while true; do
+            read -p "$question [$prompt]: " yn <&1
+            case $yn in
+                [yY]*) resp=0; break;;
+                [nN]*) resp=1; break;;
+                        "")
+                                if [ "$#" -eq "2" ]; then
+                                        resp=$default; break
+                                else
+                                        p "Please enter y or n."
+                                fi
+                        ;;
+                *) p "Please enter y or n.";;
+            esac
+        done
+        return $resp
+}
+
+
 p "#  _   _                    "
 p "# | |_| |__   ___  ___ __ _ "
 p "# | __| '_ \ / _ \/ __/ _\` |"
@@ -78,26 +113,19 @@ if [ ! -d "$HOME/.theca" ]; then
 	p "#   $HOME/.theca"
 	p "#   $HOME/.theca/default.json"
 	p "# which can also be done with 'theca new-profile'"
-	select yn in "Yes" "No"; do
-		case $yn in
-			Yes)
-				p "#"
-				mkdir $HOME/.theca
-				ok "couldn't create $HOME/.theca"
-				p "# created $HOME/.theca"
-				theca new-profile
-				ok "couldn't create default profile, this seems bad..."
-				p "# created the default profile"
-				p "#"
-				p "# HAVE A FUN TIME"
-				break
-			;;
-			No)
-				p "#"
-				p "# ok, we are done!"
-				p "# have fun!"
-				exit
-			;;
-		esac
-	done
+	if get_yn; then
+		p "#"
+                mkdir $HOME/.theca
+                ok "couldn't create $HOME/.theca"
+                p "# created $HOME/.theca"
+                theca new-profile
+                ok "couldn't create default profile, this seems bad..."
+                p "# created the default profile"
+                p "#"
+                p "# HAVE A FUN TIME"
+	else
+		p "#"
+		p "# ok, we are done!"
+		p "# have fun!"
+	fi
 fi
