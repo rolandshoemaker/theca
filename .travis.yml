@@ -15,6 +15,17 @@ install:
     - sudo python3.4 -m pip install pycrypto
 
 script:
-    - bash tools/build.sh test --travis
+    - bash tools/build.sh test --travis --release
+    - cargo clean
     - bash tools/build.sh build --release --verbose
     - sudo bash tools/build.sh install
+
+after_script:
+    - theca -v
+    - theca -y new-profile
+    - theca add "this is a note"
+    - theca add "this is a note with a status" -s
+    - theca add "this is a note with a body" -b "yurp..."
+    - theca add "everything" -b "mhm" -u
+    - echo "from stdin" | theca add "body" -
+    - theca

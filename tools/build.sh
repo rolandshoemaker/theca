@@ -117,11 +117,6 @@ case "$1" in
             err "rust tests did't pass!"
         fi
 
-        # build the dev binary
-        if ! cargo build; then
-            err "couldn't build the binary!"
-        fi
-
         if [[ "$@" =~  "--travis" ]]; then
             python="python3.4"
         else
@@ -132,10 +127,18 @@ case "$1" in
         if [[ "$@" =~ "--release" ]]; then
             build_profile="release"
             python_cmd="$python_cmd target/release/theca"
+            cargo_cmd="cargo build --release"
         else
             build_profile="dev"
             python_cmd="$python_cmd target/theca"
+            cargo_cmd="cargo build"
         fi
+
+        # build the dev binary
+        if ! $cargo_cmd; then
+            err "couldn't build the binary!"
+        fi
+
         # run the python tests
         p "running python harness tests"
         if ! eval "$python_cmd -pt"; then
