@@ -17,9 +17,7 @@
 #![feature(old_io)]
 #![feature(rustc_private)]
 #![feature(os)]
-#![feature(io)]
 #![feature(fs_time)]
-#![feature(path)]
 #![feature(path_ext)]
 
 
