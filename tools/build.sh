@@ -1,6 +1,6 @@
 #!/bin/bash
-#  _   _                    
-# | |_| |__   ___  ___ __ _ 
+#  _   _
+# | |_| |__   ___  ___ __ _
 # | __| '_ \ / _ \/ __/ _` |
 # | |_| | | |  __/ (_| (_| |
 #  \__|_| |_|\___|\___\__,_|
@@ -87,6 +87,10 @@ case "$1" in
     install)
         if [ -e "bin/theca" ]; then
             cp bin/theca $INSTALL_DIR/
+            if [ $? -ne 0 ]; then
+                p "theca could not be copied to $INSTALL_DIR"
+                err "please rerun the script with sudo if you do not have write permissions in $INSTALL_DIR"
+            fi
             p "copied bin/theca -> $INSTALL_DIR/theca"
         else
             err "bin/theca doesn't exist (did you run ./build.sh build [--release]?)"
