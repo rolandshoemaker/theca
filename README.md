@@ -100,8 +100,7 @@ to get the nightly `rustc` and `cargo` binaries, once those have finished buildi
 
 	$ sudo bash tools/build.sh install [--release, --man, --bash-complete, --zsh-complete]
 
-The `cargo` flag `--release` enables `rustc` optimizations. F
-The `cargo` flag `--release` enables `rustc` optimizations.or the `install` the flag `--man`
+The `cargo` flag `--release` enables `rustc` optimizations. For the `install` the flag `--man`
 will additionally install the man page and `--bash-complete` and `--zsh-complete` will
 additionally install the `bash` or `zsh` tab completion scripts. `cargo` will automatically
 download and compile `theca`s dependencies for you.
