@@ -9,7 +9,10 @@ before_install:
 
 install:
     - sudo apt-get install -y python3.4 python3.4-dev
-    - sudo python3.4 -m ensurepip --upgrade
+    - wget https://bootstrap.pypa.io/get-pip.py
+    - sudo python3.4 get-pip.py
+    - rm get-pip.py
+    - sudo python3.4 --upgrade
     - sudo python3.4 -m pip install passlib
     - sudo python3.4 -m pip install jsonschema
     - sudo python3.4 -m pip install pycrypto
