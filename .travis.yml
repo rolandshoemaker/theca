@@ -12,7 +12,7 @@ install:
     - wget https://bootstrap.pypa.io/get-pip.py
     - sudo python3.4 get-pip.py
     - rm get-pip.py
-    - sudo python3.4 --upgrade
+    - sudo python3.4 -m pip --upgrade
     - sudo python3.4 -m pip install passlib
     - sudo python3.4 -m pip install jsonschema
     - sudo python3.4 -m pip install pycrypto
