@@ -1,5 +1,5 @@
-//  _   _                    
-// | |_| |__   ___  ___ __ _ 
+//  _   _
+// | |_| |__   ___  ___ __ _
 // | __| '_ \ / _ \/ __/ _` |
 // | |_| | | |  __/ (_| (_| |
 //  \__|_| |_|\___|\___\__,_|
@@ -10,15 +10,13 @@
 //   the theca binary, we finish error unwinding in here and set
 //   the exit status if there was an error.
 
-#![feature(exit_status)]
-
 extern crate theca;
 extern crate docopt;
 
 use docopt::Docopt;
 use theca::{Args, ThecaProfile, setup_args, parse_cmds, version};
-use theca::errors::{ThecaError};
-use std::env::{set_exit_status};
+use theca::errors::ThecaError;
+use std::process::exit;
 
 static USAGE: &'static str = "
 theca - simple cli note taking tool
@@ -93,19 +91,18 @@ Miscellaneous:
 ";
 
 fn theca_main() -> Result<(), ThecaError> {
-    let mut args: Args = try!(Docopt::new(USAGE).unwrap()
-                                                .version(Some(version()))
-                                                .decode());
+    let mut args: Args = try!(Docopt::new(USAGE)
+                                  .unwrap()
+                                  .version(Some(version()))
+                                  .decode());
     try!(setup_args(&mut args));
 
-    let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(
-        &args.flag_profile,
-        &args.flag_profile_folder,
-        &args.flag_key,
-        args.cmd_new_profile,
-        args.flag_encrypted,
-        args.flag_yes
-    ));
+    let (mut profile, profile_fingerprint) = try!(ThecaProfile::new(&args.flag_profile,
+                                                                    &args.flag_profile_folder,
+                                                                    &args.flag_key,
+                                                                    args.cmd_new_profile,
+                                                                    args.flag_encrypted,
+                                                                    args.flag_yes));
 
     try!(parse_cmds(&mut profile, &mut args, &profile_fingerprint));
 
@@ -117,8 +114,8 @@ fn main() {
     match theca_main() {
         Err(e) => {
             println!("{}", e.desc);
-            set_exit_status(1);
-        },
-        Ok(_) => ()
+            exit(1);
+        }
+        Ok(_) => (),
     };
 }
