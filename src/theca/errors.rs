@@ -24,16 +24,38 @@ use term;
 
 pub use self::ErrorKind::{TermError, InternalIoError, GenericError};
 
+#[derive(Debug)]
 pub enum ErrorKind {
     TermError(term::Error),
     InternalIoError(IoError),
     GenericError,
 }
 
+#[derive(Debug)]
 pub struct ThecaError {
     pub kind: ErrorKind,
     pub desc: String,
     pub detail: Option<String>,
+}
+
+impl fmt::Display for ThecaError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", &self.desc)
+    }
+}
+
+impl Error for ThecaError {
+    fn description(&self) -> &str {
+        &self.desc
+    }
+
+    fn cause(&self) -> Option<&Error> {
+        match self.kind {
+            ErrorKind::TermError(ref e) => Some(e),
+            ErrorKind::InternalIoError(ref e) => Some(e),
+            _ => None,
+        }
+    }
 }
 
 macro_rules! specific_fail {
