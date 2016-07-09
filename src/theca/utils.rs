@@ -17,6 +17,7 @@ use std::process::{Command, Stdio};
 use std::env::{var, home_dir};
 use std::cmp::Ordering;
 use std::iter::repeat;
+use std::time::UNIX_EPOCH;
 
 // time imports
 use time::get_time;
@@ -326,7 +327,15 @@ pub fn sorted_print(notes: &mut Vec<ThecaItem>,
     Ok(())
 }
 
-pub fn find_profile_folder(profile_folder: &String) -> Result<PathBuf, ThecaError> {
+pub fn profile_fingerprint<P: AsRef<Path>>(path: P) -> Result<u64, ThecaError> {
+    let path = path.as_ref();
+    let metadata = try!(path.metadata());
+    let modified = try!(metadata.modified());
+    let since_epoch = try!(modified.duration_since(UNIX_EPOCH));
+    Ok(since_epoch.as_secs())
+}
+
+pub fn find_profile_folder(profile_folder: &str) -> Result<PathBuf, ThecaError> {
     if !profile_folder.is_empty() {
         Ok(PathBuf::from(profile_folder))
     } else {
