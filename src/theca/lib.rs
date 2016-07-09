@@ -179,95 +179,78 @@ pub struct ThecaProfile {
 }
 
 impl ThecaProfile {
+    fn from_scratch(profile_folder: &str,
+                    encrypted: bool,
+                    yes: bool)
+                    -> Result<(ThecaProfile, u64), ThecaError> {
+        let profile_path = try!(find_profile_folder(profile_folder));
+        // if the folder doesn't exist, make it yo!
+        if !profile_path.exists() {
+            if !yes {
+                println!("{} doesn't exist, would you like to create it?",
+                         profile_path.display());
+                if !try!(get_yn_input()) {
+                    specific_fail_str!("ok bye ♥");
+                }
+            }
+            try!(create_dir(&profile_path));
+        }
+        Ok((ThecaProfile {
+            encrypted: encrypted,
+            notes: vec![],
+        },
+            0u64))
+    }
+
+    fn from_existing_profile(profile_name: &str,
+                             profile_folder: &str,
+                             key: &str,
+                             encrypted: bool)
+                             -> Result<(ThecaProfile, u64), ThecaError> {
+        // set profile folder
+        let mut profile_path = try!(find_profile_folder(profile_folder));
+
+        // set profile name
+        profile_path.push(&(profile_name.to_string() + ".json"));
+
+        // attempt to read profile
+        if profile_path.is_file() {
+            let mut file = try!(File::open(&profile_path));
+            let mut contents_buf = vec![];
+            try!(file.read_to_end(&mut contents_buf));
+            let contents = if encrypted {
+                let key = password_to_key(&key[..]);
+                try!(String::from_utf8(try!(decrypt(&*contents_buf, &*key))))
+            } else {
+                try!(String::from_utf8(contents_buf))
+            };
+            let decoded: ThecaProfile = match decode(&*contents) {
+                Ok(s) => s,
+                Err(_) => specific_fail!(format!("invalid JSON in {}", profile_path.display())),
+            };
+            let fingerprint = try!(profile_fingerprint(profile_path));
+            Ok((decoded, fingerprint))
+        } else {
+            if profile_path.exists() {
+                specific_fail!(format!("{} is not a file.", profile_path.display()));
+            } else {
+                specific_fail!(format!("{} does not exist.", profile_path.display()));
+            }
+        }
+    }
+
     /// setup a ThecaProfile struct based on the command line arguments
-    pub fn new(profile_name: &String,
-               profile_folder: &String,
-               key: &String,
+    pub fn new(profile_name: &str,
+               profile_folder: &str,
+               key: &str,
                new_profile: bool,
                encrypted: bool,
                yes: bool)
                -> Result<(ThecaProfile, u64), ThecaError> {
         if new_profile {
-            let profile_pathbuf = try!(find_profile_folder(profile_folder));
-            let profile_path: &Path = &profile_pathbuf;
-            // if the folder doesn't exist, make it yo!
-            if !profile_path.exists() {
-                if !yes {
-                    println!("{} doesn't exist, would you like to create it?",
-                             profile_path.display());
-                    if !try!(get_yn_input()) {
-                        specific_fail_str!("ok bye ♥");
-                    }
-                }
-                try!(create_dir(&profile_path));
-            }
-            Ok((ThecaProfile {
-                encrypted: encrypted,
-                notes: vec![],
-            },
-                0u64))
+            ThecaProfile::from_scratch(profile_folder, encrypted, yes)
         } else {
-            // set profile folder
-            let mut profile_pathbuf = try!(find_profile_folder(profile_folder));
-
-            // set profile name
-            profile_pathbuf.push(&(profile_name.to_string() + ".json"));
-            let profile_path: &Path = &profile_pathbuf;
-
-            // attempt to read profile
-            match profile_path.is_file() {
-                false => {
-                    if profile_path.exists() {
-                        specific_fail!(format!("{} is not a file.", profile_path.display()));
-                    } else {
-                        // FIXME
-                        // if profile_name == &"default".to_string() {
-                        //     println!(
-                        //         "{} does not exist, would you like to create it? (this will be the default profile)",
-                        //         profile_path.display()
-                        //     );
-                        //     match try!(get_yn_input()) {
-                        //         true => Ok((
-                        //             ThecaProfile {
-                        //                 encrypted: encrypted,
-                        //                 notes: vec![]
-                        //             },
-                        //             0u64
-                        //         )),
-                        //         false => specific_fail_str!("ok bye ♥")
-                        //     }
-                        // } else {
-                        //     specific_fail!(format!(
-                        //         "{} does not exist.",
-                        //         profile_path.display()
-                        //     ));
-                        // }
-                        specific_fail!(format!("{} does not exist.", profile_path.display()));
-                    }
-                }
-                true => {
-                    let mut file = try!(File::open(profile_path));
-                    let mut contents_buf: Vec<u8> = vec![];
-                    try!(file.read_to_end(&mut contents_buf));
-                    let contents = match encrypted {
-                        false => try!(String::from_utf8(contents_buf)),
-                        true => {
-                            let key = password_to_key(&key[..]);
-                            try!(String::from_utf8(try!(decrypt(&*contents_buf, &*key))))
-                        }
-                    };
-                    let decoded: ThecaProfile = match decode(&*contents) {
-                        Ok(s) => s,
-                        Err(_) => {
-                            specific_fail!(format!("invalid JSON in {}", profile_path.display()))
-                        }
-                    };
-                    let metadata = try!(profile_path.metadata());
-                    let modified = try!(metadata.modified());
-                    let since_epoch = try!(modified.duration_since(UNIX_EPOCH));
-                    Ok((decoded, since_epoch.as_secs()))
-                }
-            }
+            ThecaProfile::from_existing_profile(profile_name, profile_folder, key, encrypted)
         }
     }
 
