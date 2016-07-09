@@ -23,7 +23,7 @@ extern crate rand;
 extern crate tempdir;
 
 // std lib imports
-use std::env::var;
+use std::env;
 use std::io::{self, stdin, Read, Write};
 use std::iter::repeat;
 use std::fs::{File, create_dir};
@@ -787,9 +787,10 @@ impl ThecaProfile {
                               started_status,
                               urgent_status));
         } else {
-            match json {
-                true => println!("[]"),
-                false => println!("nothing found"),
+            if json {
+                println!("[]");
+            } else {
+                println!("nothing found");
             }
         }
         Ok(())
@@ -797,23 +798,17 @@ impl ThecaProfile {
 }
 
 pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
-    match var("THECA_DEFAULT_PROFILE") {
-        Ok(val) => {
-            if args.flag_profile.is_empty() && !val.is_empty() {
-                args.flag_profile = val;
-            }
+    if let Ok(val) = env::var("THECA_DEFAULT_PROFILE") {
+        if args.flag_profile.is_empty() && !val.is_empty() {
+            args.flag_profile = val;
         }
-        Err(_) => (),
-    };
+    }
 
-    match var("THECA_PROFILE_FOLDER") {
-        Ok(val) => {
-            if args.flag_profile_folder.is_empty() && !val.is_empty() {
-                args.flag_profile_folder = val;
-            }
+    if let Ok(val) = env::var("THECA_PROFILE_FOLDER") {
+        if args.flag_profile_folder.is_empty() && !val.is_empty() {
+            args.flag_profile_folder = val;
         }
-        Err(_) => (),
-    };
+    }
 
     // if key is provided but --encrypted not set, it prob should be
     if !args.flag_key.is_empty() && !args.flag_encrypted {
