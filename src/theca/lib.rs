@@ -9,9 +9,6 @@
 // lib.rs
 //   main theca struct defintions and command parsing functions.
 
-#![crate_name="theca"]
-#![crate_type="lib"]
-
 //! Definitions of ThecaItem and ThecaProfile and their implementations
 
 extern crate core;
@@ -29,7 +26,6 @@ extern crate tempdir;
 use std::env::var;
 use std::io::{self, stdin, Read, Write};
 use std::iter::repeat;
-use std::path::Path;
 use std::fs::{File, create_dir};
 
 // random things
@@ -270,15 +266,13 @@ impl ThecaProfile {
     /// save the profile back to file (either plaintext or encrypted)
     pub fn save_to_file(&mut self, args: &Args, fingerprint: &u64) -> Result<(), ThecaError> {
         // set profile folder
-        let mut profile_pathbuf = try!(find_profile_folder(&args.flag_profile_folder));
+        let mut profile_path = try!(find_profile_folder(&args.flag_profile_folder));
 
         // set file name
         match args.cmd_new_profile {
-            true => profile_pathbuf.push(&(args.arg_name[0].to_string() + ".json")),
-            false => profile_pathbuf.push(&(args.flag_profile.to_string() + ".json")),
+            true => profile_path.push(&(args.arg_name[0].to_string() + ".json")),
+            false => profile_path.push(&(args.flag_profile.to_string() + ".json")),
         };
-
-        let profile_path: &Path = &profile_pathbuf;
 
         if args.cmd_new_profile && profile_path.exists() && !args.flag_yes {
             println!("profile {} already exists would you like to overwrite it?",
@@ -982,9 +976,8 @@ pub fn parse_cmds(profile: &mut ThecaProfile,
             }
 
             if args.cmd_list_profiles {
-                let profile_pathbuf = try!(find_profile_folder(&args.flag_profile_folder));
-                let profile_folder: &Path = &profile_pathbuf;
-                try!(profiles_in_folder(profile_folder));
+                let profile_path = try!(find_profile_folder(&args.flag_profile_folder));
+                try!(profiles_in_folder(&profile_path));
                 return Ok(());
             }
 
