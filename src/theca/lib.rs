@@ -27,11 +27,10 @@ extern crate tempdir;
 
 // std lib imports
 use std::env::var;
-use std::io::{stdin, Read, Write};
+use std::io::{self, stdin, Read, Write};
 use std::iter::repeat;
 use std::path::Path;
 use std::fs::{File, create_dir};
-use std::time::UNIX_EPOCH;
 
 // random things
 use regex::Regex;
@@ -44,7 +43,7 @@ use lineformat::LineFormat;
 use utils::c::istty;
 use utils::{drop_to_editor, pretty_line, format_field, get_yn_input, sorted_print,
             localize_last_touched_string, parse_last_touched, find_profile_folder, get_password,
-            profiles_in_folder};
+            profiles_in_folder, profile_fingerprint};
 use errors::{ThecaError, GenericError};
 use crypt::{encrypt, decrypt, password_to_key};
 
@@ -126,37 +125,46 @@ pub struct ThecaItem {
 impl ThecaItem {
     /// print a note as a line
     fn print(&self, line_format: &LineFormat, search_body: bool) -> Result<(), ThecaError> {
+        self.write(&mut io::stdout(), line_format, search_body)
+    }
+
+    fn write<T: Write>(&self,
+                       output: &mut T,
+                       line_format: &LineFormat,
+                       search_body: bool)
+                       -> Result<(), ThecaError> {
         let column_seperator: String = repeat(' ')
                                            .take(line_format.colsep)
                                            .collect();
-        print!("{}",
-               format_field(&self.id.to_string(), line_format.id_width, false));
-        print!("{}", column_seperator);
-        match !self.body.is_empty() && !search_body {
-            true => {
-                print!("{}",
-                       format_field(&self.title, line_format.title_width - 4, true));
-                print!("{}", format_field(&" (+)".to_string(), 4, false));
-            }
-            false => {
-                print!("{}",
-                       format_field(&self.title, line_format.title_width, true));
-            }
+        try!(write!(output,
+                    "{}",
+                    format_field(&self.id.to_string(), line_format.id_width, false)));
+        try!(write!(output, "{}", column_seperator));
+        if !self.body.is_empty() && !search_body {
+            try!(write!(output,
+                        "{}",
+                        format_field(&self.title, line_format.title_width - 4, true)));
+            try!(write!(output, "{}", format_field(&" (+)".to_string(), 4, false)));
+        } else {
+            try!(write!(output,
+                        "{}",
+                        format_field(&self.title, line_format.title_width, true)));
         }
-        print!("{}", column_seperator);
+        try!(write!(output, "{}", column_seperator));
         if line_format.status_width != 0 {
-            print!("{}",
-                   format_field(&self.status, line_format.status_width, false));
-            print!("{}", column_seperator);
+            try!(write!(output,
+                        "{}",
+                        format_field(&self.status, line_format.status_width, false)));
+            try!(write!(output, "{}", column_seperator));
         }
-        print!("{}",
-               format_field(&try!(localize_last_touched_string(&*self.last_touched)),
-                            line_format.touched_width,
-                            false));
-        print!("\n");
+        try!(writeln!(output,
+                      "{}",
+                      format_field(&try!(localize_last_touched_string(&*self.last_touched)),
+                                   line_format.touched_width,
+                                   false)));
         if search_body {
             for l in self.body.lines() {
-                println!("\t{}", l);
+                try!(writeln!(output, "\t{}", l));
             }
         }
         Ok(())
@@ -298,10 +306,7 @@ impl ThecaProfile {
         }
 
         if fingerprint > &0u64 {
-            let metadata = try!(profile_path.metadata());
-            let modified = try!(metadata.modified());
-            let since_epoch = try!(modified.duration_since(UNIX_EPOCH));
-            let new_fingerprint = since_epoch.as_secs();
+            let new_fingerprint = try!(profile_fingerprint(&profile_path));
             if &new_fingerprint != fingerprint && !args.flag_yes {
                 println!("changes have been made to the profile '{}' on disk since it was \
                           loaded, would you like to attempt to merge them?",
@@ -1017,4 +1022,87 @@ pub fn parse_cmds(profile: &mut ThecaProfile,
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+#![allow(non_snake_case)]
+    use super::{STARTED, ThecaItem};
+    use super::lineformat::LineFormat;
+
+    fn write_item_test_case(item: ThecaItem, search: bool) -> String {
+        let mut bytes: Vec<u8> = vec![];
+        let line_format = LineFormat::new(&vec![item.clone()], false, false).unwrap();
+        item.write(&mut bytes, &line_format, search).expect("item.write failed");
+        String::from_utf8_lossy(&bytes).into_owned()
+    }
+
+    #[test]
+    fn test_write_item__no_search_non_empty_body() {
+        let item = ThecaItem {
+            id: 0,
+            title: "This is a title".into(),
+            status: "".into(),
+            body: "This is the body".into(),
+            last_touched: "2016-07-08 15:31:14 -0800".into(),
+        };
+        assert_eq!(write_item_test_case(item, false),
+                   "0   This is a title (+)  2016-07-08 16:31:14\n");
+    }
+
+    #[test]
+    fn test_write_item__no_search_empty_body() {
+        // no search && empty body
+        let item = ThecaItem {
+            id: 0,
+            title: "This is a title".into(),
+            status: "".into(),
+            body: "".into(),
+            last_touched: "2016-07-08 15:31:14 -0800".into(),
+        };
+        assert_eq!(write_item_test_case(item, false),
+                   "0   This is a title  2016-07-08 16:31:14\n");
+    }
+
+    #[test]
+    fn test_write_item__search_non_empty_body() {
+        let item = ThecaItem {
+            id: 0,
+            title: "This is a title".into(),
+            status: "".into(),
+            body: "This is the body\nit has multiple lines".into(),
+            last_touched: "2016-07-08 15:31:14 -0800".into(),
+        };
+        assert_eq!(write_item_test_case(item, true),
+                   "0   This is a title      2016-07-08 16:31:14\n\tThis is the body\n\tit has \
+                    multiple lines\n");
+    }
+
+    #[test]
+    fn test_write_item__search_empty_body() {
+        // search && empty body
+        let item = ThecaItem {
+            id: 0,
+            title: "This is a title".into(),
+            status: "".into(),
+            body: "".into(),
+            last_touched: "2016-07-08 15:31:14 -0800".into(),
+        };
+        assert_eq!(write_item_test_case(item, true),
+                   "0   This is a title  2016-07-08 16:31:14\n");
+    }
+
+    #[test]
+    fn test_write_item__non_zero_status_width() {
+        let item = ThecaItem {
+            id: 0,
+            title: "This is a title".into(),
+            status: STARTED.into(),
+            body: "This is the body".into(),
+            last_touched: "2016-07-08 15:31:14 -0800".into(),
+        };
+        assert_eq!(write_item_test_case(item, false),
+                   "0   This is a title (+)  Started  2016-07-08 16:31:14\n");
+
+    }
 }
