@@ -727,9 +727,10 @@ impl ThecaProfile {
                               started_status,
                               urgent_status));
         } else {
-            match json {
-                true => println!("[]"),
-                false => println!("this profile is empty"),
+            if json {
+                println!("[]");
+            } else {
+                println!("this profile is empty");
             }
         }
         Ok(())
@@ -749,31 +750,30 @@ impl ThecaProfile {
                         started_status: bool,
                         urgent_status: bool)
                         -> Result<(), ThecaError> {
-        let notes: Vec<ThecaItem> = match regex {
-            true => {
-                let re = match Regex::new(&pattern[..]) {
-                    Ok(r) => r,
-                    Err(e) => specific_fail!(format!("regex error: {}.", e)),
-                };
-                self.notes
-                    .iter()
-                    .filter(|n| match search_body {
-                        true => re.is_match(&*n.body),
-                        false => re.is_match(&*n.title),
-                    })
-                    .map(|n| n.clone())
-                    .collect()
-            }
-            false => {
-                self.notes
-                    .iter()
-                    .filter(|n| match search_body {
-                        true => n.body.contains(&pattern[..]),
-                        false => n.title.contains(&pattern[..]),
-                    })
-                    .map(|n| n.clone())
-                    .collect()
-            }
+        let notes: Vec<ThecaItem> = if regex {
+            let re = match Regex::new(&pattern[..]) {
+                Ok(r) => r,
+                Err(e) => specific_fail!(format!("regex error: {}.", e)),
+            };
+            self.notes
+                .iter()
+                .filter(|n| if search_body {
+                    re.is_match(&*n.body)
+                } else {
+                    re.is_match(&*n.title)
+                })
+                .map(|n| n.clone())
+                .collect()
+        } else {
+            self.notes
+                .iter()
+                .filter(|n| if search_body {
+                    n.body.contains(&pattern[..])
+                } else {
+                    n.title.contains(&pattern[..])
+                })
+                .map(|n| n.clone())
+                .collect()
         };
         if notes.len() > 0 {
             try!(sorted_print(&mut notes.clone(),
