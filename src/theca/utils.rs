@@ -123,7 +123,7 @@ pub fn termsize() -> usize {
     }
 }
 
-pub fn drop_to_editor(contents: &String) -> Result<String, ThecaError> {
+pub fn drop_to_editor(contents: &str) -> Result<String, ThecaError> {
     // setup temporary directory
     let tmpdir = try!(TempDir::new("theca"));
     // setup temporary file to write/read
@@ -210,7 +210,7 @@ pub fn get_yn_input() -> Result<bool, ThecaError> {
     Ok(answer)
 }
 
-pub fn pretty_line(bold: &str, plain: &String, tty: bool) -> Result<(), ThecaError> {
+pub fn pretty_line(bold: &str, plain: &str, tty: bool) -> Result<(), ThecaError> {
     let mut t = match stdout() {
         Some(t) => t,
         None => specific_fail_str!("could not retrieve standard output."),
@@ -226,7 +226,7 @@ pub fn pretty_line(bold: &str, plain: &String, tty: bool) -> Result<(), ThecaErr
     Ok(())
 }
 
-pub fn format_field(value: &String, width: usize, truncate: bool) -> String {
+pub fn format_field(value: &str, width: usize, truncate: bool) -> String {
     if value.len() > width && width > 3 && truncate {
         format!("{: <1$.1$}...", value, width - 3)
     } else {

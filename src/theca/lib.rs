@@ -415,7 +415,7 @@ impl ThecaProfile {
 
     /// add a item to the profile
     pub fn add_note(&mut self,
-                    title: &String,
+                    title: &str,
                     body: &Vec<String>,
                     started: bool,
                     urgent: bool,
@@ -495,7 +495,7 @@ impl ThecaProfile {
     /// edit an item in the profile
     pub fn edit_note(&mut self,
                      id: usize,
-                     title: &String,
+                     title: &str,
                      body: &Vec<String>,
                      started: bool,
                      urgent: bool,
@@ -590,7 +590,7 @@ impl ThecaProfile {
     }
 
     /// print information about the profile
-    pub fn stats(&mut self, name: &String) -> Result<(), ThecaError> {
+    pub fn stats(&mut self, name: &str) -> Result<(), ThecaError> {
         let no_s = self.notes.iter().filter(|n| n.status == "").count();
         let started_s = self.notes
                             .iter()
@@ -743,7 +743,7 @@ impl ThecaProfile {
 
     /// print notes search for in the profile
     pub fn search_notes(&mut self,
-                        pattern: &String,
+                        pattern: &str,
                         regex: bool,
                         limit: usize,
                         condensed: bool,
