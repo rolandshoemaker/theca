@@ -62,7 +62,7 @@ case "$1" in
             if [[ "$@" =~ "--release" ]]; then
                 bin_loc="target/release/theca"
             else
-                bin_loc="target/theca"
+                bin_loc="target/debug/theca"
             fi
             p "built $bin_loc"
             cp "$bin_loc" bin/theca
@@ -134,7 +134,7 @@ case "$1" in
             cargo_cmd="cargo build --release"
         else
             build_profile="dev"
-            python_cmd="$python_cmd target/theca"
+            python_cmd="$python_cmd target/debug/theca"
             cargo_cmd="cargo build"
         fi
 
