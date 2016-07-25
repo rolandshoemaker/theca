@@ -922,11 +922,7 @@ pub fn parse_cmds(profile: &mut ThecaProfile,
         // view
         if !args.arg_id.is_empty() {
             try!(profile.view_note(args.arg_id[0], args.flag_json, args.flag_condensed));
-            return Ok(());
-        }
-
-        // search
-        if args.cmd_search {
+        } else if args.cmd_search {
             try!(profile.search_notes(&args.arg_pattern,
                                       args.flag_regex,
                                       args.flag_limit,
@@ -938,16 +934,9 @@ pub fn parse_cmds(profile: &mut ThecaProfile,
                                       args.flag_none,
                                       args.flag_started,
                                       args.flag_urgent));
-            return Ok(());
-        }
-
-        // stats
-        if args.cmd_info {
+        } else if args.cmd_info {
             try!(profile.stats(&args.flag_profile));
-            return Ok(());
-        }
-
-        if args.cmd_import {
+        } else if args.cmd_import {
             // reverse(?) transfer a note
             let mut from_args = args.clone();
             from_args.cmd_transfer = args.cmd_import;
@@ -965,17 +954,10 @@ pub fn parse_cmds(profile: &mut ThecaProfile,
                 ));
 
             try!(parse_cmds(&mut from_profile, &mut from_args, &from_fingerprint));
-            return Ok(());
-        }
-
-        if args.cmd_list_profiles {
+        } else if args.cmd_list_profiles {
             let profile_path = try!(find_profile_folder(&args.flag_profile_folder));
             try!(profiles_in_folder(&profile_path));
-            return Ok(());
-        }
-
-        // list
-        if args.arg_id.is_empty() {
+        } else if args.arg_id.is_empty() {
             try!(profile.list_notes(args.flag_limit,
                                     args.flag_condensed,
                                     args.flag_json,
@@ -985,7 +967,6 @@ pub fn parse_cmds(profile: &mut ThecaProfile,
                                     args.flag_none,
                                     args.flag_started,
                                     args.flag_urgent));
-            return Ok(());
         }
     }
 
