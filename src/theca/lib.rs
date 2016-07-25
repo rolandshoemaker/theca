@@ -832,127 +832,132 @@ pub fn parse_cmds(profile: &mut ThecaProfile,
                   args: &mut Args,
                   profile_fingerprint: &u64)
                   -> Result<(), ThecaError> {
-    if [args.cmd_add,
-        args.cmd_edit,
-        args.cmd_encrypt_profile,
-        args.cmd_del,
-        args.cmd_decrypt_profile,
-        args.cmd_transfer,
-        args.cmd_clear,
-        args.cmd_new_profile]
-           .iter()
-           .any(|c| *c) {
-        // add
-        if args.cmd_add {
-            try!(profile.add_note(&args.arg_title,
-                                  &args.flag_body,
-                                  args.flag_started,
-                                  args.flag_urgent,
-                                  args.cmd__,
-                                  args.flag_editor,
-                                  true));
-        }
-
-        // edit
-        if args.cmd_edit {
-            try!(profile.edit_note(args.arg_id[0],
-                                   &args.arg_title,
-                                   &args.flag_body,
-                                   args.flag_started,
-                                   args.flag_urgent,
-                                   args.flag_none,
-                                   args.cmd__,
-                                   args.flag_editor,
-                                   args.flag_encrypted,
-                                   args.flag_yes));
-        }
-
-        // delete
-        if args.cmd_del {
-            profile.delete_note(&args.arg_id);
-        }
-
-        // transfer
-        if args.cmd_transfer {
-            // transfer a note
-            try!(profile.transfer_note(args));
-        }
-
-        // clear
-        if args.cmd_clear {
-            try!(profile.clear(args.flag_yes));
-        }
-
-        // decrypt profile
-        // FIXME: should test how this interacts with save_to_file when the profile has
-        //        changed during execution
-        if args.cmd_decrypt_profile {
-            profile.encrypted = false; // is it that easy? i think it is
-            println!("decrypting '{}'", args.flag_profile);
-        }
-
-        // encrypt profile
-        // FIXME: should test how this interacts with save_to_file when the profile has
-        //        changed during execution
-        if args.cmd_encrypt_profile {
-            // get the new key
-            if args.flag_new_key.is_empty() {
-                args.flag_new_key = try!(get_password());
-            }
-
-            // set args.key and args.encrypted
-            args.flag_encrypted = true;
-            args.flag_key = args.flag_new_key.clone();
-
-            // set profile to encrypted
-            profile.encrypted = true;
-            println!("encrypting '{}'", args.flag_profile);
-        }
-
-        // new profile
-        if args.cmd_new_profile {
-            if args.cmd_new_profile && args.arg_name.is_empty() {
-                args.arg_name.push("default".to_string())
-            }
-            println!("creating profile '{}'", args.arg_name[0]);
-        }
-
-        try!(profile.save_to_file(args, profile_fingerprint));
-    } else {
-        // view
-        if !args.arg_id.is_empty() {
-            try!(profile.view_note(args.arg_id[0], args.flag_json, args.flag_condensed));
-        }
-
-        // search
-        if args.cmd_search {
-            try!(profile.search_notes(&args.arg_pattern,
-                                      args.flag_regex,
-                                      args.flag_limit,
-                                      args.flag_condensed,
-                                      args.flag_json,
-                                      args.flag_datesort,
-                                      args.flag_reverse,
-                                      args.flag_search_body,
-                                      args.flag_none,
+    match [args.cmd_add,
+           args.cmd_edit,
+           args.cmd_encrypt_profile,
+           args.cmd_del,
+           args.cmd_decrypt_profile,
+           args.cmd_transfer,
+           args.cmd_clear,
+           args.cmd_new_profile]
+              .iter()
+              .any(|c| c == &true) {
+        true => {
+            // add
+            if args.cmd_add {
+                try!(profile.add_note(&args.arg_title,
+                                      &args.flag_body,
                                       args.flag_started,
-                                      args.flag_urgent));
+                                      args.flag_urgent,
+                                      args.cmd__,
+                                      args.flag_editor,
+                                      true));
+            }
+
+            // edit
+            if args.cmd_edit {
+                try!(profile.edit_note(args.arg_id[0],
+                                       &args.arg_title,
+                                       &args.flag_body,
+                                       args.flag_started,
+                                       args.flag_urgent,
+                                       args.flag_none,
+                                       args.cmd__,
+                                       args.flag_editor,
+                                       args.flag_encrypted,
+                                       args.flag_yes));
+            }
+
+            // delete
+            if args.cmd_del {
+                profile.delete_note(&args.arg_id);
+            }
+
+            // transfer
+            if args.cmd_transfer {
+                // transfer a note
+                try!(profile.transfer_note(args));
+            }
+
+            // clear
+            if args.cmd_clear {
+                try!(profile.clear(args.flag_yes));
+            }
+
+            // decrypt profile
+            // FIXME: should test how this interacts with save_to_file when the profile has
+            //        changed during execution
+            if args.cmd_decrypt_profile {
+                profile.encrypted = false; // is it that easy? i think it is
+                println!("decrypting '{}'", args.flag_profile);
+            }
+
+            // encrypt profile
+            // FIXME: should test how this interacts with save_to_file when the profile has
+            //        changed during execution
+            if args.cmd_encrypt_profile {
+                // get the new key
+                if args.flag_new_key.is_empty() {
+                    args.flag_new_key = try!(get_password());
+                }
+
+                // set args.key and args.encrypted
+                args.flag_encrypted = true;
+                args.flag_key = args.flag_new_key.clone();
+
+                // set profile to encrypted
+                profile.encrypted = true;
+                println!("encrypting '{}'", args.flag_profile);
+            }
+
+            // new profile
+            if args.cmd_new_profile {
+                if args.cmd_new_profile && args.arg_name.is_empty() {
+                    args.arg_name.push("default".to_string())
+                }
+                println!("creating profile '{}'", args.arg_name[0]);
+            }
+
+            try!(profile.save_to_file(args, profile_fingerprint));
         }
+        false => {
+            // view
+            if !args.arg_id.is_empty() {
+                try!(profile.view_note(args.arg_id[0], args.flag_json, args.flag_condensed));
+                return Ok(());
+            }
 
-        // stats
-        if args.cmd_info {
-            try!(profile.stats(&args.flag_profile));
-        }
+            // search
+            if args.cmd_search {
+                try!(profile.search_notes(&args.arg_pattern,
+                                          args.flag_regex,
+                                          args.flag_limit,
+                                          args.flag_condensed,
+                                          args.flag_json,
+                                          args.flag_datesort,
+                                          args.flag_reverse,
+                                          args.flag_search_body,
+                                          args.flag_none,
+                                          args.flag_started,
+                                          args.flag_urgent));
+                return Ok(());
+            }
 
-        if args.cmd_import {
-            // reverse(?) transfer a note
-            let mut from_args = args.clone();
-            from_args.cmd_transfer = args.cmd_import;
-            from_args.cmd_import = false;
-            from_args.flag_profile = args.arg_name[0].clone();
-            from_args.arg_name[0] = args.flag_profile.clone();
+            // stats
+            if args.cmd_info {
+                try!(profile.stats(&args.flag_profile));
+                return Ok(());
+            }
 
-            let (mut from_profile, from_fingerprint) = try!(ThecaProfile::new(
+            if args.cmd_import {
+                // reverse(?) transfer a note
+                let mut from_args = args.clone();
+                from_args.cmd_transfer = args.cmd_import;
+                from_args.cmd_import = false;
+                from_args.flag_profile = args.arg_name[0].clone();
+                from_args.arg_name[0] = args.flag_profile.clone();
+
+                let (mut from_profile, from_fingerprint) = try!(ThecaProfile::new(
                     &from_args.flag_profile,
                     &from_args.flag_profile_folder,
                     &from_args.flag_key,
@@ -961,25 +966,29 @@ pub fn parse_cmds(profile: &mut ThecaProfile,
                     from_args.flag_yes
                 ));
 
-            try!(parse_cmds(&mut from_profile, &mut from_args, &from_fingerprint));
-        }
+                try!(parse_cmds(&mut from_profile, &mut from_args, &from_fingerprint));
+                return Ok(());
+            }
 
-        if args.cmd_list_profiles {
-            let profile_path = try!(find_profile_folder(&args.flag_profile_folder));
-            try!(profiles_in_folder(&profile_path));
-        }
+            if args.cmd_list_profiles {
+                let profile_path = try!(find_profile_folder(&args.flag_profile_folder));
+                try!(profiles_in_folder(&profile_path));
+                return Ok(());
+            }
 
-        // list
-        if args.arg_id.is_empty() {
-            try!(profile.list_notes(args.flag_limit,
-                                    args.flag_condensed,
-                                    args.flag_json,
-                                    args.flag_datesort,
-                                    args.flag_reverse,
-                                    args.flag_search_body,
-                                    args.flag_none,
-                                    args.flag_started,
-                                    args.flag_urgent));
+            // list
+            if args.arg_id.is_empty() {
+                try!(profile.list_notes(args.flag_limit,
+                                        args.flag_condensed,
+                                        args.flag_json,
+                                        args.flag_datesort,
+                                        args.flag_reverse,
+                                        args.flag_search_body,
+                                        args.flag_none,
+                                        args.flag_started,
+                                        args.flag_urgent));
+                return Ok(());
+            }
         }
     }
 
