@@ -105,9 +105,10 @@ pub mod c {
 fn set_term_echo(echo: bool) -> Result<(), ThecaError> {
     let mut t = c::Termios::new();
     try_errno!(c::tcgetattr(STDIN_FILENO, &mut t));
-    match echo {
-        true => t.c_lflag |= c::ECHO,  // on
-        false => t.c_lflag &= !c::ECHO,  // off
+    if echo {
+        t.c_lflag |= c::ECHO;  // on
+    } else {
+        t.c_lflag &= !c::ECHO;  // off
     };
     try_errno!(c::tcsetattr(STDIN_FILENO, c::TCSANOW, &mut t));
     Ok(())
@@ -149,15 +150,14 @@ pub fn drop_to_editor(contents: &str) -> Result<String, ThecaError> {
     editor_command.stdout(Stdio::inherit());
     editor_command.stderr(Stdio::inherit());
     let editor_proc = editor_command.spawn();
-    match try!(editor_proc).wait().is_ok() {
-        true => {
-            // finished editing, time to read `tmpfile` for the final output
-            let mut tmpfile = try!(File::open(&tmppath));
-            let mut content = String::new();
-            try!(tmpfile.read_to_string(&mut content));
-            Ok(content)
-        }
-        false => specific_fail_str!("the editor broke... I think"),
+    if try!(editor_proc).wait().is_ok() {
+        // finished editing, time to read `tmpfile` for the final output
+        let mut tmpfile = try!(File::open(&tmppath));
+        let mut content = String::new();
+        try!(tmpfile.read_to_string(&mut content));
+        Ok(content)
+    } else {
+        specific_fail_str!("the editor broke... I think") 
     }
 }
 
@@ -190,19 +190,13 @@ pub fn get_yn_input() -> Result<bool, ThecaError> {
         let mut input = String::new();
         try!(stdin.read_line(&mut input));
         input = input.trim().to_string();
-        match yes.iter().any(|n| &n[..] == input) {
-            true => {
-                answer = true;
-                break;
-            }
-            false => {
-                match no.iter().any(|n| &n[..] == input) {
-                    true => {
-                        answer = false;
-                        break;
-                    }
-                    false => (),
-                }
+        if yes.iter().any(|n| &n[..] == input) {
+            answer = true;
+            break;
+        } else {
+            if no.iter().any(|n| &n[..] == input) {
+                    answer = false;
+                    break;
             }
         };
         println!("invalid input.");
@@ -246,12 +240,11 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
                                        .take(line_format.line_width())
                                        .collect();
     let tty = c::istty(STDOUT_FILENO);
-    let status = match line_format.status_width == 0 {
+    let status = if line_format.status_width == 0 {
         true => "".to_string(),
-        false => {
+    } else {
             format_field(&"status".to_string(), line_format.status_width, false) +
             &*column_seperator
-        }
     };
     if tty {
         try!(t.attr(Bold));
@@ -290,9 +283,10 @@ pub fn sorted_print(notes: &mut Vec<ThecaItem>,
     } else if urgent_status {
         notes.retain(|n| n.status == "Urgent");
     }
-    let limit = match limit != 0 && notes.len() >= limit {
-        true => limit,
-        false => notes.len(),
+    let limit = if limit != 0 && notes.len() >= limit {
+        limit
+    } else {
+        notes.len()
     };
     if datesort {
         notes.sort_by(|a, b| match cmp_last_touched(&*a.last_touched, &*b.last_touched) {
@@ -301,26 +295,23 @@ pub fn sorted_print(notes: &mut Vec<ThecaItem>,
         });
     }
 
-    match json {
-        false => {
-            if reverse {
-                notes.reverse();
-            }
-            let line_format = try!(LineFormat::new(&notes[0..limit].to_vec(),
-                                                   condensed,
-                                                   search_body));
-            if !condensed && !json {
-                try!(print_header(&line_format));
-            }
-            for n in notes[0..limit].iter() {
-                try!(n.print(&line_format, search_body));
-            }
+    if json {
+        if reverse {
+            notes.reverse();
         }
-        true => {
-            if reverse {
-                notes.reverse();
-            }
-            println!("{}", as_pretty_json(&notes[0..limit].to_vec()))
+        println!("{}", as_pretty_json(&notes[0..limit].to_vec()))
+    } else {
+        if reverse {
+            notes.reverse();
+        }
+        let line_format = try!(LineFormat::new(&notes[0..limit].to_vec(),
+                                                condensed,
+                                                search_body));
+        if !condensed && !json {
+            try!(print_header(&line_format));
+        }
+        for n in notes[0..limit].iter() {
+            try!(n.print(&line_format, search_body));
         }
     };
 
@@ -363,36 +354,35 @@ pub fn cmp_last_touched(a: &str, b: &str) -> Result<Ordering, ThecaError> {
 
 pub fn validate_profile_from_path(profile_path: &PathBuf) -> (bool, bool) {
     // return (is_a_profile, encrypted(?))
-    match profile_path.extension().unwrap() == "json" {
-        true => {
-            match File::open(profile_path) {
-                Ok(mut f) => {
-                    let mut contents_buf: Vec<u8> = vec![];
-                    match f.read_to_end(&mut contents_buf) {
-                        Ok(c) => c,
-                        // nopnopnopppppp
-                        Err(_) => return (false, false),
-                    };
-                    match String::from_utf8(contents_buf) {
-                        Ok(s) => {
-                            // well it's a .json and valid utf-8 at least
-                            match decode::<ThecaProfile>(&*s) {
-                                // yup
-                                Ok(_) => return (true, false),
-                                // noooooop
-                                Err(_) => return (false, false),
-                            };
-                        }
-                        // possibly encrypted
-                        Err(_) => return (true, true),
+    if profile_path.extension().unwrap() == "json" {
+        match File::open(profile_path) {
+            Ok(mut f) => {
+                let mut contents_buf: Vec<u8> = vec![];
+                match f.read_to_end(&mut contents_buf) {
+                    Ok(c) => c,
+                    // nopnopnopppppp
+                    Err(_) => return (false, false),
+                };
+                match String::from_utf8(contents_buf) {
+                    Ok(s) => {
+                        // well it's a .json and valid utf-8 at least
+                        match decode::<ThecaProfile>(&*s) {
+                            // yup
+                            Ok(_) => return (true, false),
+                            // noooooop
+                            Err(_) => return (false, false),
+                        };
                     }
+                    // possibly encrypted
+                    Err(_) => return (true, true),
                 }
-                // nooppp
-                Err(_) => return (false, false),
             }
+            // nooppp
+            Err(_) => return (false, false),
         }
+    } else {
         // noooppp
-        false => return (false, false),
+        return (false, false);
     };
 }
 

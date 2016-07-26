@@ -33,9 +33,10 @@ impl LineFormat {
         let console_width = termsize();
 
         // set colsep
-        let colsep = match condensed {
-            true => 1,
-            false => 2,
+        let colsep = if condensed {
+            1
+        } else {
+            2
         };
 
         let mut line_format = LineFormat {
@@ -65,9 +66,10 @@ impl LineFormat {
                                                  false => n.title.len(),
                                              }) {
             Some(n) => {
-                match n.body.is_empty() || search {
-                    true => n.title.len(),
-                    false => n.title.len() + 4,
+                if n.body.is_empty() || search {
+                    n.title.len()
+                } else {
+                    n.title.len() + 4
                 }
             }
             None => 0,
@@ -79,29 +81,28 @@ impl LineFormat {
         }
 
         // status length stuff
-        line_format.status_width = match items.iter()
+        line_format.status_width = if items.iter()
                                               .any(|n| n.status.len() > 0) {
-            true => {
-                match condensed {
-                    // expanded print, get longest status (7 or 6 / started or urgent)
-                    false => {
-                        match items.iter().max_by_key(|n| n.status.len()) {
-                            Some(w) => w.status.len(),
-                            None => 0,
-                        }
-                    }
-                    // only display first char of status (e.g. S or U) for condensed print
-                    true => 1,
+            if condensed {
+                // only display first char of status (e.g. S or U) for condensed print
+                1
+            } else {
+                // expanded print, get longest status (7 or 6 / started or urgent)
+                match items.iter().max_by_key(|n| n.status.len()) {
+                    Some(w) => w.status.len(),
+                    None => 0,
                 }
             }
+        } else {
             // no items have statuses so truncate column
-            false => 0,
+            0
         };
 
         // last_touched has fixed string length so no need for silly iter stuff
-        line_format.touched_width = match condensed {
-            true => 10, // condensed
-            false => 19, // expanded
+        line_format.touched_width = if condensed {
+            10 // condensed
+        } else {
+            19 // expanded
         };
 
         // check to make sure our new line format isn't bigger than the console
@@ -117,9 +118,10 @@ impl LineFormat {
     }
 
     pub fn line_width(&self) -> usize {
-        let columns = match self.status_width == 0 {
-            true => 2 * self.colsep,
-            false => 3 * self.colsep,
+        let columns = if self.status_width == 0 {
+            2 * self.colsep
+        } else {
+            3 * self.colsep
         };
         self.id_width + self.title_width + self.status_width + self.touched_width + columns
     }
