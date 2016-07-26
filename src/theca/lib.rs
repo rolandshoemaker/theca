@@ -269,10 +269,11 @@ impl ThecaProfile {
         let mut profile_path = try!(find_profile_folder(&args.flag_profile_folder));
 
         // set file name
-        match args.cmd_new_profile {
-            true => profile_path.push(&(args.arg_name[0].to_string() + ".json")),
-            false => profile_path.push(&(args.flag_profile.to_string() + ".json")),
-        };
+        if args.cmd_new_profile {
+            profile_path.push(&(args.arg_name[0].to_string() + ".json"));
+        } else {
+            profile_path.push(&(args.flag_profile.to_string() + ".json"));
+        }
 
         if args.cmd_new_profile && profile_path.exists() && !args.flag_yes {
             println!("profile {} already exists would you like to overwrite it?",
@@ -326,12 +327,11 @@ impl ThecaProfile {
         }
 
         // encrypt json if its an encrypted profile
-        let buffer = match self.encrypted {
-            true => {
-                let key = password_to_key(&*args.flag_key);
-                try!(encrypt(&json_prof.into_bytes(), &*key))
-            }
-            false => json_prof.into_bytes(),
+        let buffer = if self.encrypted {
+            let key = password_to_key(&*args.flag_key);
+            try!(encrypt(&json_prof.into_bytes(), &*key))
+        } else {
+            json_prof.into_bytes()
         };
 
         // write buffer to file
@@ -360,50 +360,43 @@ impl ThecaProfile {
             args.flag_yes
         ));
 
-        match self.notes
-                  .iter()
-                  .find(|n| n.id == args.arg_id[0])
-                  .map(|n| {
-                      let (started, urgent) = (n.status == STARTED, n.status == URGENT);
-                      trans_profile.add_note(&n.title,
-                                             &vec![n.body.clone()],
-                                             started,
-                                             urgent,
-                                             false,
-                                             false,
-                                             false)
-                  })
-                  .is_some() {
-            true => {
-                match self.notes
-                          .iter()
-                          .position(|n| n.id == args.arg_id[0])
-                          .map(|e| self.notes.remove(e))
-                          .is_some() {
-                    true => try!(trans_profile.save_to_file(&trans_args, &trans_fingerprint)),
-                    false => {
-                        specific_fail!(format!("couldn't remove note {} in {}, aborting nothing \
-                                                will be saved",
-                                               args.arg_id[0],
-                                               args.flag_profile))
-                    }
-                };
-            }
-            false => {
-                specific_fail!(format!("could not transfer note {} from {} -> {}",
+        if self.notes
+               .iter()
+               .find(|n| n.id == args.arg_id[0])
+               .map(|n| {
+                   let (started, urgent) = (n.status == STARTED, n.status == URGENT);
+                   trans_profile.add_note(&n.title,
+                                          &vec![n.body.clone()],
+                                          started,
+                                          urgent,
+                                          false,
+                                          false,
+                                          false)
+               })
+               .is_some() {
+            if self.notes
+                   .iter()
+                   .position(|n| n.id == args.arg_id[0])
+                   .map(|e| self.notes.remove(e))
+                   .is_some() {
+                try!(trans_profile.save_to_file(&trans_args, &trans_fingerprint))
+            } else {
+                specific_fail!(format!("couldn't remove note {} in {}, aborting nothing will be \
+                                        saved",
                                        args.arg_id[0],
-                                       args.flag_profile,
-                                       args.arg_name[0]))
+                                       args.flag_profile))
             }
-        };
+        } else {
+            specific_fail!(format!("could not transfer note {} from {} -> {}",
+                                   args.arg_id[0],
+                                   args.flag_profile,
+                                   args.arg_name[0]))
+        }
         println!("transfered [{}: note {} -> {}: note {}]",
                  args.flag_profile,
                  args.arg_id[0],
                  args.arg_name[0],
-                 match trans_profile.notes.last() {
-                     Some(n) => n.id,
-                     None => 0,
-                 });
+                 trans_profile.notes.last().map_or(0, |n| n.id));
         Ok(())
     }
 
@@ -426,27 +419,24 @@ impl ThecaProfile {
             NOSTATUS.to_string()
         };
 
-        let body = match use_stdin {
-            false => {
-                match use_editor {
-                    false => {
-                        match body.is_empty() {
-                            true => "".to_string(),
-                            false => body[0].clone(),
-                        }
-                    }
-                    true => {
-                        match istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
-                            true => try!(drop_to_editor(&"".to_string())),
-                            false => "".to_string(),
-                        }
+        let body = if use_stdin {
+            let mut buf = String::new();
+            try!(stdin().read_to_string(&mut buf));
+            buf.to_owned()
+        } else {
+            match use_editor {
+                false => {
+                    match body.is_empty() {
+                        true => "".to_string(),
+                        false => body[0].clone(),
                     }
                 }
-            }
-            true => {
-                let mut buf = String::new();
-                try!(stdin().read_to_string(&mut buf));
-                buf.to_owned()
+                true => {
+                    match istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
+                        true => try!(drop_to_editor(&"".to_string())),
+                        false => "".to_string(),
+                    }
+                }
             }
         };
 
