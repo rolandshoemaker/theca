@@ -424,18 +424,17 @@ impl ThecaProfile {
             try!(stdin().read_to_string(&mut buf));
             buf.to_owned()
         } else {
-            match use_editor {
-                false => {
-                    match body.is_empty() {
-                        true => "".to_string(),
-                        false => body[0].clone(),
-                    }
+            if !use_editor {
+                if body.is_empty() {
+                    "".to_string()
+                } else {
+                    body[0].clone()
                 }
-                true => {
-                    match istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
-                        true => try!(drop_to_editor(&"".to_string())),
-                        false => "".to_string(),
-                    }
+            } else {
+                if istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
+                    try!(drop_to_editor(&"".to_string()))
+                } else {
+                    "".to_string()
                 }
             }
         };
@@ -465,13 +464,10 @@ impl ThecaProfile {
                              .position(|n| &n.id == nid)
                              .map(|e| self.notes.remove(e))
                              .is_some();
-            match remove {
-                true => {
-                    println!("deleted note {}", nid);
-                }
-                false => {
-                    println!("note {} doesn't exist", nid);
-                }
+            if remove {
+                println!("deleted note {}", nid);
+            } else {
+                println!("note {} doesn't exist", nid);
             }
         }
     }
@@ -495,24 +491,18 @@ impl ThecaProfile {
             None => specific_fail!(format!("note {} doesn't exist", id)),
         };
         if !title.is_empty() {
-            match title.replace("\n", "") == "-" {
-                true => {
-                    match !use_stdin {
-                        true => {
-                            let mut buf = String::new();
-                            try!(stdin().read_to_string(&mut buf));
-                            self.notes[item_pos].body = buf.to_owned();
-                        }
-                        false => {
-                            self.notes[item_pos].title = title.replace("\n", "")
-                                                              .to_string()
-                        }
-                    }
-                }
-                false => {
+            if title.replace("\n", "") == "-" {
+                if !use_stdin {
+                    let mut buf = String::new();
+                    try!(stdin().read_to_string(&mut buf));
+                    self.notes[item_pos].body = buf.to_owned();
+                } else {
                     self.notes[item_pos].title = title.replace("\n", "")
                                                       .to_string()
                 }
+            } else {
+                self.notes[item_pos].title = title.replace("\n", "")
+                                                  .to_string()
             }
             // change title
         }
@@ -529,40 +519,36 @@ impl ThecaProfile {
 
         if !body.is_empty() || use_editor || use_stdin {
             // change body
-            self.notes[item_pos].body = match use_stdin {
-                true => {
-                    let mut buf = String::new();
-                    try!(stdin().read_to_string(&mut buf));
-                    buf.to_owned()
-                }
-                false => {
-                    match use_editor {
-                        true => {
-                            match istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
-                                true => {
-                                    if encrypted && !yes {
-                                        println!("{0}\n\n{1}\n{2}\n\n{0}\n{3}\n",
-                                                 "## [WARNING] ##",
-                                                 "continuing will write the body of the \
-                                                  decrypted note to a temporary",
-                                                 "file, increasing the possibilty it could be \
-                                                  recovered later.",
-                                                 "Are you sure you want to continue?");
-                                        if !try!(get_yn_input()) {
-                                            specific_fail_str!("ok bye ♥");
-                                        }
-                                    }
-                                    let new_body = try!(drop_to_editor(&self.notes[item_pos].body));
-                                    match self.notes[item_pos].body != new_body {
-                                        true => new_body,
-                                        false => self.notes[item_pos].body.clone(),
-                                    }
-                                }
-                                false => self.notes[item_pos].body.clone(),
+            self.notes[item_pos].body = if use_stdin {
+                let mut buf = String::new();
+                try!(stdin().read_to_string(&mut buf));
+                buf.to_owned()
+            } else {
+                if use_editor {
+                    if istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
+                        if encrypted && !yes {
+                            println!("{0}\n\n{1}\n{2}\n\n{0}\n{3}\n",
+                                     "## [WARNING] ##",
+                                     "continuing will write the body of the decrypted note to a \
+                                      temporary",
+                                     "file, increasing the possibilty it could be recovered \
+                                      later.",
+                                     "Are you sure you want to continue?");
+                            if !try!(get_yn_input()) {
+                                specific_fail_str!("ok bye ♥");
                             }
                         }
-                        false => body[0].clone(),
+                        let new_body = try!(drop_to_editor(&self.notes[item_pos].body));
+                        if self.notes[item_pos].body != new_body {
+                            new_body
+                        } else {
+                            self.notes[item_pos].body.clone()
+                        }
+                    } else {
+                        self.notes[item_pos].body.clone()
                     }
+                } else {
+                    body[0].clone()
                 }
             };
         }
@@ -625,70 +611,57 @@ impl ThecaProfile {
             Some(i) => i,
             None => specific_fail!(format!("note {} doesn't exist", id)),
         };
-        match json {
-            false => {
-                let tty = istty(STDOUT_FILENO);
+        if json {
+            println!("{}", as_pretty_json(&self.notes[note_pos].clone()));
+        } else {
+            let tty = istty(STDOUT_FILENO);
 
-                match condensed {
-                    true => {
-                        try!(pretty_line("id: ", &format!("{}\n", self.notes[note_pos].id), tty));
-                        try!(pretty_line("title: ",
-                                         &format!("{}\n", self.notes[note_pos].title),
-                                         tty));
-                        if !self.notes[note_pos].status.is_empty() {
-                            try!(pretty_line("status: ",
-                                             &format!("{}\n", self.notes[note_pos].status),
-                                             tty));
-                        }
-                        try!(pretty_line("last touched: ",
-                                         &format!("{}\n",
-                                                  try!(
-                                    localize_last_touched_string(
-                                        &*self.notes[note_pos].last_touched
-                                    )
-                                )),
-                                         tty));
-                    }
-                    false => {
-                        try!(pretty_line("id\n--\n",
-                                         &format!("{}\n\n", self.notes[note_pos].id),
-                                         tty));
-                        try!(pretty_line("title\n-----\n",
-                                         &format!("{}\n\n", self.notes[note_pos].title),
-                                         tty));
-                        if !self.notes[note_pos].status.is_empty() {
-                            try!(pretty_line("status\n------\n",
-                                             &format!("{}\n\n", self.notes[note_pos].status),
-                                             tty));
-                        }
-                        try!(pretty_line("last touched\n------------\n",
-                                         &format!("{}\n\n",
-                                                  try!(
-                                    localize_last_touched_string(
-                                        &*self.notes[note_pos].last_touched
-                                    )
-                                )),
-                                         tty));
-                    }
-                };
-
-                // body
-                if !self.notes[note_pos].body.is_empty() {
-                    match condensed {
-                        true => {
-                            try!(pretty_line("body: ",
-                                             &format!("{}\n", self.notes[note_pos].body),
-                                             tty));
-                        }
-                        false => {
-                            try!(pretty_line("body\n----\n",
-                                             &format!("{}\n\n", self.notes[note_pos].body),
-                                             tty));
-                        }
-                    };
+            if condensed {
+                try!(pretty_line("id: ", &format!("{}\n", self.notes[note_pos].id), tty));
+                try!(pretty_line("title: ", &format!("{}\n", self.notes[note_pos].title), tty));
+                if !self.notes[note_pos].status.is_empty() {
+                    try!(pretty_line("status: ",
+                                     &format!("{}\n", self.notes[note_pos].status),
+                                     tty));
                 }
+                try!(pretty_line("last touched: ",
+                                 &format!("{}\n",
+                                          try!(
+                                localize_last_touched_string(
+                                    &*self.notes[note_pos].last_touched
+                                )
+                            )),
+                                 tty));
+            } else {
+                try!(pretty_line("id\n--\n", &format!("{}\n\n", self.notes[note_pos].id), tty));
+                try!(pretty_line("title\n-----\n",
+                                 &format!("{}\n\n", self.notes[note_pos].title),
+                                 tty));
+                if !self.notes[note_pos].status.is_empty() {
+                    try!(pretty_line("status\n------\n",
+                                     &format!("{}\n\n", self.notes[note_pos].status),
+                                     tty));
+                }
+                try!(pretty_line("last touched\n------------\n",
+                                 &format!("{}\n\n",
+                                          try!(
+                                localize_last_touched_string(
+                                    &*self.notes[note_pos].last_touched
+                                )
+                            )),
+                                 tty));
+            };
+
+            // body
+            if !self.notes[note_pos].body.is_empty() {
+                if condensed {
+                    try!(pretty_line("body: ", &format!("{}\n", self.notes[note_pos].body), tty));
+                } else {
+                    try!(pretty_line("body\n----\n",
+                                     &format!("{}\n\n", self.notes[note_pos].body),
+                                     tty));
+                };
             }
-            true => println!("{}", as_pretty_json(&self.notes[note_pos].clone())),
         }
         Ok(())
     }
