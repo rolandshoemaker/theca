@@ -82,7 +82,7 @@ impl LineFormat {
 
         // status length stuff
         line_format.status_width = if items.iter()
-                                              .any(|n| n.status.len() > 0) {
+                                           .any(|n| n.status.len() > 0) {
             if condensed {
                 // only display first char of status (e.g. S or U) for condensed print
                 1

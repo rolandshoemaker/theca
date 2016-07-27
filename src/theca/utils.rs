@@ -157,7 +157,7 @@ pub fn drop_to_editor(contents: &str) -> Result<String, ThecaError> {
         try!(tmpfile.read_to_string(&mut content));
         Ok(content)
     } else {
-        specific_fail_str!("the editor broke... I think") 
+        specific_fail_str!("the editor broke... I think")
     }
 }
 
@@ -195,8 +195,8 @@ pub fn get_yn_input() -> Result<bool, ThecaError> {
             break;
         } else {
             if no.iter().any(|n| &n[..] == input) {
-                    answer = false;
-                    break;
+                answer = false;
+                break;
             }
         };
         println!("invalid input.");
@@ -241,10 +241,9 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
                                        .collect();
     let tty = c::istty(STDOUT_FILENO);
     let status = if line_format.status_width == 0 {
-        true => "".to_string(),
+        "".to_string()
     } else {
-            format_field(&"status".to_string(), line_format.status_width, false) +
-            &*column_seperator
+        format_field(&"status".to_string(), line_format.status_width, false) + &*column_seperator
     };
     if tty {
         try!(t.attr(Bold));
@@ -304,9 +303,7 @@ pub fn sorted_print(notes: &mut Vec<ThecaItem>,
         if reverse {
             notes.reverse();
         }
-        let line_format = try!(LineFormat::new(&notes[0..limit].to_vec(),
-                                                condensed,
-                                                search_body));
+        let line_format = try!(LineFormat::new(&notes[0..limit].to_vec(), condensed, search_body));
         if !condensed && !json {
             try!(print_header(&line_format));
         }
