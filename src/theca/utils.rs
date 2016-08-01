@@ -24,7 +24,7 @@ use time::get_time;
 use time::{strftime, strptime, at, Tm};
 
 // term imports
-use term::stdout;
+use term::{self, stdout};
 use term::Attr::Bold;
 
 // json imports
@@ -180,13 +180,24 @@ pub fn get_password() -> Result<String> {
     Ok(key.trim().to_string())
 }
 
-pub fn get_yn_input() -> Result<bool> {
+pub fn get_yn_input(message: &str) -> Result<bool> {
+    let stdout = match stdout() {
+        Some(t) => t,
+        None => specific_fail_str!("could not retrieve standard output."),
+    };
+    get_yn_input_with_output(stdout, message)
+}
+
+pub fn get_yn_input_with_output<W: Write>(mut terminal: Box<term::Terminal<Output=W>>, message: &str) -> Result<bool> {
+    try!(write!(terminal, "{}", message));
+    try!(terminal.flush());
     let stdin = stdin();
     let answer;
     let yes = vec!["y", "Y", "yes", "YES", "Yes"];
     let no = vec!["n", "N", "no", "NO", "No"];
     loop {
-        print!("[y/n]# ");
+        try!(write!(terminal, "[y/n]# "));
+        try!(terminal.flush());
         let mut input = String::new();
         try!(stdin.read_line(&mut input));
         input = input.trim().to_string();
@@ -199,9 +210,17 @@ pub fn get_yn_input() -> Result<bool> {
                 break;
             }
         };
-        println!("invalid input.");
+        try!(writeln!(terminal, "invalid input."));
+        try!(terminal.flush());
     }
     Ok(answer)
+}
+
+pub fn get_stdout() -> Result<Box<term::Terminal<Output=::std::io::Stdout>>> {
+    match stdout() {
+        Some(t) => Ok(t),
+        None => specific_fail_str!("could not retrieve standard output."),
+    }
 }
 
 pub fn pretty_line(bold: &str, plain: &str, tty: bool) -> Result<()> {
