@@ -11,8 +11,8 @@
 //   tries to construct a line format that won't overflow the console
 //   width.
 
-use errors::ThecaError;
-use {ThecaItem, Status};
+use errors::Result;
+use {Item, Status};
 use utils::termsize;
 
 #[derive(Clone, Copy)]
@@ -25,10 +25,10 @@ pub struct LineFormat {
 }
 
 impl LineFormat {
-    pub fn new(items: &Vec<ThecaItem>,
+    pub fn new(items: &Vec<Item>,
                condensed: bool,
                search: bool)
-               -> Result<LineFormat, ThecaError> {
+               -> Result<LineFormat> {
         // get termsize :>
         let console_width = termsize();
 

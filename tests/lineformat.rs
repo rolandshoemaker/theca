@@ -1,10 +1,10 @@
 extern crate theca;
 
-use theca::{Status, ThecaItem};
+use theca::{Status, Item};
 use theca::lineformat::{LineFormat};
 
 struct LineTest {
-    input_notes: Vec<ThecaItem>,
+    input_notes: Vec<Item>,
     condensed: bool,
     search: bool,
     expected_format: LineFormat
@@ -28,14 +28,14 @@ fn test_new_line_format_basic() {
     let basic_tests = vec![
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
@@ -55,14 +55,14 @@ fn test_new_line_format_basic() {
         },
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
@@ -90,14 +90,14 @@ fn test_new_line_format_statuses() {
     let status_tests = vec![
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::Started,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
@@ -117,14 +117,14 @@ fn test_new_line_format_statuses() {
         },
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
@@ -144,14 +144,14 @@ fn test_new_line_format_statuses() {
         },
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
@@ -179,14 +179,14 @@ fn test_new_line_format_body() {
     let body_tests = vec![
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
@@ -206,14 +206,14 @@ fn test_new_line_format_body() {
         },
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
@@ -233,14 +233,14 @@ fn test_new_line_format_body() {
         },
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
@@ -260,14 +260,14 @@ fn test_new_line_format_body() {
         },
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
@@ -295,14 +295,14 @@ fn test_new_line_format_full() {
     let body_tests = vec![
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::Started,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
@@ -322,14 +322,14 @@ fn test_new_line_format_full() {
         },
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::Started,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
@@ -349,14 +349,14 @@ fn test_new_line_format_full() {
         },
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::Urgent,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
@@ -376,14 +376,14 @@ fn test_new_line_format_full() {
         },
         LineTest {
             input_notes: vec![
-                ThecaItem {
+                Item {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
                     status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
-                ThecaItem {
+                Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),

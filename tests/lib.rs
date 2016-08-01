@@ -1,10 +1,10 @@
 extern crate theca;
 
-use theca::{Status, ThecaProfile};
+use theca::{Status, Profile};
 
 #[test]
 fn test_add_note() {
-    let mut p = ThecaProfile {
+    let mut p = Profile {
         encrypted: false,
         notes: vec![]
     };
@@ -18,7 +18,7 @@ fn test_add_note() {
 
 #[test]
 fn test_add_started_note() {
-    let mut p = ThecaProfile {
+    let mut p = Profile {
         encrypted: false,
         notes: vec![]
     };
@@ -32,7 +32,7 @@ fn test_add_started_note() {
 
 #[test]
 fn test_add_urgent_note() {
-    let mut p = ThecaProfile {
+    let mut p = Profile {
         encrypted: false,
         notes: vec![]
     };
@@ -46,7 +46,7 @@ fn test_add_urgent_note() {
 
 #[test]
 fn test_add_basic_body_note() {
-    let mut p = ThecaProfile {
+    let mut p = Profile {
         encrypted: false,
         notes: vec![]
     };
@@ -60,7 +60,7 @@ fn test_add_basic_body_note() {
 
 #[test]
 fn test_add_full_basic_body_note() {
-    let mut p = ThecaProfile {
+    let mut p = Profile {
         encrypted: false,
         notes: vec![]
     };
@@ -74,7 +74,7 @@ fn test_add_full_basic_body_note() {
 
 #[test]
 fn test_edit_note_title() {
-    let mut p = ThecaProfile {
+    let mut p = Profile {
         encrypted: false,
         notes: vec![]
     };
@@ -89,7 +89,7 @@ fn test_edit_note_title() {
 
 #[test]
 fn test_edit_note_status() {
-    let mut p = ThecaProfile {
+    let mut p = Profile {
         encrypted: false,
         notes: vec![]
     };
@@ -114,7 +114,7 @@ fn test_edit_note_status() {
 
 #[test]
 fn test_edit_note_body_basic() {
-    let mut p = ThecaProfile {
+    let mut p = Profile {
         encrypted: false,
         notes: vec![]
     };
@@ -129,7 +129,7 @@ fn test_edit_note_body_basic() {
 
 #[test]
 fn test_edit_full_note() {
-    let mut p = ThecaProfile {
+    let mut p = Profile {
         encrypted: false,
         notes: vec![]
     };
@@ -144,7 +144,7 @@ fn test_edit_full_note() {
 
 #[test]
 fn test_delete_single_note() {
-    let mut p = ThecaProfile {
+    let mut p = Profile {
         encrypted: false,
         notes: vec![]
     };
@@ -155,7 +155,7 @@ fn test_delete_single_note() {
 
 #[test]
 fn test_delete_some_notes() {
-    let mut p = ThecaProfile {
+    let mut p = Profile {
         encrypted: false,
         notes: vec![]
     };
@@ -175,7 +175,7 @@ fn test_delete_some_notes() {
 
 #[test]
 fn test_clear_notes() {
-    let mut p = ThecaProfile {
+    let mut p = Profile {
         encrypted: false,
         notes: vec![]
     };
