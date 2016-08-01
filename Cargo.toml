@@ -16,9 +16,10 @@ doc = false
 [dependencies]
 time = "*"
 regex = "*"
-regex_macros = "*"
 rustc-serialize = "*"
 docopt = "*"
 rust-crypto = "*"
 rand = "*"
 tempdir = "*"
+libc = "*"
+term = "*"

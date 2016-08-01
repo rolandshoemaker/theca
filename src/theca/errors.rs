@@ -1,5 +1,5 @@
-//  _   _                    
-// | |_| |__   ___  ___ __ _ 
+//  _   _
+// | |_| |__   ___  ___ __ _
 // | __| '_ \ / _ \/ __/ _` |
 // | |_| | | |  __/ (_| (_| |
 //  \__|_| |_|\___|\___\__,_|
@@ -7,40 +7,62 @@
 // licensed under the MIT license <http://opensource.org/licenses/MIT>
 //
 // errors.rs
-//   definitions for ThecaError, a catch-all for converting various 
+//   definitions for Error, a catch-all for converting various
 //   lib errors.
 
-use core::{fmt};
-use core::error::{Error};
-use std::error::{FromError};
-use std::old_io::{IoError};
-use std::io;
-use std::string::{FromUtf8Error};
-use time::{ParseError};
-use crypto::symmetriccipher::{SymmetricCipherError};
-use rustc_serialize::json::{EncoderError};
+use std::fmt;
+use std::convert::From;
+use std::error::Error as StdError;
+use std::io::Error as IoError;
+use std::string::FromUtf8Error;
+use std::time::SystemTimeError;
+use time::ParseError;
+use crypto::symmetriccipher::SymmetricCipherError;
+use rustc_serialize::json::EncoderError;
 use docopt;
+use term;
 
-pub use self::ErrorKind::{
-    InternalIoError,
-    GenericError
-};
+pub use self::ErrorKind::{TermError, InternalIoError, GenericError};
+pub type Result<T> = ::std::result::Result<T, Error>;
 
+#[derive(Debug)]
 pub enum ErrorKind {
+    TermError(term::Error),
     InternalIoError(IoError),
-    GenericError
+    GenericError,
 }
 
-pub struct ThecaError {
+#[derive(Debug)]
+pub struct Error {
     pub kind: ErrorKind,
     pub desc: String,
-    pub detail: Option<String>
+    pub detail: Option<String>,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", &self.desc)
+    }
+}
+
+impl StdError for Error {
+    fn description(&self) -> &str {
+        &self.desc
+    }
+
+    fn cause(&self) -> Option<&StdError> {
+        match self.kind {
+            ErrorKind::TermError(ref e) => Some(e),
+            ErrorKind::InternalIoError(ref e) => Some(e),
+            _ => None,
+        }
+    }
 }
 
 macro_rules! specific_fail {
     ($short:expr) => {
-        return Err(::std::error::FromError::from_error(
-            ThecaError {
+        return Err(::std::convert::From::from(
+            Error {
                 kind: GenericError,
                 desc: $short,
                 detail: None
@@ -60,11 +82,8 @@ macro_rules! try_errno {
         {
             if $e != 0 {
                 return Err(
-                    ::std::error::FromError::from_error(
-                        IoError::from_errno(
-                            errno() as i32,
-                            true
-                        )
+                    ::std::convert::From::from(
+                        IoError::last_os_error()
                     )
                 );
             }
@@ -72,87 +91,102 @@ macro_rules! try_errno {
     }
 }
 
-impl FromError<EncoderError> for ThecaError {
-    fn from_error(err: EncoderError) -> ThecaError {
-        ThecaError {
+impl From<EncoderError> for Error {
+    fn from(err: EncoderError) -> Error {
+        Error {
             kind: GenericError,
             desc: err.description().to_string(),
-            detail: None
+            detail: None,
         }
     }
 }
 
-impl FromError<IoError> for ThecaError {
-    fn from_error(err: IoError) -> ThecaError {
-        ThecaError {
+impl From<IoError> for Error {
+    fn from(err: IoError) -> Error {
+        Error {
             kind: GenericError,
-            desc: err.desc.to_string(),
-            detail: err.detail
+            desc: err.description().into(),
+            detail: None,
         }
     }
 }
 
-impl FromError<(ErrorKind, &'static str)> for ThecaError {
-    fn from_error((kind, desc): (ErrorKind, &'static str)) -> ThecaError {
-        ThecaError { kind: kind, desc: desc.to_string(), detail: None }
+impl From<term::Error> for Error {
+    fn from(err: term::Error) -> Error {
+        Error {
+            desc: err.description().into(),
+            kind: TermError(err),
+            detail: None,
+        }
     }
 }
 
-impl FromError<ParseError> for ThecaError {
-    fn from_error(err: ParseError) -> ThecaError {
-        ThecaError {
+impl From<(ErrorKind, &'static str)> for Error {
+    fn from((kind, desc): (ErrorKind, &'static str)) -> Error {
+        Error {
+            kind: kind,
+            desc: desc.to_string(),
+            detail: None,
+        }
+    }
+}
+
+impl From<SystemTimeError> for Error {
+    fn from(err: SystemTimeError) -> Error {
+        Error {
+            kind: GenericError,
+            desc: err.description().into(),
+            detail: None,
+        }
+    }
+}
+
+impl From<ParseError> for Error {
+    fn from(err: ParseError) -> Error {
+        Error {
             kind: GenericError,
             desc: format!("time parsing error: {}", err),
-            detail: None
+            detail: None,
         }
     }
 }
 
-impl FromError<FromUtf8Error> for ThecaError {
-    fn from_error(err: FromUtf8Error) -> ThecaError {
-        ThecaError {
+impl From<FromUtf8Error> for Error {
+    fn from(err: FromUtf8Error) -> Error {
+        Error {
             kind: GenericError,
-            desc: format!(
-                "is this profile encrypted? ({})",
-                err
-            ),
-            detail: None
+            desc: format!("is this profile encrypted? ({})", err),
+            detail: None,
         }
     }
 }
 
-impl FromError<SymmetricCipherError> for ThecaError {
-    fn from_error(_: SymmetricCipherError) -> ThecaError {
-        ThecaError {
+impl From<SymmetricCipherError> for Error {
+    fn from(_: SymmetricCipherError) -> Error {
+        Error {
             kind: GenericError,
             desc: "invalid encryption key".to_string(),
-            detail: None
+            detail: None,
         }
     }
 }
 
-impl FromError<docopt::Error> for ThecaError {
-    fn from_error(err: docopt::Error) -> ThecaError {
-        ThecaError { kind: GenericError, desc: err.to_string(), detail: None }
+impl From<docopt::Error> for Error {
+    fn from(err: docopt::Error) -> Error {
+        Error {
+            kind: GenericError,
+            desc: err.to_string(),
+            detail: None,
+        }
     }
 }
 
-impl FromError<fmt::Error> for ThecaError {
-    fn from_error(_: fmt::Error) -> ThecaError {
-        ThecaError {
+impl From<fmt::Error> for Error {
+    fn from(_: fmt::Error) -> Error {
+        Error {
             kind: GenericError,
             desc: "formatting error".to_string(),
-            detail: None
-        }
-    }
-}
-
-impl FromError<io::Error> for ThecaError {
-    fn from_error(err: io::Error) -> ThecaError {
-        ThecaError {
-            kind: GenericError,
-            desc: format!("{:?}", err),
-            detail: None
+            detail: None,
         }
     }
 }
