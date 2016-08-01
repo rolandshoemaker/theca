@@ -254,9 +254,8 @@ impl Profile {
         // if the folder doesn't exist, make it yo!
         if !profile_path.exists() {
             if !yes {
-                println!("{} doesn't exist, would you like to create it?",
-                         profile_path.display());
-                if !try!(get_yn_input()) {
+                let message = format!("{} doesn't exist, would you like to create it?\n", profile_path.display());
+                if !try!(get_yn_input(&message)) {
                     specific_fail_str!("ok bye ♥");
                 }
             }
@@ -324,8 +323,8 @@ impl Profile {
     /// remove all notes from the profile
     pub fn clear(&mut self, yes: bool) -> Result<()> {
         if !yes {
-            println!("are you sure you want to delete all the notes in this profile?");
-            if !try!(get_yn_input()) {
+            let message = "are you sure you want to delete all the notes in this profile?\n";
+            if !try!(get_yn_input(&message)) {
                 specific_fail_str!("ok bye ♥");
             }
         }
@@ -347,9 +346,9 @@ impl Profile {
         }
 
         if args.cmd_new_profile && profile_path.exists() && !args.flag_yes {
-            println!("profile {} already exists would you like to overwrite it?",
+            let message = format!("profile {} already exists would you like to overwrite it?\n",
                      profile_path.display());
-            if !try!(get_yn_input()) {
+            if !try!(get_yn_input(&message)) {
                 specific_fail_str!("ok bye ♥");
             }
         }
@@ -357,10 +356,10 @@ impl Profile {
         if fingerprint > &0u64 {
             let new_fingerprint = try!(profile_fingerprint(&profile_path));
             if &new_fingerprint != fingerprint && !args.flag_yes {
-                println!("changes have been made to the profile '{}' on disk since it was \
-                          loaded, would you like to attempt to merge them?",
+                let message = format!("changes have been made to the profile '{}' on disk since it was \
+                          loaded, would you like to attempt to merge them?\n",
                          args.flag_profile);
-                if !try!(get_yn_input()) {
+                if !try!(get_yn_input(&message)) {
                     specific_fail_str!("ok bye ♥");
                 }
                 let mut new_args = args.clone();
@@ -598,14 +597,14 @@ impl Profile {
                 if use_editor {
                     if istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
                         if encrypted && !yes {
-                            println!("{0}\n\n{1}\n{2}\n\n{0}\n{3}\n",
+                            let message = format!("{0}\n\n{1}\n{2}\n\n{0}\n{3}\n",
                                      "## [WARNING] ##",
                                      "continuing will write the body of the decrypted note to a \
                                       temporary",
                                      "file, increasing the possibilty it could be recovered \
                                       later.",
-                                     "Are you sure you want to continue?");
-                            if !try!(get_yn_input()) {
+                                     "Are you sure you want to continue?\n");
+                            if !try!(get_yn_input(&message)) {
                                 specific_fail_str!("ok bye ♥");
                             }
                         }
