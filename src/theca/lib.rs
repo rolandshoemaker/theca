@@ -9,7 +9,7 @@
 // lib.rs
 //   main theca struct defintions and command parsing functions.
 
-//! Definitions of ThecaItem and ThecaProfile and their implementations
+//! Definitions of Item and Profile and their implementations
 
 extern crate core;
 extern crate libc;
@@ -41,7 +41,7 @@ use utils::c::istty;
 use utils::{drop_to_editor, pretty_line, format_field, get_yn_input, sorted_print,
             localize_last_touched_string, parse_last_touched, find_profile_folder, get_password,
             profiles_in_folder, profile_fingerprint};
-use errors::{ThecaError, GenericError};
+use errors::{Result, Error, GenericError};
 use crypt::{encrypt, decrypt, password_to_key};
 
 pub use self::libc::{STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO};
@@ -105,7 +105,7 @@ pub enum Status {
 }
 
 impl Encodable for Status {
-    fn encode<S: rustc_serialize::Encoder>(&self, encoder: &mut S) -> Result<(), S::Error> {
+    fn encode<S: rustc_serialize::Encoder>(&self, encoder: &mut S) -> ::std::result::Result<(), S::Error> {
         match &*self {
             &Status::NoStatus => {
                 encoder.emit_enum("Status", |encoder| {
@@ -142,7 +142,7 @@ impl Encodable for Status {
 }
 
 impl Decodable for Status {
-    fn decode<D: ::rustc_serialize::Decoder>(decoder: &mut D) -> Result<Status, D::Error> {
+    fn decode<D: ::rustc_serialize::Decoder>(decoder: &mut D) -> ::std::result::Result<Status, D::Error> {
         decoder.read_enum(
                 "Status",
                 |decoder| {
@@ -181,7 +181,7 @@ static DATEFMT_SHORT: &'static str = "%F %T";
 
 /// Represents a note within a profile
 #[derive(RustcDecodable, RustcEncodable, Clone)]
-pub struct ThecaItem {
+pub struct Item {
     pub id: usize,
     pub title: String,
     pub status: Status,
@@ -189,9 +189,9 @@ pub struct ThecaItem {
     pub last_touched: String,
 }
 
-impl ThecaItem {
+impl Item {
     /// print a note as a line
-    fn print(&self, line_format: &LineFormat, search_body: bool) -> Result<(), ThecaError> {
+    fn print(&self, line_format: &LineFormat, search_body: bool) -> Result<()> {
         self.write(&mut io::stdout(), line_format, search_body)
     }
 
@@ -199,7 +199,7 @@ impl ThecaItem {
                        output: &mut T,
                        line_format: &LineFormat,
                        search_body: bool)
-                       -> Result<(), ThecaError> {
+                       -> Result<()> {
         let column_seperator: String = repeat(' ')
                                            .take(line_format.colsep)
                                            .collect();
@@ -240,16 +240,16 @@ impl ThecaItem {
 
 /// Main container of a theca profile file
 #[derive(RustcDecodable, RustcEncodable, Clone)]
-pub struct ThecaProfile {
+pub struct Profile {
     pub encrypted: bool,
-    pub notes: Vec<ThecaItem>,
+    pub notes: Vec<Item>,
 }
 
-impl ThecaProfile {
+impl Profile {
     fn from_scratch(profile_folder: &str,
                     encrypted: bool,
                     yes: bool)
-                    -> Result<(ThecaProfile, u64), ThecaError> {
+                    -> Result<(Profile, u64)> {
         let profile_path = try!(find_profile_folder(profile_folder));
         // if the folder doesn't exist, make it yo!
         if !profile_path.exists() {
@@ -262,7 +262,7 @@ impl ThecaProfile {
             }
             try!(create_dir(&profile_path));
         }
-        Ok((ThecaProfile {
+        Ok((Profile {
             encrypted: encrypted,
             notes: vec![],
         },
@@ -273,7 +273,7 @@ impl ThecaProfile {
                              profile_folder: &str,
                              key: &str,
                              encrypted: bool)
-                             -> Result<(ThecaProfile, u64), ThecaError> {
+                             -> Result<(Profile, u64)> {
         // set profile folder
         let mut profile_path = try!(find_profile_folder(profile_folder));
 
@@ -291,7 +291,7 @@ impl ThecaProfile {
             } else {
                 try!(String::from_utf8(contents_buf))
             };
-            let decoded: ThecaProfile = match decode(&*contents) {
+            let decoded: Profile = match decode(&*contents) {
                 Ok(s) => s,
                 Err(_) => specific_fail!(format!("invalid JSON in {}", profile_path.display())),
             };
@@ -306,23 +306,23 @@ impl ThecaProfile {
         }
     }
 
-    /// setup a ThecaProfile struct based on the command line arguments
+    /// setup a Profile struct based on the command line arguments
     pub fn new(profile_name: &str,
                profile_folder: &str,
                key: &str,
                new_profile: bool,
                encrypted: bool,
                yes: bool)
-               -> Result<(ThecaProfile, u64), ThecaError> {
+               -> Result<(Profile, u64)> {
         if new_profile {
-            ThecaProfile::from_scratch(profile_folder, encrypted, yes)
+            Profile::from_scratch(profile_folder, encrypted, yes)
         } else {
-            ThecaProfile::from_existing_profile(profile_name, profile_folder, key, encrypted)
+            Profile::from_existing_profile(profile_name, profile_folder, key, encrypted)
         }
     }
 
     /// remove all notes from the profile
-    pub fn clear(&mut self, yes: bool) -> Result<(), ThecaError> {
+    pub fn clear(&mut self, yes: bool) -> Result<()> {
         if !yes {
             println!("are you sure you want to delete all the notes in this profile?");
             if !try!(get_yn_input()) {
@@ -335,7 +335,7 @@ impl ThecaProfile {
 
     // FIXME (this as well as transfer_note, shouldn't *need* to take all of `args`)
     /// save the profile back to file (either plaintext or encrypted)
-    pub fn save_to_file(&mut self, args: &Args, fingerprint: &u64) -> Result<(), ThecaError> {
+    pub fn save_to_file(&mut self, args: &Args, fingerprint: &u64) -> Result<()> {
         // set profile folder
         let mut profile_path = try!(find_profile_folder(&args.flag_profile_folder));
 
@@ -372,7 +372,7 @@ impl ThecaProfile {
                     };
                 }
                 let (mut changed_profile, changed_fingerprint) = try!(
-                    ThecaProfile::new(
+                    Profile::new(
                         &new_args.flag_profile,
                         &new_args.flag_profile_folder,
                         &new_args.flag_key,
@@ -413,7 +413,7 @@ impl ThecaProfile {
 
     // FIXME (this as well as save_to_file, shouldn't *need* to take all of `args`)
     /// transfer a note from the profile to another profile
-    pub fn transfer_note(&mut self, args: &Args) -> Result<(), ThecaError> {
+    pub fn transfer_note(&mut self, args: &Args) -> Result<()> {
         if args.flag_profile == args.arg_name[0] {
             specific_fail!(format!("cannot transfer a note from a profile to itself ({} -> {})",
                                    args.flag_profile,
@@ -422,7 +422,7 @@ impl ThecaProfile {
 
         let mut trans_args = args.clone();
         trans_args.flag_profile = args.arg_name[0].clone();
-        let (mut trans_profile, trans_fingerprint) = try!(ThecaProfile::new(
+        let (mut trans_profile, trans_fingerprint) = try!(Profile::new(
             &args.arg_name[0],
             &args.flag_profile_folder,
             &args.flag_key,
@@ -480,7 +480,7 @@ impl ThecaProfile {
                     use_stdin: bool,
                     use_editor: bool,
                     print_msg: bool)
-                    -> Result<(), ThecaError> {
+                    -> Result<()> {
         let title = title.replace("\n", "").to_string();
         let status = if started {
             Status::Started
@@ -514,7 +514,7 @@ impl ThecaProfile {
             Some(n) => n.id,
             None => 0,
         };
-        self.notes.push(ThecaItem {
+        self.notes.push(Item {
             id: new_id + 1,
             title: title,
             status: status,
@@ -555,7 +555,7 @@ impl ThecaProfile {
                      use_editor: bool,
                      encrypted: bool,
                      yes: bool)
-                     -> Result<(), ThecaError> {
+                     -> Result<()> {
         // let id = args.arg_id[0];
         let item_pos: usize = match self.notes.iter().position(|n| n.id == id) {
             Some(i) => i,
@@ -631,7 +631,7 @@ impl ThecaProfile {
     }
 
     /// print information about the profile
-    pub fn stats(&mut self, name: &str) -> Result<(), ThecaError> {
+    pub fn stats(&mut self, name: &str) -> Result<()> {
         let no_s = self.notes.iter().filter(|n| n.status == Status::NoStatus).count();
         let started_s = self.notes
                             .iter()
@@ -676,7 +676,7 @@ impl ThecaProfile {
     }
 
     /// print a full item
-    pub fn view_note(&mut self, id: usize, json: bool, condensed: bool) -> Result<(), ThecaError> {
+    pub fn view_note(&mut self, id: usize, json: bool, condensed: bool) -> Result<()> {
         let id = id;
         let note_pos = match self.notes.iter().position(|n| n.id == id) {
             Some(i) => i,
@@ -748,7 +748,7 @@ impl ThecaProfile {
                       no_status: bool,
                       started_status: bool,
                       urgent_status: bool)
-                      -> Result<(), ThecaError> {
+                      -> Result<()> {
         if self.notes.len() > 0 {
             try!(sorted_print(&mut self.notes.clone(),
                               limit,
@@ -783,8 +783,8 @@ impl ThecaProfile {
                         no_status: bool,
                         started_status: bool,
                         urgent_status: bool)
-                        -> Result<(), ThecaError> {
-        let notes: Vec<ThecaItem> = if regex {
+                        -> Result<()> {
+        let notes: Vec<Item> = if regex {
             let re = match Regex::new(&pattern[..]) {
                 Ok(r) => r,
                 Err(e) => specific_fail!(format!("regex error: {}.", e)),
@@ -831,7 +831,7 @@ impl ThecaProfile {
     }
 }
 
-pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
+pub fn setup_args(args: &mut Args) -> Result<()> {
     if let Ok(val) = env::var("THECA_DEFAULT_PROFILE") {
         if args.flag_profile.is_empty() && !val.is_empty() {
             args.flag_profile = val;
@@ -862,10 +862,10 @@ pub fn setup_args(args: &mut Args) -> Result<(), ThecaError> {
     Ok(())
 }
 
-pub fn parse_cmds(profile: &mut ThecaProfile,
+pub fn parse_cmds(profile: &mut Profile,
                   args: &mut Args,
                   profile_fingerprint: &u64)
-                  -> Result<(), ThecaError> {
+                  -> Result<()> {
     if [args.cmd_add,
         args.cmd_edit,
         args.cmd_encrypt_profile,
@@ -978,7 +978,7 @@ pub fn parse_cmds(profile: &mut ThecaProfile,
             from_args.flag_profile = args.arg_name[0].clone();
             from_args.arg_name[0] = args.flag_profile.clone();
 
-            let (mut from_profile, from_fingerprint) = try!(ThecaProfile::new(
+            let (mut from_profile, from_fingerprint) = try!(Profile::new(
                     &from_args.flag_profile,
                     &from_args.flag_profile_folder,
                     &from_args.flag_key,
@@ -1010,10 +1010,10 @@ pub fn parse_cmds(profile: &mut ThecaProfile,
 #[cfg(test)]
 mod tests {
 #![allow(non_snake_case)]
-    use super::{Status, ThecaItem};
+    use super::{Status, Item};
     use super::lineformat::LineFormat;
 
-    fn write_item_test_case(item: ThecaItem, search: bool) -> String {
+    fn write_item_test_case(item: Item, search: bool) -> String {
         let mut bytes: Vec<u8> = vec![];
         let line_format = LineFormat::new(&vec![item.clone()], false, false).unwrap();
         item.write(&mut bytes, &line_format, search).expect("item.write failed");
@@ -1022,7 +1022,7 @@ mod tests {
 
     #[test]
     fn test_write_item__no_search_non_empty_body() {
-        let item = ThecaItem {
+        let item = Item {
             id: 0,
             title: "This is a title".into(),
             status: Status::NoStatus,
@@ -1036,7 +1036,7 @@ mod tests {
     #[test]
     fn test_write_item__no_search_empty_body() {
         // no search && empty body
-        let item = ThecaItem {
+        let item = Item {
             id: 0,
             title: "This is a title".into(),
             status: Status::NoStatus,
@@ -1049,7 +1049,7 @@ mod tests {
 
     #[test]
     fn test_write_item__search_non_empty_body() {
-        let item = ThecaItem {
+        let item = Item {
             id: 0,
             title: "This is a title".into(),
             status: Status::NoStatus,
@@ -1064,7 +1064,7 @@ mod tests {
     #[test]
     fn test_write_item__search_empty_body() {
         // search && empty body
-        let item = ThecaItem {
+        let item = Item {
             id: 0,
             title: "This is a title".into(),
             status: Status::NoStatus,
@@ -1077,7 +1077,7 @@ mod tests {
 
     #[test]
     fn test_write_item__non_zero_status_width() {
-        let item = ThecaItem {
+        let item = Item {
             id: 0,
             title: "This is a title".into(),
             status: Status::Started,

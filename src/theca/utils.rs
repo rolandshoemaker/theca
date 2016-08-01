@@ -37,8 +37,8 @@ use std::io::stdin;
 use std::io::Error as IoError;
 
 // theca imports
-use {DATEFMT, DATEFMT_SHORT, ThecaItem, ThecaProfile, Status};
-use errors::{ThecaError, GenericError};
+use {DATEFMT, DATEFMT_SHORT, Item, Profile, Status};
+use errors::{Result, Error, GenericError};
 use lineformat::LineFormat;
 
 pub use libc::{STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO};
@@ -102,7 +102,7 @@ pub mod c {
     }
 }
 
-fn set_term_echo(echo: bool) -> Result<(), ThecaError> {
+fn set_term_echo(echo: bool) -> Result<()> {
     let mut t = c::Termios::new();
     try_errno!(c::tcgetattr(STDIN_FILENO, &mut t));
     if echo {
@@ -124,7 +124,7 @@ pub fn termsize() -> usize {
     }
 }
 
-pub fn drop_to_editor(contents: &str) -> Result<String, ThecaError> {
+pub fn drop_to_editor(contents: &str) -> Result<String> {
     // setup temporary directory
     let tmpdir = try!(TempDir::new("theca"));
     // setup temporary file to write/read
@@ -161,7 +161,7 @@ pub fn drop_to_editor(contents: &str) -> Result<String, ThecaError> {
     }
 }
 
-pub fn get_password() -> Result<String, ThecaError> {
+pub fn get_password() -> Result<String> {
     // should really turn off terminal echo...
     print!("Key: ");
     let tty = c::istty(STDIN_FILENO);
@@ -180,7 +180,7 @@ pub fn get_password() -> Result<String, ThecaError> {
     Ok(key.trim().to_string())
 }
 
-pub fn get_yn_input() -> Result<bool, ThecaError> {
+pub fn get_yn_input() -> Result<bool> {
     let stdin = stdin();
     let answer;
     let yes = vec!["y", "Y", "yes", "YES", "Yes"];
@@ -204,7 +204,7 @@ pub fn get_yn_input() -> Result<bool, ThecaError> {
     Ok(answer)
 }
 
-pub fn pretty_line(bold: &str, plain: &str, tty: bool) -> Result<(), ThecaError> {
+pub fn pretty_line(bold: &str, plain: &str, tty: bool) -> Result<()> {
     let mut t = match stdout() {
         Some(t) => t,
         None => specific_fail_str!("could not retrieve standard output."),
@@ -228,7 +228,7 @@ pub fn format_field(value: &str, width: usize, truncate: bool) -> String {
     }
 }
 
-fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
+fn print_header(line_format: &LineFormat) -> Result<()> {
     let mut t = match stdout() {
         Some(t) => t,
         None => specific_fail_str!("could not retrieve standard output."),
@@ -264,7 +264,7 @@ fn print_header(line_format: &LineFormat) -> Result<(), ThecaError> {
     Ok(())
 }
 
-pub fn sorted_print(notes: &mut Vec<ThecaItem>,
+pub fn sorted_print(notes: &mut Vec<Item>,
                     limit: usize,
                     condensed: bool,
                     json: bool,
@@ -274,7 +274,7 @@ pub fn sorted_print(notes: &mut Vec<ThecaItem>,
                     no_status: bool,
                     started_status: bool,
                     urgent_status: bool)
-                    -> Result<(), ThecaError> {
+                    -> Result<()> {
     if no_status {
         notes.retain(|n| n.status == Status::NoStatus);
     } else if started_status {
@@ -315,7 +315,7 @@ pub fn sorted_print(notes: &mut Vec<ThecaItem>,
     Ok(())
 }
 
-pub fn profile_fingerprint<P: AsRef<Path>>(path: P) -> Result<u64, ThecaError> {
+pub fn profile_fingerprint<P: AsRef<Path>>(path: P) -> Result<u64> {
     let path = path.as_ref();
     let metadata = try!(path.metadata());
     let modified = try!(metadata.modified());
@@ -323,7 +323,7 @@ pub fn profile_fingerprint<P: AsRef<Path>>(path: P) -> Result<u64, ThecaError> {
     Ok(since_epoch.as_secs())
 }
 
-pub fn find_profile_folder(profile_folder: &str) -> Result<PathBuf, ThecaError> {
+pub fn find_profile_folder(profile_folder: &str) -> Result<PathBuf> {
     if !profile_folder.is_empty() {
         Ok(PathBuf::from(profile_folder))
     } else {
@@ -334,16 +334,16 @@ pub fn find_profile_folder(profile_folder: &str) -> Result<PathBuf, ThecaError> 
     }
 }
 
-pub fn parse_last_touched(lt: &str) -> Result<Tm, ThecaError> {
+pub fn parse_last_touched(lt: &str) -> Result<Tm> {
     Ok(at(try!(strptime(lt, DATEFMT)).to_timespec()))
 }
 
-pub fn localize_last_touched_string(lt: &str) -> Result<String, ThecaError> {
+pub fn localize_last_touched_string(lt: &str) -> Result<String> {
     let t = try!(parse_last_touched(lt));
     Ok(try!(strftime(DATEFMT_SHORT, &t)))
 }
 
-pub fn cmp_last_touched(a: &str, b: &str) -> Result<Ordering, ThecaError> {
+pub fn cmp_last_touched(a: &str, b: &str) -> Result<Ordering> {
     let a_tm = try!(parse_last_touched(a));
     let b_tm = try!(parse_last_touched(b));
     Ok(a_tm.cmp(&b_tm))
@@ -363,7 +363,7 @@ pub fn validate_profile_from_path(profile_path: &PathBuf) -> (bool, bool) {
                 match String::from_utf8(contents_buf) {
                     Ok(s) => {
                         // well it's a .json and valid utf-8 at least
-                        match decode::<ThecaProfile>(&*s) {
+                        match decode::<Profile>(&*s) {
                             // yup
                             Ok(_) => return (true, false),
                             // noooooop
@@ -384,13 +384,13 @@ pub fn validate_profile_from_path(profile_path: &PathBuf) -> (bool, bool) {
 }
 
 // this is pretty gross
-pub fn path_to_profile_name(profile_path: &PathBuf) -> Result<String, ThecaError> {
+pub fn path_to_profile_name(profile_path: &PathBuf) -> Result<String> {
     let just_f = profile_path.file_stem().unwrap();
 
     Ok(just_f.to_str().unwrap().to_string())
 }
 
-pub fn profiles_in_folder(folder: &Path) -> Result<(), ThecaError> {
+pub fn profiles_in_folder(folder: &Path) -> Result<()> {
     if folder.is_dir() {
         println!("# profiles in {}", folder.display());
         for file in try!(read_dir(folder)) {

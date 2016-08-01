@@ -426,7 +426,7 @@ the bug, and if you're really awesome a test case that exposes it.
 ### TODO
 
 * clean-ups/optimizations pretty much everywhere
-* `ThecaProfile` and `ThecaItem` and assosiated functions should be moved out of `src/theca/lib.rs`
+* `Profile` and `Item` and assosiated functions should be moved out of `src/theca/lib.rs`
   to their own file
 * `list-profiles` should be alphabetic
 * `bash_complete.sh` could use a lot of improvement, `_theca` also, but less...
