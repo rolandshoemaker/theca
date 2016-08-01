@@ -1,6 +1,6 @@
 extern crate theca;
 
-use theca::{ThecaItem};
+use theca::{Status, ThecaItem};
 use theca::lineformat::{LineFormat};
 
 struct LineTest {
@@ -32,14 +32,14 @@ fn test_new_line_format_basic() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -59,14 +59,14 @@ fn test_new_line_format_basic() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -94,14 +94,14 @@ fn test_new_line_format_statuses() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "Started".to_string(),
+                    status: Status::Started,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -121,14 +121,14 @@ fn test_new_line_format_statuses() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
-                    status: "Urgent".to_string(),
+                    status: Status::Urgent,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -148,14 +148,14 @@ fn test_new_line_format_statuses() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
-                    status: "Urgent".to_string(),
+                    status: Status::Urgent,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -183,14 +183,14 @@ fn test_new_line_format_body() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -210,14 +210,14 @@ fn test_new_line_format_body() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -237,14 +237,14 @@ fn test_new_line_format_body() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -264,14 +264,14 @@ fn test_new_line_format_body() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -299,14 +299,14 @@ fn test_new_line_format_full() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "Started".to_string(),
+                    status: Status::Started,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -326,14 +326,14 @@ fn test_new_line_format_full() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "Started".to_string(),
+                    status: Status::Started,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -353,14 +353,14 @@ fn test_new_line_format_full() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "Urgent".to_string(),
+                    status: Status::Urgent,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -380,14 +380,14 @@ fn test_new_line_format_full() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: "".to_string(),
+                    status: Status::NoStatus,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 ThecaItem {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: "Urgent".to_string(),
+                    status: Status::Urgent,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],

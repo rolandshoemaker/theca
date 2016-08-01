@@ -23,6 +23,7 @@ extern crate rand;
 extern crate tempdir;
 
 // std lib imports
+use std::fmt;
 use std::env;
 use std::io::{self, stdin, Read, Write};
 use std::iter::repeat;
@@ -30,7 +31,7 @@ use std::fs::{File, create_dir};
 
 // random things
 use regex::Regex;
-use rustc_serialize::Encodable;
+use rustc_serialize::{Decodable, Encodable};
 use rustc_serialize::json::{decode, as_pretty_json, Encoder};
 use time::{now, strftime};
 
@@ -96,12 +97,82 @@ pub struct Args {
     pub flag_yes: bool,
 }
 
-/// No status text
-static NOSTATUS: &'static str = "";
-/// Started status text
-static STARTED: &'static str = "Started";
-/// Urgent status text
-static URGENT: &'static str = "Urgent";
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum Status {
+    NoStatus,
+    Started,
+    Urgent,
+}
+
+impl Encodable for Status {
+    fn encode<S: rustc_serialize::Encoder>(&self, encoder: &mut S) -> Result<(), S::Error> {
+        match &*self {
+            &Status::NoStatus => {
+                encoder.emit_enum("Status", |encoder| {
+                             encoder.emit_enum_variant(
+                                     "",
+                                     0usize,
+                                     0usize,
+                                     |_| Ok(())
+                            )
+                })
+            }
+            &Status::Started => {
+                encoder.emit_enum("Status", |encoder| {
+                             encoder.emit_enum_variant(
+                                     "Started",
+                                     1usize,
+                                     0usize,
+                                     |_| Ok(())
+                            )
+                })
+            }
+            &Status::Urgent => {
+                encoder.emit_enum("Status", |encoder| {
+                             encoder.emit_enum_variant(
+                                     "Urgent",
+                                     2usize,
+                                     0usize,
+                                    |_| Ok(())
+                            )
+                })
+            }
+        }
+    }
+}
+
+impl Decodable for Status {
+    fn decode<D: ::rustc_serialize::Decoder>(decoder: &mut D) -> Result<Status, D::Error> {
+        decoder.read_enum(
+                "Status",
+                |decoder| {
+                          decoder.read_enum_variant(
+                                  &["", "Started", "Urgent"],
+                                  |_, i| {
+                                        Ok(match i {
+                                                0usize => Status::NoStatus,
+                                                1usize => Status::Started,
+                                                2usize => Status::Urgent,
+                                                _ => panic!("internal error: entered unreachable code"),
+                                                                    
+                                  }
+                        )
+                })
+        })
+    }
+}                                                        
+
+impl fmt::Display for Status {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+               "{}",
+               match *self {
+                   Status::NoStatus => "",
+                   Status::Started => "Started",
+                   Status::Urgent => "Urgent",
+               })
+    }
+}
 
 /// datetime formating string
 static DATEFMT: &'static str = "%F %T %z";
@@ -113,7 +184,7 @@ static DATEFMT_SHORT: &'static str = "%F %T";
 pub struct ThecaItem {
     pub id: usize,
     pub title: String,
-    pub status: String,
+    pub status: Status,
     pub body: String,
     pub last_touched: String,
 }
@@ -150,7 +221,7 @@ impl ThecaItem {
         if line_format.status_width != 0 {
             try!(write!(output,
                         "{}",
-                        format_field(&self.status, line_format.status_width, false)));
+                        format_field(&format!("{:?}", self.status), line_format.status_width, false)));
             try!(write!(output, "{}", column_seperator));
         }
         try!(writeln!(output,
@@ -364,7 +435,7 @@ impl ThecaProfile {
                .iter()
                .find(|n| n.id == args.arg_id[0])
                .map(|n| {
-                   let (started, urgent) = (n.status == STARTED, n.status == URGENT);
+                   let (started, urgent) = (n.status == Status::Started, n.status == Status::Urgent);
                    trans_profile.add_note(&n.title,
                                           &vec![n.body.clone()],
                                           started,
@@ -412,11 +483,11 @@ impl ThecaProfile {
                     -> Result<(), ThecaError> {
         let title = title.replace("\n", "").to_string();
         let status = if started {
-            STARTED.to_string()
+            Status::Started
         } else if urgent {
-            URGENT.to_string()
+            Status::Urgent
         } else {
-            NOSTATUS.to_string()
+            Status::NoStatus
         };
 
         let body = if use_stdin {
@@ -509,11 +580,11 @@ impl ThecaProfile {
         if started || urgent || no_status {
             // change status
             if started {
-                self.notes[item_pos].status = STARTED.to_string();
+                self.notes[item_pos].status = Status::Started;
             } else if urgent {
-                self.notes[item_pos].status = URGENT.to_string();
+                self.notes[item_pos].status = Status::Urgent;
             } else if no_status {
-                self.notes[item_pos].status = NOSTATUS.to_string();
+                self.notes[item_pos].status = Status::NoStatus;
             }
         }
 
@@ -561,14 +632,14 @@ impl ThecaProfile {
 
     /// print information about the profile
     pub fn stats(&mut self, name: &str) -> Result<(), ThecaError> {
-        let no_s = self.notes.iter().filter(|n| n.status == "").count();
+        let no_s = self.notes.iter().filter(|n| n.status == Status::NoStatus).count();
         let started_s = self.notes
                             .iter()
-                            .filter(|n| n.status == "Started")
+                            .filter(|n| n.status == Status::Started)
                             .count();
         let urgent_s = self.notes
                            .iter()
-                           .filter(|n| n.status == "Urgent")
+                           .filter(|n| n.status == Status::Urgent)
                            .count();
         let tty = istty(STDOUT_FILENO);
         let min = match self.notes
@@ -619,7 +690,7 @@ impl ThecaProfile {
             if condensed {
                 try!(pretty_line("id: ", &format!("{}\n", self.notes[note_pos].id), tty));
                 try!(pretty_line("title: ", &format!("{}\n", self.notes[note_pos].title), tty));
-                if !self.notes[note_pos].status.is_empty() {
+                if self.notes[note_pos].status != Status::NoStatus {
                     try!(pretty_line("status: ",
                                      &format!("{}\n", self.notes[note_pos].status),
                                      tty));
@@ -637,9 +708,9 @@ impl ThecaProfile {
                 try!(pretty_line("title\n-----\n",
                                  &format!("{}\n\n", self.notes[note_pos].title),
                                  tty));
-                if !self.notes[note_pos].status.is_empty() {
+                if self.notes[note_pos].status != Status::NoStatus {
                     try!(pretty_line("status\n------\n",
-                                     &format!("{}\n\n", self.notes[note_pos].status),
+                                     &format!("{:?}\n\n", self.notes[note_pos].status),
                                      tty));
                 }
                 try!(pretty_line("last touched\n------------\n",
@@ -939,7 +1010,7 @@ pub fn parse_cmds(profile: &mut ThecaProfile,
 #[cfg(test)]
 mod tests {
 #![allow(non_snake_case)]
-    use super::{STARTED, ThecaItem};
+    use super::{Status, ThecaItem};
     use super::lineformat::LineFormat;
 
     fn write_item_test_case(item: ThecaItem, search: bool) -> String {
@@ -954,7 +1025,7 @@ mod tests {
         let item = ThecaItem {
             id: 0,
             title: "This is a title".into(),
-            status: "".into(),
+            status: Status::NoStatus,
             body: "This is the body".into(),
             last_touched: "2016-07-08 15:31:14 -0800".into(),
         };
@@ -968,7 +1039,7 @@ mod tests {
         let item = ThecaItem {
             id: 0,
             title: "This is a title".into(),
-            status: "".into(),
+            status: Status::NoStatus,
             body: "".into(),
             last_touched: "2016-07-08 15:31:14 -0800".into(),
         };
@@ -981,7 +1052,7 @@ mod tests {
         let item = ThecaItem {
             id: 0,
             title: "This is a title".into(),
-            status: "".into(),
+            status: Status::NoStatus,
             body: "This is the body\nit has multiple lines".into(),
             last_touched: "2016-07-08 15:31:14 -0800".into(),
         };
@@ -996,7 +1067,7 @@ mod tests {
         let item = ThecaItem {
             id: 0,
             title: "This is a title".into(),
-            status: "".into(),
+            status: Status::NoStatus,
             body: "".into(),
             last_touched: "2016-07-08 15:31:14 -0800".into(),
         };
@@ -1009,7 +1080,7 @@ mod tests {
         let item = ThecaItem {
             id: 0,
             title: "This is a title".into(),
-            status: STARTED.into(),
+            status: Status::Started,
             body: "This is the body".into(),
             last_touched: "2016-07-08 15:31:14 -0800".into(),
         };

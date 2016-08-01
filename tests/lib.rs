@@ -1,6 +1,6 @@
 extern crate theca;
 
-use theca::ThecaProfile;
+use theca::{Status, ThecaProfile};
 
 #[test]
 fn test_add_note() {
@@ -12,7 +12,7 @@ fn test_add_note() {
     assert_eq!(p.notes.len(), 1);
     assert_eq!(p.notes[0].id, 1);
     assert_eq!(p.notes[0].title, "this is a title".to_string());
-    assert_eq!(p.notes[0].status, "".to_string());
+    assert_eq!(p.notes[0].status, Status::NoStatus);
     assert_eq!(p.notes[0].body, "".to_string());
 }
 
@@ -26,7 +26,7 @@ fn test_add_started_note() {
     assert_eq!(p.notes.len(), 1);
     assert_eq!(p.notes[0].id, 1);
     assert_eq!(p.notes[0].title, "this is a title".to_string());
-    assert_eq!(p.notes[0].status, "Started".to_string());
+    assert_eq!(p.notes[0].status, Status::Started);
     assert_eq!(p.notes[0].body, "".to_string());
 }
 
@@ -40,7 +40,7 @@ fn test_add_urgent_note() {
     assert_eq!(p.notes.len(), 1);
     assert_eq!(p.notes[0].id, 1);
     assert_eq!(p.notes[0].title, "this is a title".to_string());
-    assert_eq!(p.notes[0].status, "Urgent".to_string());
+    assert_eq!(p.notes[0].status, Status::Urgent);
     assert_eq!(p.notes[0].body, "".to_string());
 }
 
@@ -54,7 +54,7 @@ fn test_add_basic_body_note() {
     assert_eq!(p.notes.len(), 1);
     assert_eq!(p.notes[0].id, 1);
     assert_eq!(p.notes[0].title, "this is a title".to_string());
-    assert_eq!(p.notes[0].status, "".to_string());
+    assert_eq!(p.notes[0].status, Status::NoStatus);
     assert_eq!(p.notes[0].body, "and what?".to_string());
 }
 
@@ -68,7 +68,7 @@ fn test_add_full_basic_body_note() {
     assert_eq!(p.notes.len(), 1);
     assert_eq!(p.notes[0].id, 1);
     assert_eq!(p.notes[0].title, "this is a title".to_string());
-    assert_eq!(p.notes[0].status, "Urgent".to_string());
+    assert_eq!(p.notes[0].status, Status::Urgent);
     assert_eq!(p.notes[0].body, "and what?".to_string());
 }
 
@@ -83,7 +83,7 @@ fn test_edit_note_title() {
     assert!(p.edit_note(1, &"this is a new title".to_string(), &vec![], false, false, false, false, false, false, false).is_ok());
     assert_eq!(p.notes[0].id, 1);
     assert_eq!(p.notes[0].title, "this is a new title".to_string());
-    assert_eq!(p.notes[0].status, "".to_string());
+    assert_eq!(p.notes[0].status, Status::NoStatus);
     assert_eq!(p.notes[0].body, "".to_string());
 }
 
@@ -98,17 +98,17 @@ fn test_edit_note_status() {
     assert!(p.edit_note(1, &"".to_string(), &vec![], true, false, false, false, false, false, false).is_ok());
     assert_eq!(p.notes[0].id, 1);
     assert_eq!(p.notes[0].title, "this is a title".to_string());
-    assert_eq!(p.notes[0].status, "Started".to_string());
+    assert_eq!(p.notes[0].status, Status::Started);
     assert_eq!(p.notes[0].body, "".to_string());
     assert!(p.edit_note(1, &"".to_string(), &vec![], false, true, false, false, false, false, false).is_ok());
     assert_eq!(p.notes[0].id, 1);
     assert_eq!(p.notes[0].title, "this is a title".to_string());
-    assert_eq!(p.notes[0].status, "Urgent".to_string());
+    assert_eq!(p.notes[0].status, Status::Urgent);
     assert_eq!(p.notes[0].body, "".to_string());
     assert!(p.edit_note(1, &"".to_string(), &vec![], false, false, true, false, false, false, false).is_ok());
     assert_eq!(p.notes[0].id, 1);
     assert_eq!(p.notes[0].title, "this is a title".to_string());
-    assert_eq!(p.notes[0].status, "".to_string());
+    assert_eq!(p.notes[0].status, Status::NoStatus);
     assert_eq!(p.notes[0].body, "".to_string());
 }
 
@@ -123,7 +123,7 @@ fn test_edit_note_body_basic() {
     assert!(p.edit_note(1, &"".to_string(), &vec!["woo body".to_string()], false, false, false, false, false, false, false).is_ok());
     assert_eq!(p.notes[0].id, 1);
     assert_eq!(p.notes[0].title, "this is a title".to_string());
-    assert_eq!(p.notes[0].status, "".to_string());
+    assert_eq!(p.notes[0].status, Status::NoStatus);
     assert_eq!(p.notes[0].body, "woo body".to_string());
 }
 
@@ -138,7 +138,7 @@ fn test_edit_full_note() {
     assert!(p.edit_note(1, &"this is a new title".to_string(), &vec!["woo body".to_string()], true, false, false, false, false, false, false).is_ok());
     assert_eq!(p.notes[0].id, 1);
     assert_eq!(p.notes[0].title, "this is a new title".to_string());
-    assert_eq!(p.notes[0].status, "Started".to_string());
+    assert_eq!(p.notes[0].status, Status::Started);
     assert_eq!(p.notes[0].body, "woo body".to_string());
 }
 
@@ -169,7 +169,7 @@ fn test_delete_some_notes() {
     assert_eq!(p.notes.len(), 1);
     assert_eq!(p.notes[0].id, 2);
     assert_eq!(p.notes[0].title, "this is a title".to_string());
-    assert_eq!(p.notes[0].status, "".to_string());
+    assert_eq!(p.notes[0].status, Status::NoStatus);
     assert_eq!(p.notes[0].body, "".to_string());
 }
 
