@@ -12,7 +12,7 @@
 //   width.
 
 use errors::ThecaError;
-use ThecaItem;
+use {ThecaItem, Status};
 use utils::termsize;
 
 #[derive(Clone, Copy)]
@@ -82,14 +82,14 @@ impl LineFormat {
 
         // status length stuff
         line_format.status_width = if items.iter()
-                                           .any(|n| n.status.len() > 0) {
+                                           .any(|n| n.status != Status::NoStatus) {
             if condensed {
                 // only display first char of status (e.g. S or U) for condensed print
                 1
             } else {
                 // expanded print, get longest status (7 or 6 / started or urgent)
-                match items.iter().max_by_key(|n| n.status.len()) {
-                    Some(w) => w.status.len(),
+                match items.iter().max_by_key(|n| format!("{}", n.status).len()) {
+                    Some(w) => format!("{}", w.status).len(),
                     None => 0,
                 }
             }

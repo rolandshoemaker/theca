@@ -37,7 +37,7 @@ use std::io::stdin;
 use std::io::Error as IoError;
 
 // theca imports
-use {DATEFMT, DATEFMT_SHORT, ThecaItem, ThecaProfile};
+use {DATEFMT, DATEFMT_SHORT, ThecaItem, ThecaProfile, Status};
 use errors::{ThecaError, GenericError};
 use lineformat::LineFormat;
 
@@ -276,11 +276,11 @@ pub fn sorted_print(notes: &mut Vec<ThecaItem>,
                     urgent_status: bool)
                     -> Result<(), ThecaError> {
     if no_status {
-        notes.retain(|n| n.status == "");
+        notes.retain(|n| n.status == Status::NoStatus);
     } else if started_status {
-        notes.retain(|n| n.status == "Started");
+        notes.retain(|n| n.status == Status::Started);
     } else if urgent_status {
-        notes.retain(|n| n.status == "Urgent");
+        notes.retain(|n| n.status == Status::Urgent);
     }
     let limit = if limit != 0 && notes.len() >= limit {
         limit
