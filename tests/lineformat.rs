@@ -32,14 +32,14 @@ fn test_new_line_format_basic() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -59,14 +59,14 @@ fn test_new_line_format_basic() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -101,7 +101,7 @@ fn test_new_line_format_statuses() {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -121,7 +121,7 @@ fn test_new_line_format_statuses() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 Item {
@@ -148,7 +148,7 @@ fn test_new_line_format_statuses() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 Item {
@@ -183,14 +183,14 @@ fn test_new_line_format_body() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -210,14 +210,14 @@ fn test_new_line_format_body() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -237,14 +237,14 @@ fn test_new_line_format_body() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -264,14 +264,14 @@ fn test_new_line_format_body() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 Item {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -306,7 +306,7 @@ fn test_new_line_format_full() {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -333,7 +333,7 @@ fn test_new_line_format_full() {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -360,7 +360,7 @@ fn test_new_line_format_full() {
                     id: 2,
                     title: "a longer title".to_string(),
                     body: "this is a body".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 }
             ],
@@ -380,7 +380,7 @@ fn test_new_line_format_full() {
                     id: 1,
                     title: "a title".to_string(),
                     body: "".to_string(),
-                    status: Status::NoStatus,
+                    status: Status::Blank,
                     last_touched: "2015-01-22 19:43:24 -0800".to_string()
                 },
                 Item {
