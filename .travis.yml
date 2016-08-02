@@ -6,6 +6,10 @@ rust:
     - beta
     - nightly
 
+os:
+    - linux
+    - osx
+
 cache: cargo
 
 matrix:
@@ -17,7 +21,12 @@ before_install:
 
 before_script:
     - |
-        pip install 'travis-cargo' --user && export PATH=$HOME/.local/bin:$PATH
+        pip install 'travis-cargo' --user
+        if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+            export PATH=$HOME/Library/Python/2.7/bin:$PATH
+        else
+            export PATH=$HOME/.local/bin:$PATH
+        fi
 
 script:
     - travis-cargo -q build
