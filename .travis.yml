@@ -1,31 +1,24 @@
+sudo: false
 language: rust
 
 rust:
+    - stable
+    - beta
     - nightly
 
-before_install:
-    - sudo add-apt-repository ppa:fkrull/deadsnakes -y
-    - sudo apt-get update -q
+cache: cargo
 
-install:
-    - sudo apt-get install -y python3.4 python3.4-dev
-    - sudo python3.4 -m ensurepip --upgrade
-    - sudo python3.4 -m pip install passlib
-    - sudo python3.4 -m pip install jsonschema
-    - sudo python3.4 -m pip install pycrypto
+matrix:
+    allow_failures:
+        - rust: nightly
+
+before_install:
+    - export TZ=America/New_York
+
+before_script:
+    - |
+        pip install 'travis-cargo' --user && export PATH=$HOME/.local/bin:$PATH
 
 script:
-    - bash tools/build.sh test --travis --release
-    - cargo clean
-    - bash tools/build.sh build --release --verbose
-    - sudo bash tools/build.sh install
-
-after_script:
-    - theca -v
-    - theca -y new-profile
-    - theca add "this is a note"
-    - theca add "this is a note with a status" -s
-    - theca add "this is a note with a body" -b "yurp..."
-    - theca add "everything" -b "mhm" -u
-    - echo "from stdin" | theca add "body" -
-    - theca
+    - travis-cargo -q build
+    - travis-cargo -q test
