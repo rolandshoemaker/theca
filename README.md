@@ -11,7 +11,7 @@
 a simple, fully featured, command line note taking tool written in
 [*Rust*](http://www.rust-lang.org/). 
 
-[![Build Status](https://travis-ci.org/rolandshoemaker/theca.svg?branch=master)](https://travis-ci.org/rolandshoemaker/theca)
+[![Build Status](https://travis-ci.org/pwoolcoc/theca.svg?branch=travis-build)](https://travis-ci.org/pwoolcoc/theca)
 
 ## Features
 
