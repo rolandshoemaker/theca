@@ -23,3 +23,8 @@ rand = "*"
 tempdir = "*"
 libc = "*"
 term = "*"
+clippy = { version = "*", optional = true }
+
+[features]
+default = []
+unstable = ["clippy"]
