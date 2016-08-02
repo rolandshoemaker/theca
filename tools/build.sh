@@ -116,26 +116,34 @@ case "$1" in
 
     # run all the tests in one place
     test)
+        if [[ "$@" =~  "--travis" ]]; then
+			travis_build=1
+			cargo_cmd="travis-cargo -q"
+            python="python3"
+        else
+			cargo_cmd="cargo"
+            python="python3"
+        fi
+
         # run the rust tests
-        if ! cargo test; then
+        if ! $cargo_cmd test; then
             err "rust tests did't pass!"
         fi
 
-        if [[ "$@" =~  "--travis" ]]; then
-            python="python3.4"
-        else
-            python="python3"
-        fi
 
         python_cmd="$python tools/theca_test_harness.py --condensed -tc"
         if [[ "$@" =~ "--release" ]]; then
             build_profile="release"
             python_cmd="$python_cmd target/release/theca"
-            cargo_cmd="cargo build --release"
+			if [[ -z "$travis_build" ]]; then
+				cargo_cmd="$cargo_cmd build --release"
+			else
+				cargo_cmd="$cargo_cmd build"
+			fi
         else
             build_profile="dev"
             python_cmd="$python_cmd target/debug/theca"
-            cargo_cmd="cargo build"
+            cargo_cmd="$cargo_cmd build"
         fi
 
         # build the dev binary
