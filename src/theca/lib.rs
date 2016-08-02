@@ -1,3 +1,6 @@
+#![cfg_attr(feature = "unstable", allow(unstable_features))]
+#![cfg_attr(feature = "unstable", feature(plugin))]
+#![cfg_attr(feature = "unstable", plugin(clippy))]
 //  _   _
 // | |_| |__   ___  ___ __ _
 // | __| '_ \ / _ \/ __/ _` |
