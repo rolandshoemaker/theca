@@ -78,7 +78,7 @@ to install the binary to your `$CARGO_HOME/bin` directory.
 All that's needed to build theca is a copy of the `rustc` compiler and the `cargo` packaging tool which can
 be downloaded directly from the [Rust website](http://www.rust-lang.org/install.html) or by running
 
-	$ curl -s https://static.rust-lang.org/rustup.sh | sh
+	$ curl https://sh.rustup.rs -sSf | sh
 
 to get the nightly `rustc` and `cargo` binaries, once those have finished building we can clone and build `theca`
 
