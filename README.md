@@ -11,7 +11,7 @@
 a simple, fully featured, command line note taking tool written in
 [*Rust*](http://www.rust-lang.org/). 
 
-[![Build Status](https://travis-ci.org/rolandshoemaker/theca.svg?branch=master)](https://travis-ci.org/rolandshoemaker/theca)
+[![Build Status](https://travis-ci.org/pwoolcoc/theca.svg?branch=travis-build)](https://travis-ci.org/pwoolcoc/theca)
 
 ## Features
 
@@ -28,7 +28,7 @@ a simple, fully featured, command line note taking tool written in
 ## Contents
 
 - [Installation](#installation)
-	- [Binaries](#binaries)
+	- [From crates.io](#binaries)
 	- [From source](#from-source)
 - [Usage](#usage)
 	- [First run](#first-run)
@@ -68,30 +68,21 @@ a simple, fully featured, command line note taking tool written in
 
 ## Installation
 
-### Binaries
+### From crates.io
 
-I've built a simple multi-(platform/arch) binary package builder (`tools/theca-packer.py`)
-based on [Fabric](http://www.fabfile.org/) so I can provide both `x86_64` and `i686` packages
-for `unknown-linux-gnu` and `apple-darwin`. You can either download the binary packages and install
-them using the packaged `install.sh` script, or you can use `curl` to install `theca` like so
-
-
-	$ curl -s https://static.bracewel.net/theca/get_theca.sh | sh
-
-If you want to uninstall you just need to add the `--uninstall` flag like so
-
-	$ curl -s https://static.bracewel.net/theca/get_theca.sh | sh -s -- --uninstall
+`theca` is available from crates.io, so you can just do `cargo install theca`
+to install the binary to your `$CARGO_HOME/bin` directory.
 
 ### From source
 
 All that's needed to build theca is a copy of the `rustc` compiler and the `cargo` packaging tool which can
 be downloaded directly from the [Rust website](http://www.rust-lang.org/install.html) or by running
 
-	$ curl -s https://static.rust-lang.org/rustup.sh | sh
+	$ curl https://sh.rustup.rs -sSf | sh
 
 to get the nightly `rustc` and `cargo` binaries, once those have finished building we can clone and build `theca`
 
-	$ git clone https://github.com/rolandshoemaker/theca.git
+	$ git clone https://github.com/pwoolcoc/theca.git
 	...
 
 	$ cd theca
@@ -426,7 +417,7 @@ the bug, and if you're really awesome a test case that exposes it.
 ### TODO
 
 * clean-ups/optimizations pretty much everywhere
-* `ThecaProfile` and `ThecaItem` and assosiated functions should be moved out of `src/theca/lib.rs`
+* `Profile` and `Item` and assosiated functions should be moved out of `src/theca/lib.rs`
   to their own file
 * `list-profiles` should be alphabetic
 * `bash_complete.sh` could use a lot of improvement, `_theca` also, but less...
@@ -632,9 +623,8 @@ A JSON test suite file for `theca_test_harness.py` looks something like this
 
 ## Author
 
-`theca` is written by roland shoemaker (<rolandshoemaker@gmail.com>), this is my first foray
-into a Rust project and my first time diving back into a systems language since 2007 or so,
-so please excuse the messiness of some of the code, dynamic languages have ruined me.
+`theca` was originally written by roland shoemaker (<rolandshoemaker@gmail.com>),
+and has since been taken up by Paul Woolcock (<paul@woolcock.us>).
 
 ## License
 
