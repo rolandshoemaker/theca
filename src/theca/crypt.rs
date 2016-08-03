@@ -32,7 +32,7 @@ pub fn encrypt(data: &[u8], key: &[u8]) -> Result<Vec<u8>, symmetriccipher::Symm
                                            blockmodes::PkcsPadding);
 
     let mut final_result = Vec::<u8>::new();
-    final_result.extend(&iv);
+    final_result.extend_from_slice(&iv);
     let mut read_buffer = buffer::RefReadBuffer::new(data);
     let mut buffer = [0; 4096];
     let mut write_buffer = buffer::RefWriteBuffer::new(&mut buffer);

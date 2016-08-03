@@ -1,3 +1,6 @@
+#![cfg_attr(feature = "unstable", allow(unstable_features))]
+#![cfg_attr(feature = "unstable", feature(plugin))]
+#![cfg_attr(feature = "unstable", plugin(clippy))]
 //  _   _
 // | |_| |__   ___  ___ __ _
 // | __| '_ \ / _ \/ __/ _` |
@@ -15,7 +18,7 @@ extern crate docopt;
 
 use docopt::Docopt;
 use theca::{Args, Profile, setup_args, parse_cmds, version};
-use theca::errors::Error;
+use theca::errors::Result;
 use std::process::exit;
 
 static USAGE: &'static str = "
@@ -90,7 +93,7 @@ Miscellaneous:
     -v, --version                       Display the version of theca and exit.
 ";
 
-fn theca_main() -> Result<(), Error> {
+fn theca_main() -> Result<()> {
     let mut args: Args = try!(Docopt::new(USAGE)
                                   .unwrap()
                                   .version(Some(version()))
@@ -111,11 +114,8 @@ fn theca_main() -> Result<(), Error> {
 
 fn main() {
     // wooo error unwinding yay
-    match theca_main() {
-        Err(e) => {
-            println!("{}", e.desc);
-            exit(1);
-        }
-        Ok(_) => (),
+    if let Err(e) = theca_main() {
+        println!("{}", e.desc);
+        exit(1);
     };
 }

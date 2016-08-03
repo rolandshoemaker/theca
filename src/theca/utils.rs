@@ -37,8 +37,8 @@ use std::io::stdin;
 use std::io::Error as IoError;
 
 // theca imports
-use {DATEFMT, DATEFMT_SHORT, Item, Profile, Status};
-use errors::{Result, Error, GenericError};
+use {DATEFMT, DATEFMT_SHORT, Item, Profile, Status, BoolFlags};
+use errors::{Result, Error};
 use lineformat::LineFormat;
 
 pub use libc::{STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO};
@@ -48,6 +48,8 @@ pub mod c {
     extern crate libc;
     pub use self::libc::{c_int, c_uint, c_ushort, c_ulong, c_uchar, STDOUT_FILENO, isatty};
     use std::mem::zeroed;
+    use std::default::Default;
+
     #[derive(Clone, Copy)]
     pub struct Winsize {
         pub ws_row: c_ushort,
@@ -65,9 +67,16 @@ pub mod c {
         pub c_ispeed: c_uint,
         pub c_ospeed: c_uint,
     }
+
+    impl Default for Termios {
+        fn default() -> Termios {
+            unsafe { zeroed() }
+        }
+    }
+
     impl Termios {
         pub fn new() -> Termios {
-            unsafe { zeroed() }
+            Default::default()
         }
     }
     pub fn tcgetattr(fd: c_int, termios_p: &mut Termios) -> c_int {
@@ -110,17 +119,27 @@ fn set_term_echo(echo: bool) -> Result<()> {
     } else {
         t.c_lflag &= !c::ECHO;  // off
     };
-    try_errno!(c::tcsetattr(STDIN_FILENO, c::TCSANOW, &mut t));
+    try_errno!(c::tcsetattr(STDIN_FILENO, c::TCSANOW, &t));
     Ok(())
 }
 
 // unsafety wrapper
 pub fn termsize() -> usize {
     let ws = unsafe { c::dimensions() };
-    if ws.ws_col <= 0 || ws.ws_row <= 0 {
+    if ws.ws_col == 0 || ws.ws_row == 0 {
         0
     } else {
         ws.ws_col as usize
+    }
+}
+
+pub fn extract_status(none: bool, started: bool, urgent: bool) -> Result<Option<Status>> {
+    match (none, started, urgent) {
+        (true, false, false) => Ok(Some(Status::Blank)),
+        (false, true, false) => Ok(Some(Status::Started)),
+        (false, false, true) => Ok(Some(Status::Urgent)),
+        (false, false, false) => Ok(None),
+        _ => specific_fail_str!("Can only specify one status"),
     }
 }
 
@@ -137,7 +156,7 @@ pub fn drop_to_editor(contents: &str) -> Result<String> {
         Err(_) => {
             match var("EDITOR") {
                 Ok(v) => v,
-                Err(_) => specific_fail_str!("neither $VISUAL nor $EDITOR is set."),
+                Err(_) => return specific_fail_str!("neither $VISUAL nor $EDITOR is set."),
             }
         }
     };
@@ -183,7 +202,7 @@ pub fn get_password() -> Result<String> {
 pub fn get_yn_input(message: &str) -> Result<bool> {
     let stdout = match stdout() {
         Some(t) => t,
-        None => specific_fail_str!("could not retrieve standard output."),
+        None => return specific_fail_str!("could not retrieve standard output."),
     };
     get_yn_input_with_output(stdout, message)
 }
@@ -204,11 +223,9 @@ pub fn get_yn_input_with_output<W: Write>(mut terminal: Box<term::Terminal<Outpu
         if yes.iter().any(|n| &n[..] == input) {
             answer = true;
             break;
-        } else {
-            if no.iter().any(|n| &n[..] == input) {
-                answer = false;
-                break;
-            }
+        } else if no.iter().any(|n| &n[..] == input) {
+            answer = false;
+            break;
         };
         try!(writeln!(terminal, "invalid input."));
         try!(terminal.flush());
@@ -226,7 +243,7 @@ pub fn get_stdout() -> Result<Box<term::Terminal<Output=::std::io::Stdout>>> {
 pub fn pretty_line(bold: &str, plain: &str, tty: bool) -> Result<()> {
     let mut t = match stdout() {
         Some(t) => t,
-        None => specific_fail_str!("could not retrieve standard output."),
+        None => return specific_fail_str!("could not retrieve standard output."),
     };
     if tty {
         try!(t.attr(Bold));
@@ -250,7 +267,7 @@ pub fn format_field(value: &str, width: usize, truncate: bool) -> String {
 fn print_header(line_format: &LineFormat) -> Result<()> {
     let mut t = match stdout() {
         Some(t) => t,
-        None => specific_fail_str!("could not retrieve standard output."),
+        None => return specific_fail_str!("could not retrieve standard output."),
     };
     let column_seperator: String = repeat(' ')
                                        .take(line_format.colsep)
@@ -285,21 +302,19 @@ fn print_header(line_format: &LineFormat) -> Result<()> {
 
 pub fn sorted_print(notes: &mut Vec<Item>,
                     limit: usize,
-                    condensed: bool,
-                    json: bool,
-                    datesort: bool,
-                    reverse: bool,
-                    search_body: bool,
-                    no_status: bool,
-                    started_status: bool,
-                    urgent_status: bool)
+                    flags: BoolFlags,
+                    status: Option<Status>)
                     -> Result<()> {
-    if no_status {
-        notes.retain(|n| n.status == Status::NoStatus);
-    } else if started_status {
-        notes.retain(|n| n.status == Status::Started);
-    } else if urgent_status {
-        notes.retain(|n| n.status == Status::Urgent);
+    let condensed = flags.condensed;
+    let json = flags.json;
+    let datesort = flags.datesort;
+    let reverse = flags.reverse;
+    let search_body = flags.search_body;
+
+    // TODO: instead of collecting this, leave as an iterator? using .take(limit) instead of the
+    // limit checking code below it?
+    if let Some(status) = status {
+        notes.retain(|n| n.status == status);
     }
     let limit = if limit != 0 && notes.len() >= limit {
         limit
@@ -313,16 +328,14 @@ pub fn sorted_print(notes: &mut Vec<Item>,
         });
     }
 
+    if reverse {
+        notes.reverse();
+    }
+
     if json {
-        if reverse {
-            notes.reverse();
-        }
         println!("{}", as_pretty_json(&notes[0..limit].to_vec()))
     } else {
-        if reverse {
-            notes.reverse();
-        }
-        let line_format = try!(LineFormat::new(&notes[0..limit].to_vec(), condensed, search_body));
+        let line_format = try!(LineFormat::new(&notes[0..limit], condensed, search_body));
         if !condensed && !json {
             try!(print_header(&line_format));
         }
@@ -384,22 +397,22 @@ pub fn validate_profile_from_path(profile_path: &PathBuf) -> (bool, bool) {
                         // well it's a .json and valid utf-8 at least
                         match decode::<Profile>(&*s) {
                             // yup
-                            Ok(_) => return (true, false),
+                            Ok(_) => (true, false),
                             // noooooop
-                            Err(_) => return (false, false),
-                        };
+                            Err(_) => (false, false),
+                        }
                     }
                     // possibly encrypted
-                    Err(_) => return (true, true),
+                    Err(_) => (true, true),
                 }
             }
             // nooppp
-            Err(_) => return (false, false),
+            Err(_) => (false, false),
         }
     } else {
         // noooppp
-        return (false, false);
-    };
+        (false, false)
+    }
 }
 
 // this is pretty gross

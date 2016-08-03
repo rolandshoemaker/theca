@@ -22,14 +22,13 @@ use rustc_serialize::json::EncoderError;
 use docopt;
 use term;
 
-pub use self::ErrorKind::{TermError, InternalIoError, GenericError};
 pub type Result<T> = ::std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum ErrorKind {
-    TermError(term::Error),
-    InternalIoError(IoError),
-    GenericError,
+    Term(term::Error),
+    InternalIo(IoError),
+    Generic,
 }
 
 #[derive(Debug)]
@@ -52,28 +51,29 @@ impl StdError for Error {
 
     fn cause(&self) -> Option<&StdError> {
         match self.kind {
-            ErrorKind::TermError(ref e) => Some(e),
-            ErrorKind::InternalIoError(ref e) => Some(e),
+            ErrorKind::Term(ref e) => Some(e),
+            ErrorKind::InternalIo(ref e) => Some(e),
             _ => None,
         }
     }
 }
 
 macro_rules! specific_fail {
-    ($short:expr) => {
-        return Err(::std::convert::From::from(
+    ($short:expr) => {{
+        use errors::ErrorKind;
+        Err(::std::convert::From::from(
             Error {
-                kind: GenericError,
+                kind: ErrorKind::Generic,
                 desc: $short,
                 detail: None
             }
         ))
-    }
+    }}
 }
 
 macro_rules! specific_fail_str {
     ($s:expr) => {
-        return specific_fail!($s.to_string())
+        specific_fail!($s.to_string())
     }
 }
 
@@ -94,7 +94,7 @@ macro_rules! try_errno {
 impl From<EncoderError> for Error {
     fn from(err: EncoderError) -> Error {
         Error {
-            kind: GenericError,
+            kind: ErrorKind::Generic,
             desc: err.description().to_string(),
             detail: None,
         }
@@ -104,7 +104,7 @@ impl From<EncoderError> for Error {
 impl From<IoError> for Error {
     fn from(err: IoError) -> Error {
         Error {
-            kind: GenericError,
+            kind: ErrorKind::Generic,
             desc: err.description().into(),
             detail: None,
         }
@@ -115,7 +115,7 @@ impl From<term::Error> for Error {
     fn from(err: term::Error) -> Error {
         Error {
             desc: err.description().into(),
-            kind: TermError(err),
+            kind: ErrorKind::Term(err),
             detail: None,
         }
     }
@@ -134,7 +134,7 @@ impl From<(ErrorKind, &'static str)> for Error {
 impl From<SystemTimeError> for Error {
     fn from(err: SystemTimeError) -> Error {
         Error {
-            kind: GenericError,
+            kind: ErrorKind::Generic,
             desc: err.description().into(),
             detail: None,
         }
@@ -144,7 +144,7 @@ impl From<SystemTimeError> for Error {
 impl From<ParseError> for Error {
     fn from(err: ParseError) -> Error {
         Error {
-            kind: GenericError,
+            kind: ErrorKind::Generic,
             desc: format!("time parsing error: {}", err),
             detail: None,
         }
@@ -154,7 +154,7 @@ impl From<ParseError> for Error {
 impl From<FromUtf8Error> for Error {
     fn from(err: FromUtf8Error) -> Error {
         Error {
-            kind: GenericError,
+            kind: ErrorKind::Generic,
             desc: format!("is this profile encrypted? ({})", err),
             detail: None,
         }
@@ -164,7 +164,7 @@ impl From<FromUtf8Error> for Error {
 impl From<SymmetricCipherError> for Error {
     fn from(_: SymmetricCipherError) -> Error {
         Error {
-            kind: GenericError,
+            kind: ErrorKind::Generic,
             desc: "invalid encryption key".to_string(),
             detail: None,
         }
@@ -174,7 +174,7 @@ impl From<SymmetricCipherError> for Error {
 impl From<docopt::Error> for Error {
     fn from(err: docopt::Error) -> Error {
         Error {
-            kind: GenericError,
+            kind: ErrorKind::Generic,
             desc: err.to_string(),
             detail: None,
         }
@@ -184,7 +184,7 @@ impl From<docopt::Error> for Error {
 impl From<fmt::Error> for Error {
     fn from(_: fmt::Error) -> Error {
         Error {
-            kind: GenericError,
+            kind: ErrorKind::Generic,
             desc: "formatting error".to_string(),
             detail: None,
         }

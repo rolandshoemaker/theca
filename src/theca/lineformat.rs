@@ -25,7 +25,7 @@ pub struct LineFormat {
 }
 
 impl LineFormat {
-    pub fn new(items: &Vec<Item>,
+    pub fn new(items: &[Item],
                condensed: bool,
                search: bool)
                -> Result<LineFormat> {
@@ -61,9 +61,10 @@ impl LineFormat {
 
         // get length of longest title string
         line_format.title_width = match items.iter()
-                                             .max_by_key(|n| match n.body.len() > 0 {
-                                                 true => n.title.len() + 4,
-                                                 false => n.title.len(),
+                                             .max_by_key(|n| if !n.body.is_empty() {
+                                                 n.title.len() + 4
+                                                 } else {
+                                                 n.title.len()
                                              }) {
             Some(n) => {
                 if n.body.is_empty() || search {
@@ -82,7 +83,7 @@ impl LineFormat {
 
         // status length stuff
         line_format.status_width = if items.iter()
-                                           .any(|n| n.status != Status::NoStatus) {
+                                           .any(|n| n.status != Status::Blank) {
             if condensed {
                 // only display first char of status (e.g. S or U) for condensed print
                 1

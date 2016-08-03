@@ -31,6 +31,7 @@ use std::env;
 use std::io::{self, stdin, Read, Write};
 use std::iter::repeat;
 use std::fs::{File, create_dir};
+use std::default::Default;
 
 // random things
 use regex::Regex;
@@ -43,8 +44,8 @@ use lineformat::LineFormat;
 use utils::c::istty;
 use utils::{drop_to_editor, pretty_line, format_field, get_yn_input, sorted_print,
             localize_last_touched_string, parse_last_touched, find_profile_folder, get_password,
-            profiles_in_folder, profile_fingerprint};
-use errors::{Result, Error, GenericError};
+            profiles_in_folder, profile_fingerprint, extract_status};
+use errors::{Result, Error};
 use crypt::{encrypt, decrypt, password_to_key};
 
 pub use self::libc::{STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO};
@@ -100,17 +101,61 @@ pub struct Args {
     pub flag_yes: bool,
 }
 
+pub struct BoolFlags {
+    pub condensed: bool,
+    pub datesort: bool,
+    pub editor: bool,
+    pub encrypted: bool,
+    pub json: bool,
+    pub regex: bool,
+    pub reverse: bool,
+    pub search_body: bool,
+    pub yes: bool,
+}
+
+impl BoolFlags {
+    pub fn from_args(args: &Args) -> BoolFlags {
+        BoolFlags {
+               condensed: args.flag_condensed,
+               datesort: args.flag_datesort,
+               editor: args.flag_editor,
+               encrypted: args.flag_encrypted,
+               json: args.flag_json,
+               regex: args.flag_regex,
+               reverse: args.flag_reverse,
+               search_body: args.flag_search_body,
+               yes: args.flag_yes,
+        }
+    }
+}
+
+impl Default for BoolFlags {
+    fn default() -> BoolFlags {
+        BoolFlags {
+            condensed: false,
+            datesort: false,
+            editor: false,
+            encrypted: false,
+            json: false,
+            regex: false,
+            reverse: false,
+            search_body: false,
+            yes: false,
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Status {
-    NoStatus,
+    Blank,
     Started,
     Urgent,
 }
 
 impl Encodable for Status {
     fn encode<S: rustc_serialize::Encoder>(&self, encoder: &mut S) -> ::std::result::Result<(), S::Error> {
-        match &*self {
-            &Status::NoStatus => {
+        match *self {
+            Status::Blank => {
                 encoder.emit_enum("Status", |encoder| {
                              encoder.emit_enum_variant(
                                      "",
@@ -120,7 +165,7 @@ impl Encodable for Status {
                             )
                 })
             }
-            &Status::Started => {
+            Status::Started => {
                 encoder.emit_enum("Status", |encoder| {
                              encoder.emit_enum_variant(
                                      "Started",
@@ -130,7 +175,7 @@ impl Encodable for Status {
                             )
                 })
             }
-            &Status::Urgent => {
+            Status::Urgent => {
                 encoder.emit_enum("Status", |encoder| {
                              encoder.emit_enum_variant(
                                      "Urgent",
@@ -153,7 +198,7 @@ impl Decodable for Status {
                                   &["", "Started", "Urgent"],
                                   |_, i| {
                                         Ok(match i {
-                                                0usize => Status::NoStatus,
+                                                0usize => Status::Blank,
                                                 1usize => Status::Started,
                                                 2usize => Status::Urgent,
                                                 _ => panic!("internal error: entered unreachable code"),
@@ -170,7 +215,7 @@ impl fmt::Display for Status {
         write!(f,
                "{}",
                match *self {
-                   Status::NoStatus => "",
+                   Status::Blank => "",
                    Status::Started => "Started",
                    Status::Urgent => "Urgent",
                })
@@ -183,7 +228,7 @@ static DATEFMT: &'static str = "%F %T %z";
 static DATEFMT_SHORT: &'static str = "%F %T";
 
 /// Represents a note within a profile
-#[derive(RustcDecodable, RustcEncodable, Clone)]
+#[derive(RustcDecodable, RustcEncodable, Clone, Debug)]
 pub struct Item {
     pub id: usize,
     pub title: String,
@@ -259,7 +304,7 @@ impl Profile {
             if !yes {
                 let message = format!("{} doesn't exist, would you like to create it?\n", profile_path.display());
                 if !try!(get_yn_input(&message)) {
-                    specific_fail_str!("ok bye ♥");
+                    return specific_fail_str!("ok bye ♥");
                 }
             }
             try!(create_dir(&profile_path));
@@ -295,16 +340,14 @@ impl Profile {
             };
             let decoded: Profile = match decode(&*contents) {
                 Ok(s) => s,
-                Err(_) => specific_fail!(format!("invalid JSON in {}", profile_path.display())),
+                Err(_) => return specific_fail!(format!("invalid JSON in {}", profile_path.display())),
             };
             let fingerprint = try!(profile_fingerprint(profile_path));
             Ok((decoded, fingerprint))
+        } else if profile_path.exists() {
+            specific_fail!(format!("{} is not a file.", profile_path.display()))
         } else {
-            if profile_path.exists() {
-                specific_fail!(format!("{} is not a file.", profile_path.display()));
-            } else {
-                specific_fail!(format!("{} does not exist.", profile_path.display()));
-            }
+            specific_fail!(format!("{} does not exist.", profile_path.display()))
         }
     }
 
@@ -328,7 +371,7 @@ impl Profile {
         if !yes {
             let message = "are you sure you want to delete all the notes in this profile?\n";
             if !try!(get_yn_input(&message)) {
-                specific_fail_str!("ok bye ♥");
+                return specific_fail_str!("ok bye ♥");
             }
         }
         self.notes.truncate(0);
@@ -352,7 +395,7 @@ impl Profile {
             let message = format!("profile {} already exists would you like to overwrite it?\n",
                      profile_path.display());
             if !try!(get_yn_input(&message)) {
-                specific_fail_str!("ok bye ♥");
+                return specific_fail_str!("ok bye ♥");
             }
         }
 
@@ -363,7 +406,7 @@ impl Profile {
                           loaded, would you like to attempt to merge them?\n",
                          args.flag_profile);
                 if !try!(get_yn_input(&message)) {
-                    specific_fail_str!("ok bye ♥");
+                    return specific_fail_str!("ok bye ♥");
                 }
                 let mut new_args = args.clone();
                 if args.flag_editor {
@@ -417,7 +460,7 @@ impl Profile {
     /// transfer a note from the profile to another profile
     pub fn transfer_note(&mut self, args: &Args) -> Result<()> {
         if args.flag_profile == args.arg_name[0] {
-            specific_fail!(format!("cannot transfer a note from a profile to itself ({} -> {})",
+            return specific_fail!(format!("cannot transfer a note from a profile to itself ({} -> {})",
                                    args.flag_profile,
                                    args.arg_name[0]));
         }
@@ -436,16 +479,12 @@ impl Profile {
         if self.notes
                .iter()
                .find(|n| n.id == args.arg_id[0])
-               .map(|n| {
-                   let (started, urgent) = (n.status == Status::Started, n.status == Status::Urgent);
-                   trans_profile.add_note(&n.title,
-                                          &vec![n.body.clone()],
-                                          started,
-                                          urgent,
+               .map(|n| trans_profile.add_note(&n.title,
+                                          &[n.body.clone()],
+                                          Some(n.status),
                                           false,
                                           false,
-                                          false)
-               })
+                                          false))
                .is_some() {
             if self.notes
                    .iter()
@@ -454,13 +493,13 @@ impl Profile {
                    .is_some() {
                 try!(trans_profile.save_to_file(&trans_args, &trans_fingerprint))
             } else {
-                specific_fail!(format!("couldn't remove note {} in {}, aborting nothing will be \
+                return specific_fail!(format!("couldn't remove note {} in {}, aborting nothing will be \
                                         saved",
                                        args.arg_id[0],
                                        args.flag_profile))
             }
         } else {
-            specific_fail!(format!("could not transfer note {} from {} -> {}",
+            return specific_fail!(format!("could not transfer note {} from {} -> {}",
                                    args.arg_id[0],
                                    args.flag_profile,
                                    args.arg_name[0]))
@@ -476,40 +515,28 @@ impl Profile {
     /// add a item to the profile
     pub fn add_note(&mut self,
                     title: &str,
-                    body: &Vec<String>,
-                    started: bool,
-                    urgent: bool,
+                    body: &[String],
+                    status: Option<Status>,
                     use_stdin: bool,
                     use_editor: bool,
                     print_msg: bool)
                     -> Result<()> {
         let title = title.replace("\n", "").to_string();
-        let status = if started {
-            Status::Started
-        } else if urgent {
-            Status::Urgent
-        } else {
-            Status::NoStatus
-        };
 
         let body = if use_stdin {
             let mut buf = String::new();
             try!(stdin().read_to_string(&mut buf));
             buf.to_owned()
-        } else {
-            if !use_editor {
-                if body.is_empty() {
-                    "".to_string()
-                } else {
-                    body[0].clone()
-                }
+        } else if !use_editor {
+            if body.is_empty() {
+                "".to_string()
             } else {
-                if istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
-                    try!(drop_to_editor(&"".to_string()))
-                } else {
-                    "".to_string()
-                }
+                body[0].clone()
             }
+        } else if istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
+            try!(drop_to_editor(&"".to_string()))
+        } else {
+            "".to_string()
         };
 
         let new_id = match self.notes.last() {
@@ -519,7 +546,7 @@ impl Profile {
         self.notes.push(Item {
             id: new_id + 1,
             title: title,
-            status: status,
+            status: status.unwrap_or(Status::Blank),
             body: body,
             last_touched: try!(strftime(DATEFMT, &now())),
         });
@@ -530,7 +557,7 @@ impl Profile {
     }
 
     /// delete an item from the profile
-    pub fn delete_note(&mut self, id: &Vec<usize>) {
+    pub fn delete_note(&mut self, id: &[usize]) {
         for nid in id.iter() {
             let remove = self.notes
                              .iter()
@@ -549,20 +576,19 @@ impl Profile {
     pub fn edit_note(&mut self,
                      id: usize,
                      title: &str,
-                     body: &Vec<String>,
-                     started: bool,
-                     urgent: bool,
-                     no_status: bool,
+                     body: &[String],
+                     status: Option<Status>,
                      use_stdin: bool,
-                     use_editor: bool,
-                     encrypted: bool,
-                     yes: bool)
+                     flags: BoolFlags)
                      -> Result<()> {
         // let id = args.arg_id[0];
         let item_pos: usize = match self.notes.iter().position(|n| n.id == id) {
             Some(i) => i,
-            None => specific_fail!(format!("note {} doesn't exist", id)),
+            None => return specific_fail!(format!("note {} doesn't exist", id)),
         };
+        let use_editor = flags.editor;
+        let encrypted = flags.encrypted;
+        let yes = flags.yes;
         if !title.is_empty() {
             if title.replace("\n", "") == "-" {
                 if !use_stdin {
@@ -579,16 +605,7 @@ impl Profile {
             }
             // change title
         }
-        if started || urgent || no_status {
-            // change status
-            if started {
-                self.notes[item_pos].status = Status::Started;
-            } else if urgent {
-                self.notes[item_pos].status = Status::Urgent;
-            } else if no_status {
-                self.notes[item_pos].status = Status::NoStatus;
-            }
-        }
+        self.notes[item_pos].status = status.unwrap_or(Status::Blank);
 
         if !body.is_empty() || use_editor || use_stdin {
             // change body
@@ -596,35 +613,33 @@ impl Profile {
                 let mut buf = String::new();
                 try!(stdin().read_to_string(&mut buf));
                 buf.to_owned()
-            } else {
-                if use_editor {
-                    if istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
-                        if encrypted && !yes {
-                            let message = format!("{0}\n\n{1}\n{2}\n\n{0}\n{3}\n",
-                                     "## [WARNING] ##",
-                                     "continuing will write the body of the decrypted note to a \
-                                      temporary",
-                                     "file, increasing the possibilty it could be recovered \
-                                      later.",
-                                     "Are you sure you want to continue?\n");
-                            if !try!(get_yn_input(&message)) {
-                                specific_fail_str!("ok bye ♥");
-                            }
+            } else if use_editor {
+                if istty(STDOUT_FILENO) && istty(STDIN_FILENO) {
+                    if encrypted && !yes {
+                        let message = format!("{0}\n\n{1}\n{2}\n\n{0}\n{3}\n",
+                                    "## [WARNING] ##",
+                                    "continuing will write the body of the decrypted note to a \
+                                    temporary",
+                                    "file, increasing the possibilty it could be recovered \
+                                    later.",
+                                    "Are you sure you want to continue?\n");
+                        if !try!(get_yn_input(&message)) {
+                            return specific_fail_str!("ok bye ♥");
                         }
-                        let new_body = try!(drop_to_editor(&self.notes[item_pos].body));
-                        if self.notes[item_pos].body != new_body {
-                            new_body
-                        } else {
-                            self.notes[item_pos].body.clone()
-                        }
+                    }
+                    let new_body = try!(drop_to_editor(&self.notes[item_pos].body));
+                    if self.notes[item_pos].body != new_body {
+                        new_body
                     } else {
                         self.notes[item_pos].body.clone()
                     }
                 } else {
-                    body[0].clone()
+                    self.notes[item_pos].body.clone()
                 }
-            };
-        }
+            } else {
+                body[0].clone()
+            }
+        };
 
         // update last_touched
         self.notes[item_pos].last_touched = try!(strftime(DATEFMT, &now()));
@@ -634,7 +649,7 @@ impl Profile {
 
     /// print information about the profile
     pub fn stats(&mut self, name: &str) -> Result<()> {
-        let no_s = self.notes.iter().filter(|n| n.status == Status::NoStatus).count();
+        let no_s = self.notes.iter().filter(|n| n.status == Status::Blank).count();
         let started_s = self.notes
                             .iter()
                             .filter(|n| n.status == Status::Started)
@@ -651,7 +666,7 @@ impl Profile {
                                 Err(_) => now(),
                             }) {
             Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
-            None => specific_fail_str!("last_touched is not properly formated"),
+            None => return specific_fail_str!("last_touched is not properly formated"),
         };
         let max = match self.notes
                             .iter()
@@ -660,7 +675,7 @@ impl Profile {
                                 Err(_) => now(),
                             }) {
             Some(n) => try!(localize_last_touched_string(&*n.last_touched)),
-            None => specific_fail_str!("last_touched is not properly formated"),
+            None => return specific_fail_str!("last_touched is not properly formated"),
         };
         try!(pretty_line("name: ", &format!("{}\n", name), tty));
         try!(pretty_line("encrypted: ", &format!("{}\n", self.encrypted), tty));
@@ -682,7 +697,7 @@ impl Profile {
         let id = id;
         let note_pos = match self.notes.iter().position(|n| n.id == id) {
             Some(i) => i,
-            None => specific_fail!(format!("note {} doesn't exist", id)),
+            None => return specific_fail!(format!("note {} doesn't exist", id)),
         };
         if json {
             println!("{}", as_pretty_json(&self.notes[note_pos].clone()));
@@ -692,7 +707,7 @@ impl Profile {
             if condensed {
                 try!(pretty_line("id: ", &format!("{}\n", self.notes[note_pos].id), tty));
                 try!(pretty_line("title: ", &format!("{}\n", self.notes[note_pos].title), tty));
-                if self.notes[note_pos].status != Status::NoStatus {
+                if self.notes[note_pos].status != Status::Blank {
                     try!(pretty_line("status: ",
                                      &format!("{}\n", self.notes[note_pos].status),
                                      tty));
@@ -710,7 +725,7 @@ impl Profile {
                 try!(pretty_line("title\n-----\n",
                                  &format!("{}\n\n", self.notes[note_pos].title),
                                  tty));
-                if self.notes[note_pos].status != Status::NoStatus {
+                if self.notes[note_pos].status != Status::Blank {
                     try!(pretty_line("status\n------\n",
                                      &format!("{:?}\n\n", self.notes[note_pos].status),
                                      tty));
@@ -742,32 +757,18 @@ impl Profile {
     /// print all notes in the profile
     pub fn list_notes(&mut self,
                       limit: usize,
-                      condensed: bool,
-                      json: bool,
-                      datesort: bool,
-                      reverse: bool,
-                      search_body: bool,
-                      no_status: bool,
-                      started_status: bool,
-                      urgent_status: bool)
+                      flags: BoolFlags,
+                      status: Option<Status>)
                       -> Result<()> {
-        if self.notes.len() > 0 {
+        if !self.notes.is_empty() {
             try!(sorted_print(&mut self.notes.clone(),
                               limit,
-                              condensed,
-                              json,
-                              datesort,
-                              reverse,
-                              search_body,
-                              no_status,
-                              started_status,
-                              urgent_status));
+                              flags,
+                              status));
+        } else if flags.json {
+            println!("[]");
         } else {
-            if json {
-                println!("[]");
-            } else {
-                println!("this profile is empty");
-            }
+            println!("this profile is empty");
         }
         Ok(())
     }
@@ -775,59 +776,44 @@ impl Profile {
     /// print notes search for in the profile
     pub fn search_notes(&mut self,
                         pattern: &str,
-                        regex: bool,
                         limit: usize,
-                        condensed: bool,
-                        json: bool,
-                        datesort: bool,
-                        reverse: bool,
-                        search_body: bool,
-                        no_status: bool,
-                        started_status: bool,
-                        urgent_status: bool)
+                        flags: BoolFlags,
+                        status: Option<Status>)
                         -> Result<()> {
-        let notes: Vec<Item> = if regex {
+        let notes: Vec<Item> = if flags.regex {
             let re = match Regex::new(&pattern[..]) {
                 Ok(r) => r,
-                Err(e) => specific_fail!(format!("regex error: {}.", e)),
+                Err(e) => return specific_fail!(format!("regex error: {}.", e)),
             };
             self.notes
                 .iter()
-                .filter(|n| if search_body {
+                .filter(|n| if flags.search_body {
                     re.is_match(&*n.body)
                 } else {
                     re.is_match(&*n.title)
                 })
-                .map(|n| n.clone())
+                .cloned()
                 .collect()
         } else {
             self.notes
                 .iter()
-                .filter(|n| if search_body {
+                .filter(|n| if flags.search_body {
                     n.body.contains(&pattern[..])
                 } else {
                     n.title.contains(&pattern[..])
                 })
-                .map(|n| n.clone())
+                .cloned()
                 .collect()
         };
-        if notes.len() > 0 {
+        if !notes.is_empty() {
             try!(sorted_print(&mut notes.clone(),
                               limit,
-                              condensed,
-                              json,
-                              datesort,
-                              reverse,
-                              search_body,
-                              no_status,
-                              started_status,
-                              urgent_status));
+                              flags,
+                              status));
+        } else if flags.json {
+            println!("[]");
         } else {
-            if json {
-                println!("[]");
-            } else {
-                println!("nothing found");
-            }
+            println!("nothing found");
         }
         Ok(())
     }
@@ -860,6 +846,7 @@ pub fn setup_args(args: &mut Args) -> Result<()> {
     if args.flag_profile.is_empty() {
         args.flag_profile = "default".to_string();
     }
+    
 
     Ok(())
 }
@@ -868,6 +855,9 @@ pub fn parse_cmds(profile: &mut Profile,
                   args: &mut Args,
                   profile_fingerprint: &u64)
                   -> Result<()> {
+    let status = try!(extract_status(args.flag_none, args.flag_started, args.flag_urgent));
+    let flags = BoolFlags::from_args(args);
+
     if [args.cmd_add,
         args.cmd_edit,
         args.cmd_encrypt_profile,
@@ -882,8 +872,7 @@ pub fn parse_cmds(profile: &mut Profile,
         if args.cmd_add {
             try!(profile.add_note(&args.arg_title,
                                   &args.flag_body,
-                                  args.flag_started,
-                                  args.flag_urgent,
+                                  status,
                                   args.cmd__,
                                   args.flag_editor,
                                   true));
@@ -894,13 +883,9 @@ pub fn parse_cmds(profile: &mut Profile,
             try!(profile.edit_note(args.arg_id[0],
                                    &args.arg_title,
                                    &args.flag_body,
-                                   args.flag_started,
-                                   args.flag_urgent,
-                                   args.flag_none,
+                                   status,
                                    args.cmd__,
-                                   args.flag_editor,
-                                   args.flag_encrypted,
-                                   args.flag_yes));
+                                   flags));
         }
 
         // delete
@@ -954,56 +939,40 @@ pub fn parse_cmds(profile: &mut Profile,
         }
 
         try!(profile.save_to_file(args, profile_fingerprint));
-    } else {
-        // view
-        if !args.arg_id.is_empty() {
-            try!(profile.view_note(args.arg_id[0], args.flag_json, args.flag_condensed));
-        } else if args.cmd_search {
-            try!(profile.search_notes(&args.arg_pattern,
-                                      args.flag_regex,
-                                      args.flag_limit,
-                                      args.flag_condensed,
-                                      args.flag_json,
-                                      args.flag_datesort,
-                                      args.flag_reverse,
-                                      args.flag_search_body,
-                                      args.flag_none,
-                                      args.flag_started,
-                                      args.flag_urgent));
-        } else if args.cmd_info {
-            try!(profile.stats(&args.flag_profile));
-        } else if args.cmd_import {
-            // reverse(?) transfer a note
-            let mut from_args = args.clone();
-            from_args.cmd_transfer = args.cmd_import;
-            from_args.cmd_import = false;
-            from_args.flag_profile = args.arg_name[0].clone();
-            from_args.arg_name[0] = args.flag_profile.clone();
+    } else if !args.arg_id.is_empty() {
+        try!(profile.view_note(args.arg_id[0], args.flag_json, args.flag_condensed));
+    } else if args.cmd_search {
+        try!(profile.search_notes(&args.arg_pattern,
+                                    args.flag_limit,
+                                    flags,
+                                    status));
+    } else if args.cmd_info {
+        try!(profile.stats(&args.flag_profile));
+    } else if args.cmd_import {
+        // reverse(?) transfer a note
+        let mut from_args = args.clone();
+        from_args.cmd_transfer = args.cmd_import;
+        from_args.cmd_import = false;
+        from_args.flag_profile = args.arg_name[0].clone();
+        from_args.arg_name[0] = args.flag_profile.clone();
 
-            let (mut from_profile, from_fingerprint) = try!(Profile::new(
-                    &from_args.flag_profile,
-                    &from_args.flag_profile_folder,
-                    &from_args.flag_key,
-                    from_args.cmd_new_profile,
-                    from_args.flag_encrypted,
-                    from_args.flag_yes
-                ));
+        let (mut from_profile, from_fingerprint) = try!(Profile::new(
+                &from_args.flag_profile,
+                &from_args.flag_profile_folder,
+                &from_args.flag_key,
+                from_args.cmd_new_profile,
+                from_args.flag_encrypted,
+                from_args.flag_yes
+            ));
 
-            try!(parse_cmds(&mut from_profile, &mut from_args, &from_fingerprint));
-        } else if args.cmd_list_profiles {
-            let profile_path = try!(find_profile_folder(&args.flag_profile_folder));
-            try!(profiles_in_folder(&profile_path));
-        } else if args.arg_id.is_empty() {
-            try!(profile.list_notes(args.flag_limit,
-                                    args.flag_condensed,
-                                    args.flag_json,
-                                    args.flag_datesort,
-                                    args.flag_reverse,
-                                    args.flag_search_body,
-                                    args.flag_none,
-                                    args.flag_started,
-                                    args.flag_urgent));
-        }
+        try!(parse_cmds(&mut from_profile, &mut from_args, &from_fingerprint));
+    } else if args.cmd_list_profiles {
+        let profile_path = try!(find_profile_folder(&args.flag_profile_folder));
+        try!(profiles_in_folder(&profile_path));
+    } else if args.arg_id.is_empty() {
+        try!(profile.list_notes(args.flag_limit,
+                                flags,
+                                status));
     }
 
     Ok(())
@@ -1027,7 +996,7 @@ mod tests {
         let item = Item {
             id: 0,
             title: "This is a title".into(),
-            status: Status::NoStatus,
+            status: Status::Blank,
             body: "This is the body".into(),
             last_touched: "2016-07-08 15:31:14 -0800".into(),
         };
@@ -1041,7 +1010,7 @@ mod tests {
         let item = Item {
             id: 0,
             title: "This is a title".into(),
-            status: Status::NoStatus,
+            status: Status::Blank,
             body: "".into(),
             last_touched: "2016-07-08 15:31:14 -0800".into(),
         };
@@ -1054,7 +1023,7 @@ mod tests {
         let item = Item {
             id: 0,
             title: "This is a title".into(),
-            status: Status::NoStatus,
+            status: Status::Blank,
             body: "This is the body\nit has multiple lines".into(),
             last_touched: "2016-07-08 15:31:14 -0800".into(),
         };
@@ -1069,7 +1038,7 @@ mod tests {
         let item = Item {
             id: 0,
             title: "This is a title".into(),
-            status: Status::NoStatus,
+            status: Status::Blank,
             body: "".into(),
             last_touched: "2016-07-08 15:31:14 -0800".into(),
         };
