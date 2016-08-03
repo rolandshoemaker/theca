@@ -28,7 +28,7 @@ a simple, fully featured, command line note taking tool written in
 ## Contents
 
 - [Installation](#installation)
-	- [Binaries](#binaries)
+	- [From crates.io](#binaries)
 	- [From source](#from-source)
 - [Usage](#usage)
 	- [First run](#first-run)
@@ -68,7 +68,10 @@ a simple, fully featured, command line note taking tool written in
 
 ## Installation
 
-### Binaries
+### From crates.io
+
+`theca` is available from crates.io, so you can just do `cargo install theca`
+to install the binary to your `$CARGO_HOME/bin` directory.
 
 ### From source
 
@@ -79,7 +82,7 @@ be downloaded directly from the [Rust website](http://www.rust-lang.org/install.
 
 to get the nightly `rustc` and `cargo` binaries, once those have finished building we can clone and build `theca`
 
-	$ git clone https://github.com/rolandshoemaker/theca.git
+	$ git clone https://github.com/pwoolcoc/theca.git
 	...
 
 	$ cd theca
@@ -620,9 +623,8 @@ A JSON test suite file for `theca_test_harness.py` looks something like this
 
 ## Author
 
-`theca` is written by roland shoemaker (<rolandshoemaker@gmail.com>), this is my first foray
-into a Rust project and my first time diving back into a systems language since 2007 or so,
-so please excuse the messiness of some of the code, dynamic languages have ruined me.
+`theca` was originally written by roland shoemaker (<rolandshoemaker@gmail.com>),
+and has since been taken up by Paul Woolcock (<paul@woolcock.us>).
 
 ## License
 
