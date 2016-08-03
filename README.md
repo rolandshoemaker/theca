@@ -70,18 +70,6 @@ a simple, fully featured, command line note taking tool written in
 
 ### Binaries
 
-I've built a simple multi-(platform/arch) binary package builder (`tools/theca-packer.py`)
-based on [Fabric](http://www.fabfile.org/) so I can provide both `x86_64` and `i686` packages
-for `unknown-linux-gnu` and `apple-darwin`. You can either download the binary packages and install
-them using the packaged `install.sh` script, or you can use `curl` to install `theca` like so
-
-
-	$ curl -s https://static.bracewel.net/theca/get_theca.sh | sh
-
-If you want to uninstall you just need to add the `--uninstall` flag like so
-
-	$ curl -s https://static.bracewel.net/theca/get_theca.sh | sh -s -- --uninstall
-
 ### From source
 
 All that's needed to build theca is a copy of the `rustc` compiler and the `cargo` packaging tool which can

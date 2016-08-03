@@ -1,8 +1,13 @@
 [package]
-
 name = "theca"
-version = "1.0.0-nightly"
-authors = ["Roland Shoemaker <roland@bind.es>"]
+version = "1.0.0"
+authors = ["Roland Shoemaker <roland@bind.es>", "Paul Woolcock <paul@woolcock.us>"]
+license = "MIT"
+description = """
+a simple, fully featured, command line note taking tool
+"""
+homepage = "https://github.com/pwoolcoc/theca"
+repository = "https://github.com/pwoolcoc/theca"
 
 [lib]
 name = "theca"
@@ -14,16 +19,16 @@ test = false
 doc = false
 
 [dependencies]
-time = "*"
-regex = "*"
-rustc-serialize = "*"
-docopt = "*"
-rust-crypto = "*"
-rand = "*"
-tempdir = "*"
-libc = "*"
-term = "*"
-clippy = { version = "*", optional = true }
+time = "^0.1.35"
+regex = "^0.1.71"
+rustc-serialize = "^0.3.19"
+docopt = "^0.6.81"
+rust-crypto = "^0.2.36"
+rand = "^0.3.14"
+tempdir = "^0.3.4"
+libc = "^0.2.13"
+term = "^0.4.4"
+clippy = { version = "^0.0.80", optional = true }
 
 [features]
 default = []
