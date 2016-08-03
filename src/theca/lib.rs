@@ -986,7 +986,7 @@ mod tests {
 
     fn write_item_test_case(item: Item, search: bool) -> String {
         let mut bytes: Vec<u8> = vec![];
-        let line_format = LineFormat::new(&vec![item.clone()], false, false).unwrap();
+        let line_format = LineFormat::new(&[item.clone()], false, false).unwrap();
         item.write(&mut bytes, &line_format, search).expect("item.write failed");
         String::from_utf8_lossy(&bytes).into_owned()
     }
