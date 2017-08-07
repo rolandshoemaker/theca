@@ -1,5 +1,5 @@
 
-	#  _   _                    
+	#  _   _
 	# | |_| |__   ___  ___ __ _
  	# | __|  _ \ / _ \/ __/ _` |
 	# | |_| | | |  __/ (_| (_| |
@@ -9,7 +9,7 @@
 ![example usage of theca](screenshots/main.png)
 
 a simple, fully featured, command line note taking tool written in
-[*Rust*](http://www.rust-lang.org/). 
+[*Rust*](http://www.rust-lang.org/).
 
 [![Build Status](https://travis-ci.org/rolandshoemaker/theca.svg?branch=master)](https://travis-ci.org/rolandshoemaker/theca)
 
@@ -84,7 +84,7 @@ If you want to uninstall you just need to add the `--uninstall` flag like so
 
 ### From source
 
-All that's needed to build theca is a copy of the `rustc` compiler and the `cargo` packaging tool which can
+All that's needed to build `theca` is a copy of the `rustc` compiler and the `cargo` packaging tool which can
 be downloaded directly from the [Rust website](http://www.rust-lang.org/install.html) or by running
 
 	$ curl -s https://static.rust-lang.org/rustup.sh | sh
@@ -100,11 +100,10 @@ to get the nightly `rustc` and `cargo` binaries, once those have finished buildi
 
 	$ sudo bash tools/build.sh install [--release, --man, --bash-complete, --zsh-complete]
 
-The `cargo` flag `--release` enables `rustc` optimizations. F
-The `cargo` flag `--release` enables `rustc` optimizations.or the `install` the flag `--man`
+The `cargo` flag `--release` enables `rustc` optimizations. For the `install` the flag `--man`
 will additionally install the man page and `--bash-complete` and `--zsh-complete` will
 additionally install the `bash` or `zsh` tab completion scripts. `cargo` will automatically
-download and compile `theca`s dependencies for you.
+download and compile `theca`'s dependencies for you.
 
 ## Usage
 
@@ -128,10 +127,10 @@ download and compile `theca`s dependencies for you.
 
 	Profiles:
 	    -f PATH, --profile-folder PATH      Path to folder containing profile.json
-	                                        files [default can be set with env var 
+	                                        files [default can be set with env var
 	                                        THECA_PROFILE_FOLDER].
 	    -p PROFILE, --profile PROFILE       Specify non-default profile [default
-	                                        can be set with env var 
+	                                        can be set with env var
 	                                        THECA_DEFAULT_PROFILE].
 
 	Printing format:
@@ -260,7 +259,7 @@ options can be used to alter the output style
 Notes can be search using either keyword or regex matching against note titles or bodies
 using `theca search`. `theca` doesn't support any kind of tagging (beyond the two basic
 statuses) but you can implement this quite simply by just appending or prepending a *tag*
-of sorts to the note title or body, e.g. `"(THECA) something about theca"`, and then 
+of sorts to the note title or body, e.g. `"(THECA) something about theca"`, and then
 do a keyword search for `"(THECA)"` to get all notes *tagged* as such.
 
 	Search:
@@ -294,12 +293,12 @@ stored alongside `default.json` in either `~/.theca/` or in the folder specified
 
 ![setting the THECA_DEFAULT_PROFILE env var](screenshots/default_profile_env.png)
 
-The default profile that `theca` loads (normalled `default`) can be changed by setting the
+The default profile that `theca` loads (normally `default`) can be changed by setting the
 environment variable `THECA_DEFAULT_PROFILE`.
 
 #### Setting the default profile folder
 
-The default profile folder can also be set via a enviroment variable, `THECA_PROFILE_FOLDER`.
+The default profile folder can also be set via an enviroment variable, `THECA_PROFILE_FOLDER`.
 
 #### List all profiles
 
@@ -325,10 +324,10 @@ the current profile (in this case `default`).
 
 ![new encrypted profile](screenshots/new_encrypted_profile.png)
 
-Using `--encrypted` tells theca that it should be dealing with encrypted profiles, so
-using `theca --encrypted new-profile secrets` theca knows to create an encrypted profile
-and will ask you for a key to encrypt the resulting `secrets.json`. If you'd like not to
-be prompted you can specify it with the argument `--key KEY`.
+Using `--encrypted` tells `theca` that it should be dealing with encrypted profiles, so for a
+command like `theca --encrypted new-profile secrets`, it will ask you for a key to encrypt
+the resulting `secrets.json`. If you'd like not to be prompted you can specify it with the
+argument `--key KEY`.
 
 `--encrypted` and `--key` can be used with all the other commands that read or write a
 profile to specify that the profile you want to use will need to be encrypted/decrypted.
@@ -361,7 +360,7 @@ isn't used you will be prompted for the encryption key to use to encrypt the pro
 
 ![change encryption key](screenshots/change_key.png)
 
-You can also use `theca encrypt-profile --new-key KEY` to change the encryption key of an already encrypted profile which is pretty cool and avoids the user having to do `encrypted with old key -> plaintext 
+You can also use `theca encrypt-profile --new-key KEY` to change the encryption key of an already encrypted profile which is pretty cool and avoids the user having to do `encrypted with old key -> plaintext
 -> encrypted with new key`!
 
 #### Synchronizing profiles
@@ -397,7 +396,7 @@ This works with the standard limit formatting arguments like `-r`, `-d`, and `-l
 
 There are preliminary `bash` and `zsh` tab completion scripts in the `completion/` directory
 which can be installed manually or by using the `--bash-complete` or `--zsh-complete` flags with
-`sudo bash tools/build.sh install` when installing the `theca` binary or by default when using the binary `installer.sh`. They both need quite a bit of 
+`sudo bash tools/build.sh install` when installing the `theca` binary or by default when using the binary `installer.sh`. They both need quite a bit of
 work but are still relatively usable for the time being.
 
 ## man page
@@ -426,7 +425,7 @@ the bug, and if you're really awesome a test case that exposes it.
 ### TODO
 
 * clean-ups/optimizations pretty much everywhere
-* `ThecaProfile` and `ThecaItem` and assosiated functions should be moved out of `src/theca/lib.rs`
+* `ThecaProfile` and `ThecaItem` and associated functions should be moved out of `src/theca/lib.rs`
   to their own file
 * `list-profiles` should be alphabetic
 * `bash_complete.sh` could use a lot of improvement, `_theca` also, but less...
@@ -501,7 +500,7 @@ and the ciphertext can be decrypted using the AES implementation from `pycrypto`
 ### `tools/build.sh`
 
 `build.sh` is a pretty simple `bash` holdall in lieu of a `Makefile` (ew) that really exists
-because I have a bad memory and forget some of the commands i'm supposed to remember. It will also
+because I have a bad memory and forget some of the commands I'm supposed to remember. It will also
 set the build version environment variable (`THECA_BUILD_VER`) which is used to set the verson `theca -v`.
 
 Usage is pretty simple
@@ -526,7 +525,7 @@ Usage is pretty simple
 It reads in JSON files which describe test cases and executes them, providing relatively simple
 information like passed/failed/time taken.
 
-The harness can preform three different output checks, against
+The harness can perform three different output checks, against
  * the resulting profile file
  * the JSON output of view, list, and search commands
  * the text output of add, edit, delete commands, etc
